@@ -45,7 +45,20 @@ section{display:none} section.active{display:block}
 .event-simple-list{display:grid;gap:8px;margin-top:12px}
 .event-simple-row{display:grid;grid-template-columns:150px 1fr auto;gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:10px;background:#0a1724}
 .event-simple-title{font-weight:700}
-.athlete-table-wrap{width:100%}
+.athlete-table-wrap{width:100%;max-width:100%}
+.athlete-table-wrap table{width:max-content;min-width:1080px}
+.athlete-table-wrap th,.athlete-table-wrap td{white-space:nowrap}
+.athlete-table-wrap th:nth-child(1),.athlete-table-wrap td:nth-child(1){min-width:120px}
+.athlete-table-wrap th:nth-child(2),.athlete-table-wrap td:nth-child(2){min-width:105px}
+.athlete-table-wrap th:nth-child(3),.athlete-table-wrap td:nth-child(3){min-width:165px}
+.athlete-table-wrap th:nth-child(4),.athlete-table-wrap td:nth-child(4){min-width:105px}
+.athlete-table-wrap th:nth-child(5),.athlete-table-wrap td:nth-child(5),
+.athlete-table-wrap th:nth-child(6),.athlete-table-wrap td:nth-child(6),
+.athlete-table-wrap th:nth-child(7),.athlete-table-wrap td:nth-child(7){min-width:70px;text-align:right}
+.athlete-table-wrap th:nth-child(8),.athlete-table-wrap td:nth-child(8){min-width:95px}
+.athlete-table-wrap th:nth-child(9),.athlete-table-wrap td:nth-child(9){min-width:95px}
+.athlete-table-wrap th:nth-child(10),.athlete-table-wrap td:nth-child(10){min-width:150px}
+.athlete-scroll-hint{display:none}
 .schedule-board-wrap{overflow-x:auto;overflow-y:hidden;margin-top:14px;-webkit-overflow-scrolling:touch}
 .season-board{width:100%;border-collapse:collapse;table-layout:fixed;font-size:11px}
 .season-board th,.season-board td{border:1px solid var(--line);padding:4px 5px;vertical-align:top}
@@ -91,8 +104,9 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
   .event{grid-template-columns:1fr 1fr}.event .event-main{grid-column:1/-1}
   .checks{grid-template-columns:1fr 1fr}
   .event-simple-row{grid-template-columns:110px 1fr auto;font-size:12px}
-  .athlete-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .athlete-table-wrap table{min-width:980px}
+  .athlete-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+  .athlete-table-wrap table{min-width:1080px}
+  .athlete-scroll-hint{display:block;font-size:11px;color:var(--muted);margin:4px 0 8px}
   table{font-size:12px} th,td{padding:8px 5px}
 }
 @media print{
@@ -145,7 +159,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
       <small id="teamHeader">TEAM未設定</small>
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.6.6</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.6.9</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
   </div>
@@ -187,7 +201,11 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
         </div>
         <div class="no-print" style="min-width:220px">
           <label>表示シーズン</label>
-          <select id="scheduleSeason" onchange="renderScheduleBoard()"></select>
+          <select id="scheduleSeason" onchange="onScheduleSeasonChange()"></select>
+          <label style="display:flex;align-items:center;gap:7px;margin-top:8px;color:var(--text);font-size:12px;cursor:pointer">
+            <input id="scheduleSeasonLock" type="checkbox" onchange="toggleScheduleSeasonLock()" style="width:auto">
+            表示シーズンをロック
+          </label>
         </div>
       </div>
       <div id="scheduleBoardWrap" class="schedule-board-wrap">
@@ -286,16 +304,16 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
       <div class="toolbar"><button class="btn" onclick="closeAthleteForm()">閉じる</button></div>
     </div>
     <h3 style="margin-top:18px">男子</h3>
-    <table>
+    <div class="athlete-scroll-hint no-print">← 横にスワイプして全項目を表示 →</div><div class="athlete-table-wrap"><div class="athlete-scroll-hint no-print">← 横にスワイプして全項目を表示 →</div><div class="athlete-table-wrap"><div class="athlete-scroll-hint no-print">← 横にスワイプして全項目を表示 →</div><div class="athlete-table-wrap"><table>
       <thead><tr><th>氏名</th><th>生年月日</th><th>所属・学年</th><th>SAJ No.</th><th>SL</th><th>GS</th><th>SG</th><th>取得日</th><th>PL No.</th><th>操作</th></tr></thead>
       <tbody id="athleteRowsMale"></tbody>
-    </table>
+    </table></div>
 
     <h3 style="margin-top:20px">女子</h3>
     <table>
       <thead><tr><th>氏名</th><th>生年月日</th><th>所属・学年</th><th>SAJ No.</th><th>SL</th><th>GS</th><th>SG</th><th>取得日</th><th>PL No.</th><th>操作</th></tr></thead>
       <tbody id="athleteRowsFemale"></tbody>
-    </table>
+    </table></div>
 
     <div id="athleteUnknownWrap" class="hidden" style="margin-top:20px">
       <h3>性別未取得</h3>
@@ -303,7 +321,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
       <table>
         <thead><tr><th>氏名</th><th>生年月日</th><th>所属・学年</th><th>SAJ No.</th><th>SL</th><th>GS</th><th>SG</th><th>取得日</th><th>PL No.</th><th>操作</th></tr></thead>
         <tbody id="athleteRowsUnknown"></tbody>
-      </table>
+      </table></div>
     </div>
     <div id="athleteDetail" class="card hidden" style="margin-top:14px"></div>
   </div>
@@ -416,7 +434,7 @@ function dayClass(dateStr,y,m,d){
   if(dow===6) return 'day-sat';
   return '';
 }
-function currentSeasonStartYear(){const t=new Date(),y=t.getFullYear(),m=t.getMonth()+1;return m>=11?y:y-1}
+function currentSeasonStartYear(){const t=new Date(),y=t.getFullYear(),m=t.getMonth()+1;return m>=7?y:y-1}
 function seasonStartYearFromDate(dateStr){
   if(!dateStr)return null;
   const p=String(dateStr).split('-').map(Number);
@@ -447,21 +465,63 @@ function enumerateDates(start,end){
   return rows;
 }
 function collectScheduleSeasonYears(){
-  const set=new Set([currentSeasonStartYear()]);
+  const cur=currentSeasonStartYear();
+  const set=new Set([cur-1,cur,cur+1]);
   [...db.schedules.map(x=>x.date),...db.events.map(x=>x.start),...db.events.map(x=>x.end)].forEach(d=>{
     const y=seasonStartYearFromDate(d);
     if(y) set.add(y);
   });
-  return [...set].sort((a,b)=>b-a);
+  return [...set].sort((a,b)=>a-b);
 }
 function initScheduleSeason(){
   const sel=document.getElementById('scheduleSeason');
+  const lock=document.getElementById('scheduleSeasonLock');
   if(!sel) return;
+
+  db.team=db.team||{};
   const years=collectScheduleSeasonYears();
-  const prev=Number(sel.value)||currentSeasonStartYear();
-  sel.innerHTML=years.map(y=>`<option value="${y}">${y}/${y+1}（11月〜4月）</option>`).join('');
-  sel.value=String(years.includes(prev)?prev:years[0]);
+  const cur=currentSeasonStartYear();
+
+  const lockedYear=Number(db.team.scheduleSeasonYear);
+  const domSelected=Number(sel.value);
+  let target=years.includes(lockedYear)
+    ? lockedYear
+    : (years.includes(domSelected)?domSelected:cur);
+
+  sel.innerHTML=years.map(y=>{
+    let role='';
+    if(y===cur-1) role='昨シーズン';
+    else if(y===cur) role='今シーズン';
+    else if(y===cur+1) role='来シーズン';
+    return `<option value="${y}">${y}/${y+1}${role?`（${role}）`:''}</option>`;
+  }).join('');
+
+  if(!years.includes(target)) target=cur;
+  sel.value=String(target);
+
+  const isLocked=!!db.team.scheduleSeasonLocked;
+  sel.disabled=isLocked;
+  if(lock) lock.checked=isLocked;
+
   renderScheduleBoard();
+}
+function onScheduleSeasonChange(){
+  const sel=document.getElementById('scheduleSeason');
+  if(!sel)return;
+  db.team=db.team||{};
+  db.team.scheduleSeasonYear=Number(sel.value);
+  localStorage.setItem(KEY,JSON.stringify(db));
+  renderScheduleBoard();
+}
+function toggleScheduleSeasonLock(){
+  const sel=document.getElementById('scheduleSeason');
+  const lock=document.getElementById('scheduleSeasonLock');
+  if(!sel||!lock)return;
+  db.team=db.team||{};
+  db.team.scheduleSeasonLocked=!!lock.checked;
+  db.team.scheduleSeasonYear=Number(sel.value)||currentSeasonStartYear();
+  sel.disabled=!!lock.checked;
+  localStorage.setItem(KEY,JSON.stringify(db));
 }
 function buildSeasonBoardItems(){
   const rows=[];
@@ -693,11 +753,15 @@ function initSajCompetitionSeason(){
   const el=document.getElementById('sajCompetitionSeason');
   if(!el || el.options.length)return;
   const cur=currentSkiSeasonCode();
-  [cur,cur-1,cur+1].forEach(s=>{
+  [
+    {s:cur-1,label:'昨シーズン'},
+    {s:cur,label:'今シーズン'},
+    {s:cur+1,label:'来シーズン'}
+  ].forEach(x=>{
     const o=document.createElement('option');
-    o.value=String(s);
-    o.textContent=`${s-1}/${s}`;
-    if(s===cur)o.selected=true;
+    o.value=String(x.s);
+    o.textContent=`${x.s-1}/${x.s}（${x.label}）`;
+    if(x.s===cur)o.selected=true;
     el.appendChild(o);
   });
 }
