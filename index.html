@@ -170,13 +170,15 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
           <input id="aSaj" inputmode="numeric" autocomplete="off" placeholder="例：03028859">
           <button id="sajRegisterBtn" class="btn ok" style="flex:0 0 auto" onclick="registerAthleteFromSaj()">選手登録</button>
         </div>
-        <div id="sajRegisterStatus" class="muted" style="margin-top:8px">SAJ番号だけ入力してください。氏名・所属・ポイントは自動取得します。</div>
+        <div id="sajRegisterStatus" class="muted" style="margin-top:8px">SAJ番号だけ入力してください。氏名・生年月日・性別・所属・ポイント・大会履歴を自動取得します。</div>
       </div>
       <div id="athleteEditFields" class="hidden" style="margin-top:12px">
         <div class="grid g3">
           <div><label>氏名</label><input id="aName"></div>
           <div><label>学校・チーム</label><input id="aSchool"></div>
           <div><label>学年（任意補正）</label><input id="aGrade" placeholder="中3 / 高1"></div>
+          <div><label>生年月日</label><input id="aBirth" type="date"></div>
+          <div><label>性別</label><select id="aSex"><option value="">未設定</option><option value="男">男</option><option value="女">女</option></select></div>
           <div><label>SLポイント</label><input id="aSL" type="number" step="0.01"></div>
           <div><label>GSポイント</label><input id="aGS" type="number" step="0.01"></div>
           <div><label>SGポイント</label><input id="aSG" type="number" step="0.01"></div>
@@ -185,10 +187,26 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
       </div>
       <div class="toolbar"><button class="btn" onclick="closeAthleteForm()">閉じる</button></div>
     </div>
+    <h3 style="margin-top:18px">男子</h3>
     <table>
-      <thead><tr><th>氏名</th><th>所属・学年</th><th>SAJ No.</th><th>SL</th><th>GS</th><th>SG</th><th>更新</th></tr></thead>
-      <tbody id="athleteRows"></tbody>
+      <thead><tr><th>氏名</th><th>生年月日</th><th>所属・学年</th><th>SAJ No.</th><th>SL</th><th>GS</th><th>SG</th><th>更新</th></tr></thead>
+      <tbody id="athleteRowsMale"></tbody>
     </table>
+
+    <h3 style="margin-top:20px">女子</h3>
+    <table>
+      <thead><tr><th>氏名</th><th>生年月日</th><th>所属・学年</th><th>SAJ No.</th><th>SL</th><th>GS</th><th>SG</th><th>更新</th></tr></thead>
+      <tbody id="athleteRowsFemale"></tbody>
+    </table>
+
+    <div id="athleteUnknownWrap" class="hidden" style="margin-top:20px">
+      <h3>性別未取得</h3>
+      <div class="muted" style="margin-bottom:8px">旧データなどで性別が未取得の選手です。「登録選手をSAJ更新」を実行してください。</div>
+      <table>
+        <thead><tr><th>氏名</th><th>生年月日</th><th>所属・学年</th><th>SAJ No.</th><th>SL</th><th>GS</th><th>SG</th><th>更新</th></tr></thead>
+        <tbody id="athleteRowsUnknown"></tbody>
+      </table>
+    </div>
     <div id="athleteDetail" class="card hidden" style="margin-top:14px"></div>
   </div>
 </section>
@@ -243,11 +261,11 @@ let db=JSON.parse(localStorage.getItem(KEY)||'null')||{
   team:{name:'ESS',sajApiUrl:'https://snowtech-saj-api.take6583.workers.dev'},
   coaches:[{id:uid(),name:'佐藤コーチ',role:'ヘッドコーチ'}],
   athletes:[
-    {id:uid(),saj:'03010001',name:'山田 太郎',school:'○○中学校',grade:'中3',sl:54.03,gs:61.44,sg:118.20,updated:'2026-09-11',results:[
+    {id:uid(),saj:'03010001',name:'山田 太郎',school:'○○中学校',grade:'中3',birth:'2011-04-10',sex:'男',sl:54.03,gs:61.44,sg:118.20,updated:'2026-09-11',results:[
       {date:'2026-03-26',race:'JOC 全日本ジュニア',disc:'SL',rank:'8位',time:'1:28.09',point:'68.32'},
       {date:'2026-03-25',race:'JOC 全日本ジュニア',disc:'GS',rank:'12位',time:'1:56.42',point:'92.15'}
     ]},
-    {id:uid(),saj:'03010002',name:'佐藤 一郎',school:'△△中学校',grade:'中2',sl:121.54,gs:76.98,sg:141.00,updated:'2026-09-11',results:[
+    {id:uid(),saj:'03010002',name:'佐藤 一郎',school:'△△中学校',grade:'中2',birth:'2012-05-15',sex:'男',sl:121.54,gs:76.98,sg:141.00,updated:'2026-09-11',results:[
       {date:'2026-02-15',race:'○○杯',disc:'GS',rank:'5位',time:'1:42.20',point:'85.20'}
     ]}
   ],
@@ -334,15 +352,11 @@ function saveAthlete(){
   closeAthleteForm();save();
 }
 function num(v){return v===''?null:Number(v)}
-function renderAthletes(){
-  athleteRows.innerHTML=db.athletes.map(a=>`<tr>
-    <td><span class="click" onclick="showAthlete('${a.id}')">${a.name}</span></td><td>${a.school} ${a.grade}</td><td>${a.saj}</td>
-    <td>${textOrDash(a.sl)}</td><td>${textOrDash(a.gs)}</td><td>${textOrDash(a.sg)}</td><td>${fmt(a.updated)}</td></tr>`).join('');
-}
+function renderAthletes(){ /* overridden below */ }
 function showAthlete(id){
   const a=db.athletes.find(x=>x.id===id);if(!a)return;
   athleteDetail.classList.remove('hidden');
-  athleteDetail.innerHTML=`<h2>${a.name}</h2><div class="muted">${a.school} ${a.grade} / SAJ No. ${a.saj}</div>
+  athleteDetail.innerHTML=`<h2>${a.name}</h2><div class="muted">${a.sex||'性別未取得'} / ${a.birth?fmt(a.birth):'生年月日未取得'} / ${a.school} ${a.grade} / SAJ No. ${a.saj}</div>
   <div class="toolbar"><span class="tag">SL ${textOrDash(a.sl)}</span><span class="tag">GS ${textOrDash(a.gs)}</span><span class="tag">SG ${textOrDash(a.sg)}</span></div>
   <h3>過去大会成績</h3><table><thead><tr><th>日付</th><th>大会</th><th>種目</th><th>順位</th><th>タイム</th><th>獲得P</th></tr></thead>
   <tbody>${(a.results||[]).map(r=>`<tr><td>${fmt(r.date)}</td><td>${r.race}</td><td>${r.disc}</td><td>${r.rank}</td><td>${r.time}</td><td>${r.point}</td></tr>`).join('')||'<tr><td colspan="6">成績データなし</td></tr>'}</tbody></table>`;
@@ -501,11 +515,12 @@ function editAthlete(id){
   const a=db.athletes.find(x=>x.id===id); if(!a)return;
   editingAthleteId=id;
   aSaj.value=a.saj||'';aName.value=a.name||'';aSchool.value=a.school||'';aGrade.value=a.grade||'';
+  aBirth.value=a.birth||'';aSex.value=a.sex||'';
   aSL.value=a.sl??'';aGS.value=a.gs??'';aSG.value=a.sg??'';
   athleteForm.classList.remove('hidden');athleteForm.scrollIntoView({behavior:'smooth',block:'start'});
 }
 saveAthlete = function(){
-  const item={saj:aSaj.value.trim(),name:aName.value.trim(),school:aSchool.value.trim(),grade:aGrade.value.trim(),
+  const item={saj:aSaj.value.trim(),name:aName.value.trim(),school:aSchool.value.trim(),grade:aGrade.value.trim(),birth:(typeof aBirth!=='undefined'?aBirth.value:''),sex:(typeof aSex!=='undefined'?aSex.value:''),
     sl:num(aSL.value),gs:num(aGS.value),sg:num(aSG.value),updated:new Date().toISOString().slice(0,10)};
   if(!item.saj || !item.name){alert('SAJ登録番号と氏名を入力してください');return}
   const duplicate=db.athletes.find(a=>a.saj===item.saj && a.id!==editingAthleteId);
@@ -524,10 +539,24 @@ function deleteAthlete(id){
   save();
 }
 renderAthletes = function(){
-  athleteRows.innerHTML=db.athletes.map(a=>`<tr>
-    <td><span class="click" onclick="showAthlete('${a.id}')">${a.name}</span></td><td>${a.school} ${a.grade}</td><td>${a.saj}</td>
+  const rowHtml = a => `<tr>
+    <td><span class="click" onclick="showAthlete('${a.id}')">${a.name}</span></td>
+    <td>${a.birth?fmt(a.birth):'—'}</td>
+    <td>${a.school||'—'} ${a.grade||''}</td>
+    <td>${a.saj}</td>
     <td>${textOrDash(a.sl)}</td><td>${textOrDash(a.gs)}</td><td>${textOrDash(a.sg)}</td>
-    <td>${fmt(a.updated)}<div class="no-print" style="margin-top:4px"><button class="btn" onclick="editAthlete('${a.id}')">編集</button> <button class="btn danger" onclick="deleteAthlete('${a.id}')">削除</button></div></td></tr>`).join('');
+    <td>${fmt(a.updated)}<div class="no-print" style="margin-top:4px"><button class="btn" onclick="editAthlete('${a.id}')">編集</button> <button class="btn danger" onclick="deleteAthlete('${a.id}')">削除</button></div></td>
+  </tr>`;
+
+  const males=db.athletes.filter(a=>a.sex==='男');
+  const females=db.athletes.filter(a=>a.sex==='女');
+  const unknown=db.athletes.filter(a=>a.sex!=='男' && a.sex!=='女');
+
+  athleteRowsMale.innerHTML=males.map(rowHtml).join('')||'<tr><td colspan="8" class="muted">男子選手は登録されていません</td></tr>';
+  athleteRowsFemale.innerHTML=females.map(rowHtml).join('')||'<tr><td colspan="8" class="muted">女子選手は登録されていません</td></tr>';
+
+  athleteUnknownWrap.classList.toggle('hidden', unknown.length===0);
+  athleteRowsUnknown.innerHTML=unknown.map(rowHtml).join('');
 };
 
 function deleteCoach(id){
@@ -567,7 +596,7 @@ openAthleteForm = function(){
   aSaj.value='';
   if(document.getElementById('athleteRegisterSimple')) athleteRegisterSimple.classList.remove('hidden');
   if(document.getElementById('athleteEditFields')) athleteEditFields.classList.add('hidden');
-  sajRegisterStatus.textContent='SAJ番号だけ入力してください。氏名・所属・ポイントは自動取得します。';
+  sajRegisterStatus.textContent='SAJ番号だけ入力してください。氏名・生年月日・性別・所属・ポイント・大会履歴を自動取得します。';
   athleteForm.classList.remove('hidden');
 };
 function setSajStatus(msg,kind='muted'){
@@ -592,7 +621,7 @@ async function registerAthleteFromSaj(){
     const a=await fetchSajAthlete(saj);
     const item={
       id:uid(),saj:a.saj||saj,name:a.name||'',school:a.team||a.organization||'',
-      organization:a.organization||'',birth:a.birth||'',grade:inferGradeFromBirth(a.birth),
+      organization:a.organization||'',birth:a.birth||'',sex:a.sex||'',grade:inferGradeFromBirth(a.birth),
       dh:a.dh,sc:a.sc,sg:a.sg,gs:a.gs,sl:a.sl,
       updated:new Date().toISOString().slice(0,10),sajSource:a.source||'',results:(a.results||[]).map(r=>({date:r.date,race:r.race,disc:r.disc,rank:r.rank,time:'',point:r.point??'-',season:r.season,category:r.category}))
     };
@@ -611,6 +640,7 @@ editAthlete = function(id){
   const a=db.athletes.find(x=>x.id===id); if(!a)return;
   editingAthleteId=id;
   aSaj.value=a.saj||'';aName.value=a.name||'';aSchool.value=a.school||'';aGrade.value=a.grade||'';
+  aBirth.value=a.birth||'';aSex.value=a.sex||'';
   aSL.value=a.sl??'';aGS.value=a.gs??'';aSG.value=a.sg??'';
   athleteRegisterSimple.classList.add('hidden');athleteEditFields.classList.remove('hidden');
   athleteForm.classList.remove('hidden');athleteForm.scrollIntoView({behavior:'smooth',block:'start'});
@@ -618,6 +648,7 @@ editAthlete = function(id){
 function saveAthleteEdit(){
   const a=db.athletes.find(x=>x.id===editingAthleteId);if(!a)return;
   a.name=aName.value.trim();a.school=aSchool.value.trim();a.grade=aGrade.value.trim();
+  a.birth=aBirth.value||'';a.sex=aSex.value||'';
   a.sl=num(aSL.value);a.gs=num(aGS.value);a.sg=num(aSG.value);
   editingAthleteId=null;closeAthleteForm();save();
 }
@@ -627,7 +658,7 @@ async function refreshAthleteFromSaj(id,quiet=false){
     const a=await fetchSajAthlete(normalizedSaj(old.saj));
     Object.assign(old,{
       name:a.name||old.name,school:a.team||a.organization||old.school,
-      organization:a.organization||old.organization||'',birth:a.birth||old.birth||'',
+      organization:a.organization||old.organization||'',birth:a.birth||old.birth||'',sex:a.sex||old.sex||'',
       dh:a.dh,sc:a.sc,sg:a.sg,gs:a.gs,sl:a.sl,
       updated:new Date().toISOString().slice(0,10),sajSource:a.source||old.sajSource||'',results:(a.results||old.results||[]).map(r=>r.race?{date:r.date,race:r.race,disc:r.disc,rank:r.rank,time:r.time||'',point:r.point??'-',season:r.season,category:r.category}:r)
     });
