@@ -42,7 +42,7 @@ section{display:none} section.active{display:block}
 .type{font-size:12px;font-weight:700;padding:5px 8px;border-radius:999px;text-align:center;background:var(--chip)}
 .hidden{display:none!important}
 .print-only{display:none!important}
-.event-simple-list{display:grid;gap:8px;margin-top:12px}
+.event-simple-list{display:grid;gap:8px;margin-top:12px;overflow-x:auto;-webkit-overflow-scrolling:touch}
 .event-simple-row{display:grid;grid-template-columns:150px 1fr auto;gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:10px;background:#0a1724}
 .event-simple-title{font-weight:700}
 .athlete-table-wrap{width:100%;max-width:100%}
@@ -72,9 +72,10 @@ section{display:none} section.active{display:block}
 .print-season-pages .month-col{width:calc(100%/3)}
 .season-board .board-day{font-size:10px;color:var(--muted);margin-bottom:3px;font-weight:700}
 .season-board .board-coach{font-size:9px;color:var(--muted);margin-top:2px}
+.screen-season-board td[data-schedule-date]{cursor:pointer}
+.screen-season-board td[data-schedule-date]:active{outline:2px solid var(--accent);outline-offset:-2px}
 .season-board .day-sun,.season-board .day-holiday{color:#ff6b6b!important}
 .season-board .day-sat{color:#69a7ff!important}
-.saj-comp-link,.saj-comp-link:visited,.saj-comp-link:hover,.saj-comp-link:active{color:#fff!important;text-decoration:underline}
 .season-board .board-item{display:block;line-height:1.2;margin-bottom:2px;word-break:break-word}
 .season-board .empty{background:rgba(255,255,255,.03)}
 .board-caption{font-size:12px;color:var(--muted);margin:8px 0 10px}
@@ -104,7 +105,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
   .g2,.g3{grid-template-columns:1fr}
   .event{grid-template-columns:1fr 1fr}.event .event-main{grid-column:1/-1}
   .checks{grid-template-columns:1fr 1fr}
-  .event-simple-row{grid-template-columns:110px 1fr auto;font-size:12px}
+  .event-simple-row{grid-template-columns:110px minmax(180px,1fr) auto auto;font-size:12px;min-width:560px}
   .athlete-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
   .athlete-table-wrap table{min-width:1160px}
   .athlete-scroll-hint{display:block;font-size:11px;color:var(--muted);margin:4px 0 8px}
@@ -146,8 +147,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
   .season-board .board-item{color:#000!important}
   .season-board .day-sun,.season-board .day-holiday{color:#d00000!important}
   .season-board .day-sat{color:#005bbb!important}
-  .saj-comp-link,.saj-comp-link:visited,.saj-comp-link:hover,.saj-comp-link:active{color:#000!important}
-  .board-caption{font-size:11px;color:#444;margin:4px 0 6px}
+    .board-caption{font-size:11px;color:#444;margin:4px 0 6px}
   @page{size:A4 portrait;margin:8mm}
 }
 </style>
@@ -160,7 +160,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
       <small id="teamHeader">TEAM未設定</small>
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.7.1</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.7.3</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
   </div>
@@ -198,7 +198,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
       <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap">
         <div>
           <h3 style="margin:0">年間予定表（画面：横スクロール / PDF：A4縦2枚）</h3>
-          <div class="board-caption" id="scheduleBoardCaption"></div><div class="muted no-print" style="font-size:11px">カレンダーをタップすると全画面表示</div>
+          <div class="board-caption" id="scheduleBoardCaption"></div><div class="muted no-print" style="font-size:11px">日付セルをタップ＝簡易入力 / 日付以外をタップ＝全画面表示</div>
         </div>
         <div class="no-print" style="min-width:220px">
           <label>表示シーズン</label>
@@ -272,6 +272,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
   </div>
 </section>
 
+
 <section id="athletes">
   <div class="card">
     <h2>所属選手</h2>
@@ -280,6 +281,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
       <button class="btn" onclick="refreshAllSaj()">登録選手をSAJ更新</button>
       <button class="btn" onclick="openSajPointList()">SAJポイントリスト</button>
     </div>
+
     <div id="athleteForm" class="hidden no-print">
       <div id="athleteRegisterSimple">
         <label>SAJ競技者番号</label>
@@ -287,8 +289,11 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
           <input id="aSaj" inputmode="numeric" autocomplete="off" placeholder="例：03028859">
           <button id="sajRegisterBtn" class="btn ok" style="flex:0 0 auto" onclick="registerAthleteFromSaj()">選手登録</button>
         </div>
-        <div id="sajRegisterStatus" class="muted" style="margin-top:8px">SAJ番号だけ入力してください。氏名・生年月日・性別・所属・ポイント・大会履歴を自動取得します。</div>
+        <div id="sajRegisterStatus" class="muted" style="margin-top:8px">
+          SAJ番号だけ入力してください。氏名・生年月日・性別・所属・ポイント・大会履歴を自動取得します。
+        </div>
       </div>
+
       <div id="athleteEditFields" class="hidden" style="margin-top:12px">
         <div class="grid g3">
           <div><label>氏名</label><input id="aName"></div>
@@ -304,24 +309,32 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
       </div>
       <div class="toolbar"><button class="btn" onclick="closeAthleteForm()">閉じる</button></div>
     </div>
-    <h3 style="margin-top:18px">男子</h3>
-    <div class="athlete-scroll-hint no-print">← 横にスワイプして全項目を表示 →</div><div class="athlete-table-wrap"><div class="athlete-scroll-hint no-print">← 横にスワイプして全項目を表示 →</div><div class="athlete-table-wrap"><div class="athlete-scroll-hint no-print">← 横にスワイプして全項目を表示 →</div>
-    <div>
-      <h3>所属選手一覧</h3>
-      <div class="athlete-scroll-hint no-print">← 横にスワイプして全項目を表示 →</div>
-      <div class="athlete-table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>氏名</th><th>性別</th><th>生年月日</th><th>所属・学年</th><th>SAJ No.</th>
-              <th>SL</th><th>GS</th><th>SG</th><th>取得日</th><th>PL No.</th><th>操作</th>
-            </tr>
-          </thead>
-          <tbody id="athleteRowsAll"></tbody>
-        </table>
-      </div>
+
+    <h3 style="margin-top:18px">所属選手一覧</h3>
+    <div class="athlete-scroll-hint no-print">← 横にスワイプして全項目を表示 →</div>
+    <div class="athlete-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>氏名</th><th>性別</th><th>生年月日</th><th>所属・学年</th><th>SAJ No.</th>
+            <th>SL</th><th>GS</th><th>SG</th><th>取得日</th><th>PL No.</th><th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="athleteRowsAll"></tbody>
+      </table>
     </div>
-</div>
+
+    <div id="athleteDetail" class="card hidden" style="margin-top:14px"></div>
+  </div>
+</section>
+
+<section id="ranking">
+  <div class="card">
+    <h2>チームランキング</h2>
+
+    <h3 style="margin-top:16px">男子</h3>
+    <div class="grid g3">
+      <div class="card"><h3>SL</h3><div id="rankMaleSL"></div></div>
       <div class="card"><h3>GS</h3><div id="rankMaleGS"></div></div>
       <div class="card"><h3>SG</h3><div id="rankMaleSG"></div></div>
     </div>
@@ -522,7 +535,8 @@ function buildSeasonBoardItems(){
       title:s.title||'',
       place:s.place||'',
       note:s.note||'',
-      coach:s.coach||''
+      coach:s.coach||'',
+      quick:!!s.quick
     });
   });
   db.events.forEach(e=>{
@@ -544,6 +558,7 @@ function buildSeasonBoardItems(){
 }
 function seasonBoardLabel(item){
   if(item.source==='event') return item.note ? `${item.title} (${item.note})` : item.title;
+  if(item.quick) return item.title;
   return item.type && item.type!=='大会' ? `${item.type}：${item.title}` : item.title;
 }
 function renderScheduleBoard(){
@@ -591,7 +606,7 @@ function renderScheduleBoard(){
           const coach=v.coach ? `<span class="board-coach">引率：${esc(v.coach)}</span>` : '';
           return `<span class="board-item">・${esc(v.label)}${coach}</span>`;
         }).join('');
-        rows += `<td class="month-col"><div class="board-day ${cls}">${day}日(${wd})</div>${items||''}</td>`;
+        rows += `<td class="month-col" data-schedule-date="${dateStr}"><div class="board-day ${cls}">${day}日(${wd})</div>${items||''}</td>`;
       });
       rows += `</tr>`;
     }
@@ -864,23 +879,25 @@ function renderSajCompetitionCandidates(){
 
   sajCompetitionList.innerHTML=`<div class="muted" style="margin-bottom:6px">表示 ${filtered.length} / 全国取得 ${sajCompetitionCache.length} 大会</div>
   <div style="overflow:auto"><table>
-    <thead><tr><th>選択</th><th>日程</th><th>大会名</th><th>開催地</th><th>種目</th></tr></thead>
+    <thead><tr><th>選択</th><th>日程</th><th>大会名</th><th>開催地</th><th>種目</th><th>詳細</th></tr></thead>
     <tbody>${filtered.map(({c,i})=>{
       const exists=db.events.some(e=>e.sajKey && e.sajKey===c.key);
       return `<tr>
         <td><input class="saj-comp-check" type="checkbox" value="${i}" ${exists?'disabled':''}></td>
         <td>${fmt(c.start)}${c.end&&c.end!==c.start?'〜'+fmt(c.end):''}</td>
-        <td>${
-          c.url
-            ? `<a class="saj-comp-link" href="${c.url}" target="_blank" rel="noopener noreferrer" style="font-weight:700">${c.title||'-'}</a>`
-            : `<b>${c.title||'-'}</b>`
-        }${exists?'<br><span class="status-ok">登録済み</span>':''}</td>
+        <td><b>${c.title||'-'}</b>${exists?'<br><span class="status-ok">登録済み</span>':''}</td>
         <td>${c.prefecture||String(c.place||'-').slice(0,3)}</td>
         <td>${c.disc||'-'}</td>
+        <td>${c.url?`<button class="btn primary" type="button" onclick="openCompetitionDetail('${c.url}')">大会詳細</button>`:'-'}</td>
       </tr>`;
     }).join('')}</tbody>
   </table></div>`;
 }
+function openCompetitionDetail(url){
+  if(!url)return;
+  window.open(url,'_blank','noopener,noreferrer');
+}
+
 function importSelectedSajCompetitions(){
   const idxs=[...document.querySelectorAll('.saj-comp-check:checked')].map(x=>Number(x.value));
   if(!idxs.length){
@@ -1067,9 +1084,10 @@ renderEvents = function(){
   const events=[...db.events].sort((a,b)=>(a.start||'').localeCompare(b.start||''));
 
   eventList.innerHTML=events.map(e=>`
-    <div class="event-simple-row">
+    <div class="event-simple-row" style="grid-template-columns:150px 1fr auto auto">
       <div>${fmt(e.start)}${e.end&&e.end!==e.start?'〜'+fmt(e.end):''}</div>
       <div class="event-simple-title">${esc(e.title||'大会')}</div>
+      <div>${e.sajUrl?`<button class="btn primary no-print" onclick="openCompetitionDetail('${e.sajUrl}')">大会詳細</button>`:''}</div>
       <div><button class="btn danger no-print" onclick="deleteEvent('${e.id}')">削除</button></div>
     </div>
   `).join('')||'<div class="muted">大会なし</div>';
@@ -1275,6 +1293,35 @@ async function refreshAllSaj(){
 
 
 
+function quickAddSchedule(dateStr){
+  if(!dateStr)return;
+  const label=prompt(`${fmt(dateStr)} の予定を一言で入力してください`, '');
+  if(label===null)return;
+  const title=String(label).trim();
+  if(!title)return;
+
+  db.schedules.push({
+    id:uid(),
+    date:dateStr,
+    type:'その他',
+    title,
+    place:'',
+    target:'',
+    coach:'',
+    note:'',
+    quick:true
+  });
+
+  localStorage.setItem(KEY,JSON.stringify(db));
+  renderScheduleBoard();
+
+  // If the fullscreen calendar is open, rebuild its contents too.
+  const overlay=document.getElementById('calendarFullscreen');
+  if(overlay && overlay.classList.contains('open')){
+    requestAnimationFrame(()=>openCalendarFullscreen());
+  }
+}
+
 let calendarFsScale=1;
 let calendarFsBaseW=0;
 let calendarFsBaseH=0;
@@ -1343,9 +1390,22 @@ function initCalendarFullscreen(){
   wrap.addEventListener('pointermove',e=>{
     if(Math.abs(e.clientX-downX)>8||Math.abs(e.clientY-downY)>8)moved=true;
   });
-  wrap.addEventListener('pointerup',()=>{if(!moved)openCalendarFullscreen()});
+  wrap.addEventListener('pointerup',e=>{
+    if(moved)return;
+    const cell=e.target.closest('td[data-schedule-date]');
+    if(cell){
+      quickAddSchedule(cell.dataset.scheduleDate);
+      return;
+    }
+    openCalendarFullscreen();
+  });
 
   back.addEventListener('click',e=>{e.stopPropagation();closeCalendarFullscreen()});
+
+  viewport.addEventListener('click',e=>{
+    const cell=e.target.closest('td[data-schedule-date]');
+    if(cell) quickAddSchedule(cell.dataset.scheduleDate);
+  });
 
   viewport.addEventListener('touchstart',e=>{
     if(e.touches.length===2){
