@@ -70,7 +70,10 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
       <h1>SnowTech Alpine Team Manager</h1>
       <small id="teamHeader">TEAM未設定</small>
     </div>
-    <div class="sync" id="syncState">● ローカル保存</div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end">
+      <span class="muted" style="font-size:12px;font-weight:700">v0.4.2</span>
+      <div class="sync" id="syncState">● ローカル保存</div>
+    </div>
   </div>
 </header>
 
@@ -142,6 +145,17 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
           <div style="align-self:end">
             <button class="btn primary" onclick="loadSajCompetitions()">大会情報を取得</button>
           </div>
+        </div>
+        <div class="card" style="margin:10px 0;padding:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+            <b>表示地域</b>
+            <div class="toolbar" style="margin:0">
+              <button class="btn" type="button" onclick="setAllSajRegions(true)">全地域ON</button>
+              <button class="btn" type="button" onclick="setAllSajRegions(false)">全地域OFF</button>
+            </div>
+          </div>
+          <div id="sajRegionFilters" class="checks" style="margin-top:8px"></div>
+          <div class="muted" style="margin-top:6px">絶対出場しない地域だけチェックを外してください。設定はこの端末に保存されます。</div>
         </div>
         <div id="sajCompetitionStatus" class="muted" style="margin:8px 0">SAJ競技データバンクから大会情報を取得します。</div>
         <div id="sajCompetitionList"></div>
@@ -327,7 +341,7 @@ function renderAll(){
   document.getElementById('teamHeader').textContent=db.team.name||'TEAM未設定';
   document.getElementById('teamName').value=db.team.name||'';
   if(document.getElementById('sajApiUrl')) document.getElementById('sajApiUrl').value=db.team.sajApiUrl||'https://snowtech-saj-api.take6583.workers.dev';
-  renderCoaches();renderAthletes();renderSchedule();renderEvents();renderRanking();renderHome();refreshSelects();initSajCompetitionSeason();
+  renderCoaches();renderAthletes();renderSchedule();renderEvents();renderRanking();renderHome();refreshSelects();initSajCompetitionSeason();renderSajRegionFilters();
 }
 
 function renderHome(){
@@ -380,6 +394,76 @@ function renderEvents(){
 }
 
 
+
+const SAJ_REGION_STORAGE='snowtech_saj_regions_v1';
+const SAJ_REGIONS=[
+  {id:'hokkaido',name:'北海道',prefs:['北海道']},
+  {id:'tohoku',name:'東北',prefs:['青森県','岩手県','宮城県','秋田県','山形県','福島県']},
+  {id:'kanto',name:'関東',prefs:['茨城県','栃木県','群馬県','埼玉県','千葉県','東京都','神奈川県']},
+  {id:'koshinetsu',name:'甲信越',prefs:['新潟県','山梨県','長野県']},
+  {id:'hokuriku',name:'北陸',prefs:['富山県','石川県','福井県']},
+  {id:'tokai',name:'東海',prefs:['岐阜県','静岡県','愛知県','三重県']},
+  {id:'kinki',name:'近畿',prefs:['滋賀県','京都府','大阪府','兵庫県','奈良県','和歌山県']},
+  {id:'chugoku',name:'中国',prefs:['鳥取県','島根県','岡山県','広島県','山口県']},
+  {id:'shikoku',name:'四国',prefs:['徳島県','香川県','愛媛県','高知県']},
+  {id:'kyushu',name:'九州・沖縄',prefs:['福岡県','佐賀県','長崎県','熊本県','大分県','宮崎県','鹿児島県','沖縄県']}
+];
+
+function loadSajRegionState(){
+  try{
+    const saved=JSON.parse(localStorage.getItem(SAJ_REGION_STORAGE)||'{}');
+    const state={};
+    SAJ_REGIONS.forEach(r=>state[r.id]=saved[r.id]!==false);
+    return state;
+  }catch{
+    return Object.fromEntries(SAJ_REGIONS.map(r=>[r.id,true]));
+  }
+}
+
+let sajRegionState=loadSajRegionState();
+
+function saveSajRegionState(){
+  localStorage.setItem(SAJ_REGION_STORAGE,JSON.stringify(sajRegionState));
+}
+
+function renderSajRegionFilters(){
+  const el=document.getElementById('sajRegionFilters');
+  if(!el)return;
+  el.innerHTML=SAJ_REGIONS.map(r=>`
+    <label class="check">
+      <input type="checkbox" ${sajRegionState[r.id]?'checked':''}
+        onchange="toggleSajRegion('${r.id}',this.checked)">
+      ${r.name}
+    </label>`).join('');
+}
+
+function toggleSajRegion(id,checked){
+  sajRegionState[id]=!!checked;
+  saveSajRegionState();
+  renderSajCompetitionCandidates();
+}
+
+function setAllSajRegions(on){
+  SAJ_REGIONS.forEach(r=>sajRegionState[r.id]=!!on);
+  saveSajRegionState();
+  renderSajRegionFilters();
+  renderSajCompetitionCandidates();
+}
+
+function detectSajRegion(place){
+  const text=String(place||'');
+  for(const r of SAJ_REGIONS){
+    if(r.prefs.some(p=>text.includes(p))) return r.id;
+  }
+  return '';
+}
+
+function sajCompetitionVisibleByRegion(c){
+  const id=detectSajRegion(c.place);
+  // If SAJ did not expose a prefecture, do not hide the event accidentally.
+  return !id || sajRegionState[id]!==false;
+}
+
 let sajCompetitionCache=[];
 
 function currentSkiSeasonCode(){
@@ -402,6 +486,7 @@ function initSajCompetitionSeason(){
 
 function toggleSajCompetitions(){
   initSajCompetitionSeason();
+  renderSajRegionFilters();
   sajCompetitionPanel.classList.toggle('hidden');
 }
 
@@ -430,13 +515,23 @@ async function loadSajCompetitions(){
 }
 
 function renderSajCompetitionCandidates(){
+  const filtered=sajCompetitionCache
+    .map((c,i)=>({c,i}))
+    .filter(x=>sajCompetitionVisibleByRegion(x.c));
+
   if(!sajCompetitionCache.length){
     sajCompetitionList.innerHTML='<div class="muted">大会情報はありません</div>';
     return;
   }
-  sajCompetitionList.innerHTML=`<div style="overflow:auto"><table>
+  if(!filtered.length){
+    sajCompetitionList.innerHTML='<div class="muted">現在ONになっている地域に該当する大会はありません。</div>';
+    return;
+  }
+
+  sajCompetitionList.innerHTML=`<div class="muted" style="margin-bottom:6px">表示 ${filtered.length} / 全国取得 ${sajCompetitionCache.length} 大会</div>
+  <div style="overflow:auto"><table>
     <thead><tr><th>選択</th><th>日程</th><th>大会名</th><th>開催地</th><th>種目</th></tr></thead>
-    <tbody>${sajCompetitionCache.map((c,i)=>{
+    <tbody>${filtered.map(({c,i})=>{
       const exists=db.events.some(e=>e.sajKey && e.sajKey===c.key);
       return `<tr>
         <td><input class="saj-comp-check" type="checkbox" value="${i}" ${exists?'disabled':''}></td>
@@ -448,7 +543,6 @@ function renderSajCompetitionCandidates(){
     }).join('')}</tbody>
   </table></div>`;
 }
-
 function importSelectedSajCompetitions(){
   const idxs=[...document.querySelectorAll('.saj-comp-check:checked')].map(x=>Number(x.value));
   if(!idxs.length){

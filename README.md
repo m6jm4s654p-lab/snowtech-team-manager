@@ -98,3 +98,35 @@ SnowTech → 管理 → `SAJ連携API URL` にWorker URLを入力 → 保存。
 - GET/POSTのフォームmethod/actionにも追従
 - `/api/debug-competition-calendar` を追加
 - デバッグAPIでフォームmethod/action/select名/シーズンoptionを確認可能
+
+## v0.4.0
+- SAJ公認大会取得の0件問題を修正
+- SAJ `/search_competitions` はシーズンだけでなく競技選択が必須
+- 検索フォームから「アルペン / Alpine」の実際のoption valueを自動検出
+- シーズン + アルペンを必ずセットして検索
+- フォームactionで0件の場合は `/search_competitions` へ同じ実フィールドを直接GET
+- debug APIに detectedSeasonField / detectedAlpineField を追加
+
+## v0.4.1
+- SAJ大会リンクの2形式に対応
+  - /alpine/YYYY/competition/ID
+  - /alpine/competition/ID
+- 大会リンクがtable row外にある場合のfallback追加
+- 大会名がリンク文字列ではなく通常セルの場合の推定を追加
+- 0件時に diagnostic をAPIレスポンスへ付加
+  - htmlLength
+  - hasNoSchedule
+  - hasCompetitionText
+  - competitionLinkCount
+  - sampleCompetitionLinks
+  - visibleExcerpt
+
+## v0.4.2
+- ヘッダー右上にバージョン `v0.4.2` を常時表示
+- SAJ公認大会画面に地域単位フィルターを追加
+- 地域: 北海道 / 東北 / 関東 / 甲信越 / 北陸 / 東海 / 近畿 / 中国 / 四国 / 九州・沖縄
+- 初期状態は全地域ON
+- チェック状態はLocalStorageへ保存
+- 全地域ON / 全地域OFFボタン追加
+- 全国取得データは保持したまま表示だけ地域フィルター
+- 開催県を判定できない大会は誤除外を避けるため表示
