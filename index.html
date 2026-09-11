@@ -237,6 +237,13 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
   }
 }
 
+
+.athlete-register-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.saj-list-table{min-width:920px!important}
+.saj-list-table th:first-child,.saj-list-table td:first-child{min-width:62px!important;text-align:center}
+.saj-list-table input[type=checkbox]{width:20px;height:20px;cursor:pointer}
+.saj-list-registered{opacity:.52}
+
 </style>
 </head>
 <body>
@@ -267,7 +274,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
       <small id="teamHeader">TEAM未設定</small>
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.8.4</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.8.6</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
   </div>
@@ -395,13 +402,70 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 
     <div id="athleteForm" class="no-print">
       <div id="athleteRegisterSimple">
-        <label>SAJ競技者番号</label>
-        <div class="row">
-          <input id="aSaj" inputmode="numeric" autocomplete="off" placeholder="例：03028859">
-          <button id="sajRegisterBtn" class="btn ok" style="flex:0 0 auto" onclick="registerAthleteFromSaj()">選手登録</button>
+        <div class="athlete-register-tabs">
+          <button id="athleteRegByNoBtn" class="btn ok" type="button" onclick="setAthleteRegisterMode('number')">競技者番号から登録</button>
+          <button id="athleteRegByListBtn" class="btn" type="button" onclick="setAthleteRegisterMode('list')">一覧から選択登録</button>
         </div>
-        <div id="sajRegisterStatus" class="muted" style="margin-top:8px">
-          SAJ番号だけ入力してください。氏名・生年月日・性別・所属・ポイント・大会履歴を自動取得します。
+
+        <div id="athleteRegisterByNumber">
+          <label>SAJ競技者番号</label>
+          <div class="row">
+            <input id="aSaj" inputmode="numeric" autocomplete="off" placeholder="例：03028859">
+            <button id="sajRegisterBtn" class="btn ok" style="flex:0 0 auto" onclick="registerAthleteFromSaj()">選手登録</button>
+          </div>
+          <div id="sajRegisterStatus" class="muted" style="margin-top:8px">
+            SAJ番号だけ入力してください。氏名・生年月日・性別・所属・ポイント・大会履歴を自動取得します。
+          </div>
+        </div>
+
+        <div id="athleteRegisterByList" class="hidden">
+          <div class="grid g3">
+            <div>
+              <label>性別</label>
+              <select id="sajListSex">
+                <option value="">選択してください</option>
+                <option value="男">男</option>
+                <option value="女">女</option>
+              </select>
+            </div>
+            <div>
+              <label>加盟団体（都道府県）</label>
+              <select id="sajListOrg">
+                <option value="">選択してください</option>
+                <option>北海道</option><option>青森</option><option>岩手</option><option>宮城</option><option>秋田</option><option>山形</option><option>福島</option>
+                <option>茨城</option><option>栃木</option><option>群馬</option><option>埼玉</option><option>千葉</option><option>東京</option><option>神奈川</option>
+                <option>新潟</option><option>富山</option><option>石川</option><option>福井</option><option>山梨</option><option>長野</option>
+                <option>岐阜</option><option>静岡</option><option>愛知</option><option>三重</option>
+                <option>滋賀</option><option>京都</option><option>大阪</option><option>兵庫</option><option>奈良</option><option>和歌山</option>
+                <option>鳥取</option><option>島根</option><option>岡山</option><option>広島</option><option>山口</option>
+                <option>徳島</option><option>香川</option><option>愛媛</option><option>高知</option>
+                <option>福岡</option><option>佐賀</option><option>長崎</option><option>熊本</option><option>大分</option><option>宮崎</option><option>鹿児島</option><option>沖縄</option>
+              </select>
+            </div>
+            <div style="display:flex;align-items:end">
+              <button id="sajListFetchBtn" class="btn ok" type="button" style="width:100%" onclick="fetchSajAthleteList()">一覧取得</button>
+            </div>
+          </div>
+
+          <div id="sajListStatus" class="muted" style="margin-top:8px">
+            性別と加盟団体を選択して、SAJポイントリストから選手一覧を取得します。
+          </div>
+
+          <div id="sajListResultsWrap" class="hidden" style="margin-top:12px">
+            <div class="toolbar">
+              <button class="btn" type="button" onclick="toggleAllSajList(true)">すべて選択</button>
+              <button class="btn" type="button" onclick="toggleAllSajList(false)">選択解除</button>
+              <button id="sajListRegisterBtn" class="btn ok" type="button" onclick="registerSelectedSajAthletes()">選択した選手を登録</button>
+            </div>
+            <div class="athlete-table-wrap">
+              <table class="saj-list-table">
+                <thead>
+                  <tr><th>選択</th><th>氏名</th><th>Birth</th><th>SAJ No.</th><th>加盟団体</th><th>チーム名</th><th>SL</th><th>GS</th><th>SG</th></tr>
+                </thead>
+                <tbody id="sajListRows"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1315,10 +1379,6 @@ function saveTeam(){db.team.name=teamName.value;save();alert('設定を保存し
 function refreshSelects(){
   sCoach.innerHTML='<option value="">未設定</option>'+db.coaches.map(c=>`<option>${c.name}</option>`).join('');
 }
-function printSection(id){
-  document.querySelectorAll('section').forEach(s=>s.classList.remove('print-target'));
-  document.getElementById(id).classList.add('print-target');window.print();
-}
 function exportJson(){
   const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='snowtech-backup.json';a.click();URL.revokeObjectURL(a.href);
@@ -1338,6 +1398,7 @@ function onlineState(){
   el.className='sync '+(navigator.onLine?'status-ok':'status-warn');
 }
 window.addEventListener('online',onlineState);
+window.addEventListener('pageshow',()=>{snowtechPrintBusy=false;});
 window.addEventListener('offline',onlineState);
 
 function openSajPointList(){
@@ -1517,14 +1578,171 @@ renderCoaches = function(){
     <button class="btn danger no-print" style="float:right" onclick="deleteCoach('${c.id}')">削除</button></div>`).join('')||'<span class="muted">未登録</span>';
 };
 
+let snowtechPrintBusy=false;
 function printSection(id){
+  if(snowtechPrintBusy)return;
+  const target=document.getElementById(id);
+  if(!target)return;
+
+  snowtechPrintBusy=true;
   document.querySelectorAll('section').forEach(s=>s.classList.remove('print-target'));
-  document.getElementById(id).classList.add('print-target');
-  const old=document.title;
+  target.classList.add('print-target');
+
+  const oldTitle=document.title;
   document.title=(db.team.name||'SnowTech')+'_'+(id==='schedule'?'年間予定表':'大会スケジュール');
-  window.print();document.title=old;
+
+  const finishPrint=()=>{
+    document.title=oldTitle;
+    snowtechPrintBusy=false;
+  };
+
+  window.addEventListener('afterprint',finishPrint,{once:true});
+
+  try{
+    window.print();
+  }catch(err){
+    finishPrint();
+    console.error('SnowTech print error',err);
+  }
 }
 
+
+
+// ===== v0.8.6 SAJ list athlete registration =====
+let sajAthleteListCache=[];
+
+function setAthleteRegisterMode(mode){
+  const byNo=document.getElementById('athleteRegisterByNumber');
+  const byList=document.getElementById('athleteRegisterByList');
+  const noBtn=document.getElementById('athleteRegByNoBtn');
+  const listBtn=document.getElementById('athleteRegByListBtn');
+  const listMode=mode==='list';
+  byNo?.classList.toggle('hidden',listMode);
+  byList?.classList.toggle('hidden',!listMode);
+  noBtn?.classList.toggle('ok',!listMode);
+  listBtn?.classList.toggle('ok',listMode);
+}
+
+function setSajListStatus(msg,kind='muted'){
+  const el=document.getElementById('sajListStatus');
+  if(!el)return;
+  el.className=kind;
+  el.textContent=msg;
+}
+
+function normalizeOrgName(v){
+  return String(v||'').replace(/[都道府県府県]$/,'').trim();
+}
+
+async function fetchSajAthleteList(){
+  const sex=document.getElementById('sajListSex')?.value||'';
+  const organization=document.getElementById('sajListOrg')?.value||'';
+  if(!sex || !organization){
+    setSajListStatus('性別と加盟団体を選択してください。','status-warn');
+    return;
+  }
+  const btn=document.getElementById('sajListFetchBtn');
+  if(btn){btn.disabled=true;btn.textContent='取得中…';}
+  setSajListStatus(`SAJポイントリストから ${organization}・${sex} の選手を取得しています…`);
+  document.getElementById('sajListResultsWrap')?.classList.add('hidden');
+
+  try{
+    const base=apiBase();
+    const r=await fetch(`${base}/api/saj-athletes?sex=${encodeURIComponent(sex)}&organization=${encodeURIComponent(organization)}`,{
+      headers:{'Accept':'application/json'}
+    });
+    let data={}; try{data=await r.json()}catch{}
+    if(!r.ok || !data.ok) throw new Error(data.error||`SAJ一覧取得エラー (${r.status})`);
+
+    sajAthleteListCache=Array.isArray(data.athletes)?data.athletes:[];
+    renderSajAthleteList();
+    document.getElementById('sajListResultsWrap')?.classList.remove('hidden');
+    setSajListStatus(`${organization}・${sex}：${sajAthleteListCache.length}名を取得しました。${data.pointListNumber!=null?` ポイントリスト No.${data.pointListNumber}`:''}`);
+  }catch(e){
+    sajAthleteListCache=[];
+    renderSajAthleteList();
+    setSajListStatus(e.message||'SAJ選手一覧を取得できませんでした。','status-danger');
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='一覧取得';}
+  }
+}
+
+function renderSajAthleteList(){
+  const tbody=document.getElementById('sajListRows');
+  if(!tbody)return;
+  const registered=new Set(db.athletes.map(a=>normalizedSaj(a.saj)));
+  tbody.innerHTML=sajAthleteListCache.map((a,i)=>{
+    const saj=normalizedSaj(a.saj);
+    const exists=registered.has(saj);
+    return `<tr class="${exists?'saj-list-registered':''}">
+      <td><input type="checkbox" class="saj-list-check" data-index="${i}" ${exists?'disabled':''}></td>
+      <td>${esc(a.name||'—')}${exists?'<br><span class="muted">登録済み</span>':''}</td>
+      <td>${esc(a.birth||'—')}</td>
+      <td>${esc(saj||'—')}</td>
+      <td>${esc(a.organization||'—')}</td>
+      <td>${esc(a.team||'—')}</td>
+      <td>${a.sl??'—'}</td>
+      <td>${a.gs??'—'}</td>
+      <td>${a.sg??'—'}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="9" class="muted">該当選手はいません</td></tr>';
+}
+
+function toggleAllSajList(on){
+  document.querySelectorAll('.saj-list-check:not(:disabled)').forEach(c=>c.checked=!!on);
+}
+
+async function registerSelectedSajAthletes(){
+  const checks=[...document.querySelectorAll('.saj-list-check:checked:not(:disabled)')];
+  if(!checks.length){
+    setSajListStatus('登録する選手をチェックしてください。','status-warn');
+    return;
+  }
+
+  const btn=document.getElementById('sajListRegisterBtn');
+  if(btn){btn.disabled=true;btn.textContent='登録中…';}
+  let ok=0,ng=0,skip=0;
+  const errors=[];
+
+  for(let n=0;n<checks.length;n++){
+    const idx=Number(checks[n].dataset.index);
+    const row=sajAthleteListCache[idx];
+    const saj=normalizedSaj(row?.saj);
+    if(!saj){ng++;continue;}
+    if(db.athletes.some(a=>normalizedSaj(a.saj)===saj)){skip++;continue;}
+
+    setSajListStatus(`${n+1}/${checks.length} ${row?.name||saj} の詳細情報を取得しています…`);
+    try{
+      const a=await fetchSajAthlete(saj);
+      const item={
+        id:uid(),saj:a.saj||saj,name:a.name||row?.name||'',school:a.team||a.organization||row?.team||'',
+        organization:a.organization||row?.organization||'',birth:a.birth||row?.birth||'',sex:a.sex||'',
+        grade:inferGradeFromBirth(a.birth||row?.birth),
+        dh:a.dh??row?.dh??null,sc:a.sc??row?.sc??null,sg:a.sg??row?.sg??null,gs:a.gs??row?.gs??null,sl:a.sl??row?.sl??null,
+        updated:new Date().toISOString().slice(0,10),
+        pointListNumber:a.pointListNumber??null,
+        pointSeasonLabel:a.pointSeasonLabel||'',
+        sajSource:a.source||'',
+        results:(a.results||[]).map(r=>({date:r.date,race:r.race,disc:r.disc,rank:r.rank,time:'',point:r.point??'-',season:r.season,category:r.category}))
+      };
+      if(!item.name) throw new Error('氏名を取得できませんでした');
+      db.athletes.push(item);
+      ok++;
+    }catch(e){
+      ng++;
+      errors.push(`${row?.name||saj}: ${e.message||'取得失敗'}`);
+    }
+  }
+
+  save();
+  renderSajAthleteList();
+  if(btn){btn.disabled=false;btn.textContent='選択した選手を登録';}
+  let msg=`一括登録完了：成功 ${ok}名`;
+  if(skip) msg+=` / 登録済み ${skip}名`;
+  if(ng) msg+=` / 失敗 ${ng}名`;
+  setSajListStatus(msg,ng?'status-warn':'muted');
+  alert(msg+(errors.length?`\n\n${errors.slice(0,5).join('\n')}`:''));
+}
 
 // ===== v0.3 SAJ one-touch athlete registration =====
 function normalizedSaj(v){ return String(v||'').replace(/\D/g,''); }
@@ -1539,6 +1757,7 @@ function apiBase(){
 }
 openAthleteForm = function(){
   editingAthleteId=null;
+  setAthleteRegisterMode('number');
   if(document.getElementById('athleteRegisterSimple')) athleteRegisterSimple.classList.remove('hidden');
   if(document.getElementById('athleteEditFields')) athleteEditFields.classList.add('hidden');
   if(document.getElementById('sajRegisterStatus')){
