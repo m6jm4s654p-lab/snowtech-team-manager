@@ -23,6 +23,8 @@ header{position:sticky;top:0;z-index:20;background:rgba(7,17,31,.95);backdrop-fi
 main{max-width:1200px;margin:auto;padding:18px 16px 80px}
 nav{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:16px}
 nav button,.btn{border:1px solid var(--line);background:var(--panel);color:var(--text);padding:11px 12px;border-radius:10px;cursor:pointer}
+.btn-compact{padding:5px 9px!important;font-size:11px!important;line-height:1.1!important;min-height:auto!important;white-space:nowrap}
+
 nav button.active,.btn.primary{background:var(--accent);color:#00131f;border-color:transparent;font-weight:700}
 .btn.ok{background:var(--ok);color:#03150d;border:none}.btn.warn{background:var(--warn);color:#1e1200;border:none}.btn.danger{background:var(--danger);color:white;border:none}
 .grid{display:grid;gap:14px}.g2{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -105,7 +107,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
   .g2,.g3{grid-template-columns:1fr}
   .event{grid-template-columns:1fr 1fr}.event .event-main{grid-column:1/-1}
   .checks{grid-template-columns:1fr 1fr}
-  .event-simple-row{grid-template-columns:110px minmax(180px,1fr) auto auto;font-size:12px;min-width:560px}
+  .event-simple-row{grid-template-columns:auto 120px minmax(180px,1fr) auto;font-size:12px;min-width:560px}
   .athlete-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
   .athlete-table-wrap table{min-width:1160px}
   .athlete-scroll-hint{display:block;font-size:11px;color:var(--muted);margin:4px 0 8px}
@@ -160,7 +162,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
       <small id="teamHeader">TEAM未設定</small>
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.7.3</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.7.4</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
   </div>
@@ -324,7 +326,6 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
       </table>
     </div>
 
-    <div id="athleteDetail" class="card hidden" style="margin-top:14px"></div>
   </div>
 </section>
 
@@ -345,6 +346,16 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
       <div class="card"><h3>GS</h3><div id="rankFemaleGS"></div></div>
       <div class="card"><h3>SG</h3><div id="rankFemaleSG"></div></div>
     </div>
+  </div>
+</section>
+
+
+<section id="athleteDetailScreen">
+  <div class="card">
+    <div class="toolbar no-print" style="justify-content:space-between">
+      <button class="btn" onclick="backToAthletes()">← 所属選手一覧へ戻る</button>
+    </div>
+    <div id="athleteDetailPage"></div>
   </div>
 </section>
 
@@ -879,16 +890,16 @@ function renderSajCompetitionCandidates(){
 
   sajCompetitionList.innerHTML=`<div class="muted" style="margin-bottom:6px">表示 ${filtered.length} / 全国取得 ${sajCompetitionCache.length} 大会</div>
   <div style="overflow:auto"><table>
-    <thead><tr><th>選択</th><th>日程</th><th>大会名</th><th>開催地</th><th>種目</th><th>詳細</th></tr></thead>
+    <thead><tr><th>選択</th><th>詳細</th><th>日程</th><th>大会名</th><th>開催地</th><th>種目</th></tr></thead>
     <tbody>${filtered.map(({c,i})=>{
       const exists=db.events.some(e=>e.sajKey && e.sajKey===c.key);
       return `<tr>
         <td><input class="saj-comp-check" type="checkbox" value="${i}" ${exists?'disabled':''}></td>
-        <td>${fmt(c.start)}${c.end&&c.end!==c.start?'〜'+fmt(c.end):''}</td>
+        <td>${c.url?`<button class="btn primary btn-compact" type="button" onclick="openCompetitionDetail('${c.url}')">詳細</button>`:'-'}</td>
+        <td>${c.end&&c.end!==c.start?`<div>${fmt(c.start)}～</div><div>${fmt(c.end)}</div>`:`<div>${fmt(c.start)}</div>`}</td>
         <td><b>${c.title||'-'}</b>${exists?'<br><span class="status-ok">登録済み</span>':''}</td>
         <td>${c.prefecture||String(c.place||'-').slice(0,3)}</td>
         <td>${c.disc||'-'}</td>
-        <td>${c.url?`<button class="btn primary" type="button" onclick="openCompetitionDetail('${c.url}')">大会詳細</button>`:'-'}</td>
       </tr>`;
     }).join('')}</tbody>
   </table></div>`;
@@ -943,12 +954,36 @@ function saveAthlete(){
 function num(v){return v===''?null:Number(v)}
 function renderAthletes(){ /* overridden below */ }
 function showAthlete(id){
-  const a=db.athletes.find(x=>x.id===id);if(!a)return;
-  athleteDetail.classList.remove('hidden');
-  athleteDetail.innerHTML=`<h2>${a.name}</h2><div class="muted">${a.sex||'性別未取得'} / ${a.birth?fmt(a.birth):'生年月日未取得'} / ${a.school} ${a.grade} / SAJ No. ${a.saj}<br>SAJ取得日: ${a.updated?fmt(a.updated):'—'} / ポイントリスト: ${a.pointListNumber!=null?'No.'+a.pointListNumber:'—'} ${a.pointSeasonLabel?'/ '+a.pointSeasonLabel:''}</div>
-  <div class="toolbar"><span class="tag">SL ${textOrDash(a.sl)}</span><span class="tag">GS ${textOrDash(a.gs)}</span><span class="tag">SG ${textOrDash(a.sg)}</span></div>
-  <h3>過去大会成績</h3><table><thead><tr><th>日付</th><th>大会</th><th>種目</th><th>順位</th><th>タイム</th><th>獲得P</th></tr></thead>
-  <tbody>${(a.results||[]).map(r=>`<tr><td>${fmt(r.date)}</td><td>${r.race}</td><td>${r.disc}</td><td>${r.rank}</td><td>${r.time}</td><td>${r.point}</td></tr>`).join('')||'<tr><td colspan="6">成績データなし</td></tr>'}</tbody></table>`;
+  const a=db.athletes.find(x=>x.id===id);
+  if(!a)return;
+  athleteDetailPage.innerHTML=`<h2>${esc(a.name)}</h2>
+    <div class="grid g3">
+      <div><b>SAJ No.</b><br>${esc(a.saj||'—')}</div>
+      <div><b>生年月日</b><br>${a.birth?fmt(a.birth):'—'}</div>
+      <div><b>性別</b><br>${esc(a.sex||'—')}</div>
+      <div><b>所属</b><br>${esc(a.school||'—')} ${esc(a.grade||'')}</div>
+      <div><b>SL</b><br>${textOrDash(a.sl)}</div>
+      <div><b>GS</b><br>${textOrDash(a.gs)}</div>
+      <div><b>SG</b><br>${textOrDash(a.sg)}</div>
+      <div><b>取得日</b><br>${a.updated?fmt(a.updated):'—'}</div>
+      <div><b>PL No.</b><br>${a.pointListNumber!=null?`No.${a.pointListNumber}`:'—'}${a.pointSeasonLabel?`<br><span class="muted">${esc(a.pointSeasonLabel)}</span>`:''}</div>
+    </div>
+    <div style="margin-top:18px">
+      <h3>大会履歴</h3>
+      ${(a.results||[]).length
+        ? `<table><thead><tr><th>日付</th><th>大会</th><th>種目</th><th>順位</th><th>ポイント</th></tr></thead><tbody>${
+            (a.results||[]).map(r=>`<tr><td>${esc(r.date||'—')}</td><td>${esc(r.title||'—')}</td><td>${esc(r.disc||'—')}</td><td>${esc(String(r.rank??'—'))}</td><td>${esc(String(r.point??'—'))}</td></tr>`).join('')
+          }</tbody></table>`
+        : '<div class="muted">大会履歴なし</div>'}
+    </div>`;
+  document.querySelectorAll('main > section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('athleteDetailScreen').classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function backToAthletes(){
+  document.querySelectorAll('main > section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('athletes').classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 function mockSajRefresh(){
   db.athletes.forEach(a=>a.updated=new Date().toISOString().slice(0,10));
@@ -1082,15 +1117,17 @@ function deleteEvent(id){
 }
 renderEvents = function(){
   const events=[...db.events].sort((a,b)=>(a.start||'').localeCompare(b.start||''));
-
-  eventList.innerHTML=events.map(e=>`
-    <div class="event-simple-row" style="grid-template-columns:150px 1fr auto auto">
-      <div>${fmt(e.start)}${e.end&&e.end!==e.start?'〜'+fmt(e.end):''}</div>
+  eventList.innerHTML=events.map(e=>{
+    const period=e.end&&e.end!==e.start
+      ? `<div>${fmt(e.start)}～</div><div>${fmt(e.end)}</div>`
+      : `<div>${fmt(e.start)}</div>`;
+    return `<div class="event-simple-row" style="grid-template-columns:auto 135px minmax(200px,1fr) auto">
+      <div>${e.sajUrl?`<button class="btn primary btn-compact no-print" onclick="openCompetitionDetail('${e.sajUrl}')">詳細</button>`:''}</div>
+      <div>${period}</div>
       <div class="event-simple-title">${esc(e.title||'大会')}</div>
-      <div>${e.sajUrl?`<button class="btn primary no-print" onclick="openCompetitionDetail('${e.sajUrl}')">大会詳細</button>`:''}</div>
       <div><button class="btn danger no-print" onclick="deleteEvent('${e.id}')">削除</button></div>
-    </div>
-  `).join('')||'<div class="muted">大会なし</div>';
+    </div>`;
+  }).join('')||'<div class="muted">大会なし</div>';
 
   if(eventPrintList){
     eventPrintList.innerHTML=events.map(e=>{
