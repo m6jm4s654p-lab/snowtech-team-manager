@@ -130,3 +130,93 @@ SnowTech → 管理 → `SAJ連携API URL` にWorker URLを入力 → 保存。
 - 全地域ON / 全地域OFFボタン追加
 - 全国取得データは保持したまま表示だけ地域フィルター
 - 開催県を判定できない大会は誤除外を避けるため表示
+
+## v0.4.3
+- SAJ大会カレンダーの「月」を必須検索条件として扱う
+- liveフォームから月selectを自動検出
+- 1月〜12月の実option値をWorker内部で順番に検索
+- 月ごとの大会結果を統合し、大会キーで重複除去
+- ユーザー側は従来どおり1回の「公認大会情報取得」で全国一覧を取得
+- 地域フィルターは取得後の表示絞り込みとして維持
+- 0件時diagnosticに月別検索結果を追加
+- 成功時monthSummaryをAPIレスポンスへ付加
+
+## v0.4.4
+- SAJ大会検索フォームをfield nameで厳密に特定
+- `/search_competitions` を大会取得の主経路へ変更
+- `search_prefecture=すべて` を送信しない
+- 開催地未指定を「全国」として検索
+- 月別巡回は維持
+- diagnosticsにvalidation/noScheduleを追加
+- ヘッダー表示 v0.4.4
+
+## v0.4.5
+- SAJ開催地未指定では全国検索にならない挙動へ対応
+- Worker APIを1か月単位に変更: `/api/saj-competitions?season=2026&month=2`
+- 1回のWorker内で47都道府県を実際のselect option値で巡回
+- SnowTech画面側が1〜12月を順番に取得し全国大会を統合
+- 大会キーで重複除去
+- 取得途中も部分結果を画面表示
+- 地域ON/OFFフィルターは従来どおり取得後に適用
+- `/search_competitions` から大会カレンダーへリダイレクトされる挙動を正常扱い
+
+## v0.4.6
+- Cloudflare Workers Free の外部subrequest上限 50/request 対応
+- 47都道府県を3バッチ（16/16/15）に分割
+- API: `/api/saj-competitions?season=2026&month=2&batch=1`
+- 1バッチ最大約33 subrequests（base取得1 + 16県×redirect込み2）
+- SnowTech側は12か月×3バッチ=36回を自動実行
+- 部分取得結果を随時一覧へ表示
+- batchInfo diagnostic追加
+- ヘッダー v0.4.6
+
+## v0.4.7
+- SAJ大会検索GETで空文字パラメータを削除しないよう修正
+- `search_discipline=` を明示送信
+- SAJフォームの実際の検索URL構造に合わせる
+- 47都道府県3バッチ方式は維持
+- ヘッダー v0.4.7
+
+## v0.4.8
+- SAJ `/search_competitions` のセッションCookie引継ぎに対応
+- HTTP 301/302/303/307/308をWorker側で手動追跡
+- `Set-Cookie` をCookie jarへ保持し、リダイレクト先へ `Cookie` として送信
+- ブラウザで検索する時と同じセッション状態を再現
+- `search_discipline=` 空文字送信を維持
+- 2月・山形県を診断プローブとして常時 `months` に記録
+- 診断に redirectCount / sessionCookieCount を追加（Cookie値は出力しない）
+- 47都道府県3バッチ方式を維持
+- ヘッダー v0.4.8
+
+## v0.4.9
+- SAJ大会検索の競技を常にアルペンへ固定
+- `search_sports_code=AL` を各検索リクエストで明示的に上書き
+- `search_discipline=` は空欄のまま（アルペン全種目取得）
+- 診断結果に `sportsCode:"AL"` を追加
+- ヘッダー v0.4.9
+
+## v0.5.0
+- 診断用 `/api/debug-competition-js` を追加
+- 大会カレンダーHTML内の script src / $.ajax / $.get / $.post / fetch / url: を抽出
+- SAJカレンダー内部の大会データ取得先を特定するための診断
+- `search_sports_code=AL` 強制指定は維持
+- 既存の47都道府県3バッチ方式は維持
+- ヘッダー v0.5.0
+
+## v0.5.1
+- SAJ大会取得をHTMLパース方式から内部JSON API方式へ全面変更
+- SAJカレンダー自身が使用する `/api/search_competitions` をGET
+- `sports_code=AL` を常時固定
+- `prefecture=` で全国、`month=1..12` を月別取得
+- `data.competitions` をSnowTech大会形式へ変換
+- racesからGS/SL等の種目を集約
+- Cookie / HTMLリダイレクト / 47都道府県3バッチ処理を大会取得本線から廃止
+- 診断 `/api/debug-competition-api?season=2026&month=2` を追加
+- ヘッダー v0.5.1
+
+## v0.5.2
+- v0.5.1生成時に残っていた旧v0.4系大会取得ブロックを完全削除
+- `Expected "}" but found "if"` のWorkerビルドエラーを修正
+- `/api/saj-competitions` はSAJ内部JSON API `/api/search_competitions` 方式のみを使用
+- `sports_code=AL`（アルペン）固定
+- worker.js / index.html JavaScript 構文チェック済み

@@ -71,7 +71,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
       <small id="teamHeader">TEAM未設定</small>
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.4.2</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.5.2</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
   </div>
@@ -498,22 +498,55 @@ async function loadSajCompetitions(){
     alert('SAJ連携API URLが設定されていません');
     return;
   }
-  sajCompetitionStatus.textContent='SAJ公認大会情報を取得中...';
+
+  sajCompetitionStatus.textContent='SAJ公認アルペン大会を全国から取得中... 0/12月';
   sajCompetitionList.innerHTML='';
   sajCompetitionActions.style.display='none';
+
+  const merged=new Map();
+  const failed=[];
+
   try{
-    const r=await fetch(`${base}/api/saj-competitions?season=${encodeURIComponent(season)}`);
-    const j=await r.json();
-    if(!r.ok || !j.ok)throw new Error(j.error||`HTTP ${r.status}`);
-    sajCompetitionCache=j.competitions||[];
+    for(let month=1;month<=12;month++){
+      sajCompetitionStatus.textContent=
+        `SAJ公認アルペン大会を全国から取得中... ${month-1}/12月`;
+
+      const r=await fetch(
+        `${base}/api/saj-competitions?season=${encodeURIComponent(season)}&month=${month}`
+      );
+      const j=await r.json();
+
+      if(!r.ok || !j.ok){
+        failed.push(`${month}月`);
+        continue;
+      }
+
+      for(const c of (j.competitions||[])){
+        const key=c.key||c.url||`${c.title}|${c.start}|${c.place}`;
+        if(!merged.has(key)) merged.set(key,c);
+      }
+
+      sajCompetitionCache=[...merged.values()].sort((a,b)=>
+        (a.start||'9999').localeCompare(b.start||'9999') ||
+        String(a.title||'').localeCompare(String(b.title||''),'ja')
+      );
+      renderSajCompetitionCandidates();
+    }
+
+    sajCompetitionCache=[...merged.values()].sort((a,b)=>
+      (a.start||'9999').localeCompare(b.start||'9999') ||
+      String(a.title||'').localeCompare(String(b.title||''),'ja')
+    );
     renderSajCompetitionCandidates();
-    sajCompetitionStatus.textContent=`${j.seasonLabel||''}：${sajCompetitionCache.length}大会を取得`;
+
+    const suffix=failed.length?` / 取得失敗: ${failed.join('・')}`:'';
+    sajCompetitionStatus.textContent=
+      `${Number(season)-1}/${season}：全国 ${sajCompetitionCache.length}大会を取得${suffix}`;
     sajCompetitionActions.style.display=sajCompetitionCache.length?'flex':'none';
   }catch(e){
     sajCompetitionStatus.textContent=`取得失敗：${e.message}`;
   }
 }
-
 function renderSajCompetitionCandidates(){
   const filtered=sajCompetitionCache
     .map((c,i)=>({c,i}))
