@@ -46,18 +46,19 @@ section{display:none} section.active{display:block}
 .event-simple-row{display:grid;grid-template-columns:150px 1fr auto;gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:10px;background:#0a1724}
 .event-simple-title{font-weight:700}
 .athlete-table-wrap{width:100%;max-width:100%}
-.athlete-table-wrap table{width:max-content;min-width:1080px}
+.athlete-table-wrap table{width:max-content;min-width:1160px}
 .athlete-table-wrap th,.athlete-table-wrap td{white-space:nowrap}
 .athlete-table-wrap th:nth-child(1),.athlete-table-wrap td:nth-child(1){min-width:120px}
-.athlete-table-wrap th:nth-child(2),.athlete-table-wrap td:nth-child(2){min-width:105px}
-.athlete-table-wrap th:nth-child(3),.athlete-table-wrap td:nth-child(3){min-width:165px}
-.athlete-table-wrap th:nth-child(4),.athlete-table-wrap td:nth-child(4){min-width:105px}
-.athlete-table-wrap th:nth-child(5),.athlete-table-wrap td:nth-child(5),
+.athlete-table-wrap th:nth-child(2),.athlete-table-wrap td:nth-child(2){min-width:65px}
+.athlete-table-wrap th:nth-child(3),.athlete-table-wrap td:nth-child(3){min-width:105px}
+.athlete-table-wrap th:nth-child(4),.athlete-table-wrap td:nth-child(4){min-width:165px}
+.athlete-table-wrap th:nth-child(5),.athlete-table-wrap td:nth-child(5){min-width:105px}
 .athlete-table-wrap th:nth-child(6),.athlete-table-wrap td:nth-child(6),
-.athlete-table-wrap th:nth-child(7),.athlete-table-wrap td:nth-child(7){min-width:70px;text-align:right}
-.athlete-table-wrap th:nth-child(8),.athlete-table-wrap td:nth-child(8){min-width:95px}
+.athlete-table-wrap th:nth-child(7),.athlete-table-wrap td:nth-child(7),
+.athlete-table-wrap th:nth-child(8),.athlete-table-wrap td:nth-child(8){min-width:70px;text-align:right}
 .athlete-table-wrap th:nth-child(9),.athlete-table-wrap td:nth-child(9){min-width:95px}
-.athlete-table-wrap th:nth-child(10),.athlete-table-wrap td:nth-child(10){min-width:150px}
+.athlete-table-wrap th:nth-child(10),.athlete-table-wrap td:nth-child(10){min-width:95px}
+.athlete-table-wrap th:nth-child(11),.athlete-table-wrap td:nth-child(11){min-width:150px}
 .athlete-scroll-hint{display:none}
 .schedule-board-wrap{overflow-x:auto;overflow-y:hidden;margin-top:14px;-webkit-overflow-scrolling:touch}
 .season-board{width:100%;border-collapse:collapse;table-layout:fixed;font-size:11px}
@@ -105,7 +106,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
   .checks{grid-template-columns:1fr 1fr}
   .event-simple-row{grid-template-columns:110px 1fr auto;font-size:12px}
   .athlete-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
-  .athlete-table-wrap table{min-width:1080px}
+  .athlete-table-wrap table{min-width:1160px}
   .athlete-scroll-hint{display:block;font-size:11px;color:var(--muted);margin:4px 0 8px}
   table{font-size:12px} th,td{padding:8px 5px}
 }
@@ -159,7 +160,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
       <small id="teamHeader">TEAM未設定</small>
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.6.9</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.7.1</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
   </div>
@@ -304,35 +305,23 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
       <div class="toolbar"><button class="btn" onclick="closeAthleteForm()">閉じる</button></div>
     </div>
     <h3 style="margin-top:18px">男子</h3>
-    <div class="athlete-scroll-hint no-print">← 横にスワイプして全項目を表示 →</div><div class="athlete-table-wrap"><div class="athlete-scroll-hint no-print">← 横にスワイプして全項目を表示 →</div><div class="athlete-table-wrap"><div class="athlete-scroll-hint no-print">← 横にスワイプして全項目を表示 →</div><div class="athlete-table-wrap"><table>
-      <thead><tr><th>氏名</th><th>生年月日</th><th>所属・学年</th><th>SAJ No.</th><th>SL</th><th>GS</th><th>SG</th><th>取得日</th><th>PL No.</th><th>操作</th></tr></thead>
-      <tbody id="athleteRowsMale"></tbody>
-    </table></div>
-
-    <h3 style="margin-top:20px">女子</h3>
-    <table>
-      <thead><tr><th>氏名</th><th>生年月日</th><th>所属・学年</th><th>SAJ No.</th><th>SL</th><th>GS</th><th>SG</th><th>取得日</th><th>PL No.</th><th>操作</th></tr></thead>
-      <tbody id="athleteRowsFemale"></tbody>
-    </table></div>
-
-    <div id="athleteUnknownWrap" class="hidden" style="margin-top:20px">
-      <h3>性別未取得</h3>
-      <div class="muted" style="margin-bottom:8px">旧データなどで性別が未取得の選手です。「登録選手をSAJ更新」を実行してください。</div>
-      <table>
-        <thead><tr><th>氏名</th><th>生年月日</th><th>所属・学年</th><th>SAJ No.</th><th>SL</th><th>GS</th><th>SG</th><th>取得日</th><th>PL No.</th><th>操作</th></tr></thead>
-        <tbody id="athleteRowsUnknown"></tbody>
-      </table></div>
+    <div class="athlete-scroll-hint no-print">← 横にスワイプして全項目を表示 →</div><div class="athlete-table-wrap"><div class="athlete-scroll-hint no-print">← 横にスワイプして全項目を表示 →</div><div class="athlete-table-wrap"><div class="athlete-scroll-hint no-print">← 横にスワイプして全項目を表示 →</div>
+    <div>
+      <h3>所属選手一覧</h3>
+      <div class="athlete-scroll-hint no-print">← 横にスワイプして全項目を表示 →</div>
+      <div class="athlete-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>氏名</th><th>性別</th><th>生年月日</th><th>所属・学年</th><th>SAJ No.</th>
+              <th>SL</th><th>GS</th><th>SG</th><th>取得日</th><th>PL No.</th><th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="athleteRowsAll"></tbody>
+        </table>
+      </div>
     </div>
-    <div id="athleteDetail" class="card hidden" style="margin-top:14px"></div>
-  </div>
-</section>
-
-<section id="ranking">
-  <div class="card">
-    <h2>チームランキング</h2>
-    <h3>男子</h3>
-    <div class="grid g3">
-      <div class="card"><h3>SL</h3><div id="rankMaleSL"></div></div>
+</div>
       <div class="card"><h3>GS</h3><div id="rankMaleGS"></div></div>
       <div class="card"><h3>SG</h3><div id="rankMaleSG"></div></div>
     </div>
@@ -1134,6 +1123,7 @@ function deleteAthlete(id){
 renderAthletes = function(){
   const rowHtml = a => `<tr>
     <td><span class="click" onclick="showAthlete('${a.id}')">${a.name}</span></td>
+    <td>${a.sex||'—'}</td>
     <td>${a.birth?fmt(a.birth):'—'}</td>
     <td>${a.school||'—'} ${a.grade||''}</td>
     <td>${a.saj}</td>
@@ -1142,16 +1132,19 @@ renderAthletes = function(){
     <td>${a.pointListNumber!=null?`No.${a.pointListNumber}`:'—'}${a.pointSeasonLabel?`<br><span class="muted">${a.pointSeasonLabel}</span>`:''}</td>
     <td><div class="no-print"><button class="btn" onclick="editAthlete('${a.id}')">編集</button> <button class="btn danger" onclick="deleteAthlete('${a.id}')">削除</button></div></td>
   </tr>`;
+  const arr=[...db.athletes].sort((a,b)=>{
+    const sexOrder=s=>s==='男'?0:s==='女'?1:2;
+    const sexDiff=sexOrder(a.sex)-sexOrder(b.sex);
+    if(sexDiff) return sexDiff;
 
-  const males=db.athletes.filter(a=>a.sex==='男');
-  const females=db.athletes.filter(a=>a.sex==='女');
-  const unknown=db.athletes.filter(a=>a.sex!=='男' && a.sex!=='女');
+    const ab=a.birth||'9999-12-31';
+    const bb=b.birth||'9999-12-31';
+    const birthDiff=String(ab).localeCompare(String(bb));
+    if(birthDiff) return birthDiff;
 
-  athleteRowsMale.innerHTML=males.map(rowHtml).join('')||'<tr><td colspan="10" class="muted">男子選手は登録されていません</td></tr>';
-  athleteRowsFemale.innerHTML=females.map(rowHtml).join('')||'<tr><td colspan="10" class="muted">女子選手は登録されていません</td></tr>';
-
-  athleteUnknownWrap.classList.toggle('hidden', unknown.length===0);
-  athleteRowsUnknown.innerHTML=unknown.map(rowHtml).join('');
+    return String(a.name||'').localeCompare(String(b.name||''),'ja');
+  });
+  athleteRowsAll.innerHTML=arr.map(rowHtml).join('')||'<tr><td colspan="11" class="muted">未登録</td></tr>';
 };
 
 function deleteCoach(id){
