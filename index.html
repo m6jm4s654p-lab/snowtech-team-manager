@@ -6,7 +6,8 @@
 <title>SnowTech Alpine Team Manager</title>
 <meta name="theme-color" content="#0b1220">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="icon" href="snowtech-icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>
@@ -161,11 +162,6 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
   @page{size:A4 portrait;margin:8mm}
 }
 
-.calendar-fullscreen #scheduleForm{
-  position:absolute;z-index:10003;left:12px;right:12px;top:54px;
-  max-width:980px;margin:0 auto;background:#07131f;border:1px solid var(--line);
-  border-radius:12px;padding:12px;box-shadow:0 12px 32px rgba(0,0,0,.45)
-}
 
 .tool-portal{
   position:fixed;inset:0;z-index:20000;
@@ -187,10 +183,13 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
   text-align:center;
 }
 .tool-portal-logo{
-  font-size:34px;font-weight:900;letter-spacing:.02em;
-  margin-bottom:4px
+  margin:0 auto 10px;
+  width:min(610px,96%);
 }
-.tool-portal-logo span{color:#56b7ff}
+.tool-portal-logo img{
+  display:block;width:100%;height:auto;
+  filter:drop-shadow(0 7px 18px rgba(0,0,0,.38));
+}
 .tool-portal-sub{color:var(--muted);font-size:13px;margin-bottom:26px}
 .tool-choice-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .tool-choice{
@@ -209,7 +208,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
   .tool-portal-card{padding:22px 16px}
   .tool-choice-grid{grid-template-columns:1fr}
   .tool-choice{padding:20px 16px}
-  .tool-portal-logo{font-size:28px}
+  .tool-portal-logo{width:min(520px,100%)}
 }
 
 </style>
@@ -218,7 +217,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 
 <div id="toolPortal" class="tool-portal no-print">
   <div class="tool-portal-card">
-    <div class="tool-portal-logo">Snow<span>Tech</span></div>
+    <div class="tool-portal-logo"><img src="snowtech-logo.png" alt="SNOWTECH SHIZUKUISHI IWATE @snowtech"></div>
     <div class="tool-portal-sub">ALPINE SKI TOOL SELECT</div>
 
     <div class="tool-choice-grid">
@@ -243,7 +242,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end">
       <button class="btn portal-back-btn no-print" type="button" onclick="showToolPortal()">ツール選択</button>
-      <span class="muted" style="font-size:12px;font-weight:700">v0.7.7</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.7.9</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
   </div>
@@ -263,13 +262,14 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
   <div class="card">
     <h2>年間活動スケジュール</h2>
     <div class="toolbar no-print">
+      <button class="btn primary" onclick="openCalendarFullscreen()">全画面表示</button>
       <button class="btn" onclick="printSection('schedule')">年間予定PDF</button>
     </div>
     <div class="card" id="scheduleBoardCard" style="margin-top:14px">
       <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap">
         <div>
           <h3 style="margin:0">年間予定表（画面：横スクロール / PDF：A4縦2枚）</h3>
-          <div class="board-caption" id="scheduleBoardCaption"></div><div class="muted no-print" style="font-size:11px">タップして全画面表示（編集は全画面モードのみ）</div>
+          <div class="board-caption" id="scheduleBoardCaption"></div><div class="muted no-print" style="font-size:11px">セルをタップして予定を編集 / 全画面表示は上のボタンから</div>
         </div>
         <div class="no-print" style="min-width:220px">
           <label>表示シーズン</label>
@@ -521,27 +521,19 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 <div id="calendarFullscreen" class="calendar-fullscreen no-print" aria-hidden="true">
   <div class="calendar-fullscreen-head" style="display:flex;align-items:center;gap:10px">
     <span>年間予定表　<span id="calendarZoomLabel">100%</span></span>
-    <button class="btn primary btn-compact" type="button" onclick="openScheduleForm()">予定追加</button>
   </div>
-
-  <div id="scheduleForm" class="hidden no-print">
-      <div class="grid g3">
-        <div><label>日付</label><input id="sDate" type="date"></div>
-        <div><label>区分</label><select id="sType"><option>大会</option><option>練習</option><option>合宿</option><option>遠征</option><option>ミーティング</option><option>休養</option><option>その他</option></select></div>
-        <div><label>名称</label><input id="sTitle"></div>
-        <div><label>場所</label><input id="sPlace"></div>
-        <div><label>対象</label><input id="sTarget" placeholder="全員 / U16 / 選抜など"></div>
-        <div><label>担当コーチ</label><select id="sCoach"></select></div>
-      </div>
-      <div style="margin-top:10px"><label>備考</label><textarea id="sNote"></textarea></div>
-      <div class="toolbar"><button class="btn ok" onclick="saveSchedule()">保存</button><button class="btn" onclick="closeScheduleForm()">閉じる</button></div>
-    </div>
   <div id="calendarFullscreenViewport" class="calendar-fullscreen-viewport">
     <div id="calendarFullscreenStage" class="calendar-fullscreen-stage">
       <div id="calendarFullscreenContent" class="calendar-fullscreen-content"></div>
     </div>
   </div>
   <button id="calendarBackBtn" class="calendar-back-btn" type="button">戻る</button>
+</div>
+
+
+<div id="scheduleForm" class="hidden no-print" style="display:none!important">
+  <input id="sDate" type="date"><select id="sType"><option>その他</option><option>大会</option><option>練習</option><option>合宿</option><option>遠征</option><option>ミーティング</option><option>休養</option></select>
+  <input id="sTitle"><input id="sPlace"><input id="sTarget"><select id="sCoach"></select><textarea id="sNote"></textarea>
 </div>
 
 <footer>SnowTech Alpine Team Manager Prototype</footer>
@@ -1508,32 +1500,59 @@ async function refreshAllSaj(){
 
 
 
-function quickAddSchedule(dateStr){
+function editScheduleCell(dateStr){
   if(!dateStr)return;
-  const label=prompt(`${fmt(dateStr)} の予定を一言で入力してください`, '');
-  if(label===null)return;
-  const title=String(label).trim();
-  if(!title)return;
 
-  db.schedules.push({
-    id:uid(),
-    date:dateStr,
-    type:'その他',
-    title,
-    place:'',
-    target:'',
-    coach:'',
-    note:'',
-    quick:true
-  });
+  // SAJ大会などdb.eventsはここでは編集しない。
+  // 同日の通常予定があれば、簡易予定を優先して1件だけ編集する。
+  const sameDay=db.schedules.filter(s=>s.date===dateStr);
+  const target=sameDay.find(s=>s.quick) || sameDay[0] || null;
+
+  if(target){
+    const label=prompt(`${fmt(dateStr)} の予定を編集してください`, target.title||'');
+    if(label===null)return;
+    const title=String(label).trim();
+    if(!title)return;
+    target.title=title;
+  }else{
+    const label=prompt(`${fmt(dateStr)} の予定を一言で入力してください`, '');
+    if(label===null)return;
+    const title=String(label).trim();
+    if(!title)return;
+
+    db.schedules.push({
+      id:uid(),
+      date:dateStr,
+      type:'その他',
+      title,
+      place:'',
+      target:'',
+      coach:'',
+      note:'',
+      quick:true
+    });
+  }
 
   localStorage.setItem(KEY,JSON.stringify(db));
   renderScheduleBoard();
 
-  // If the fullscreen calendar is open, rebuild its contents too.
+  // 全画面表示中なら表示内容も更新。
   const overlay=document.getElementById('calendarFullscreen');
   if(overlay && overlay.classList.contains('open')){
-    requestAnimationFrame(()=>openCalendarFullscreen());
+    requestAnimationFrame(()=>{
+      const viewport=document.getElementById('calendarFullscreenViewport');
+      const oldLeft=viewport?viewport.scrollLeft:0;
+      const oldTop=viewport?viewport.scrollTop:0;
+      const oldScale=calendarFsScale;
+      openCalendarFullscreen();
+      requestAnimationFrame(()=>{
+        updateCalendarFullscreenScale(oldScale);
+        if(viewport){
+          viewport.scrollLeft=oldLeft;
+          viewport.scrollTop=oldTop;
+        }
+      });
+    });
   }
 }
 
@@ -1608,14 +1627,15 @@ function initCalendarFullscreen(){
   });
   wrap.addEventListener('pointerup',e=>{
     if(moved)return;
-    openCalendarFullscreen();
+    const cell=e.target.closest('td[data-schedule-date]');
+    if(cell) editScheduleCell(cell.dataset.scheduleDate);
   });
 
   back.addEventListener('click',e=>{e.stopPropagation();closeCalendarFullscreen()});
 
   viewport.addEventListener('click',e=>{
     const cell=e.target.closest('td[data-schedule-date]');
-    if(cell) quickAddSchedule(cell.dataset.scheduleDate);
+    if(cell) editScheduleCell(cell.dataset.scheduleDate);
   });
 
   viewport.addEventListener('touchstart',e=>{
