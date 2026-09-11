@@ -127,7 +127,29 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
     <h2>大会管理</h2>
     <div class="toolbar no-print">
       <button class="btn primary" onclick="openEventForm()">大会追加</button>
+      <button class="btn" onclick="toggleSajCompetitions()">公認大会情報取得</button>
       <button class="btn" onclick="printSection('events')">大会スケジュールPDF</button>
+    </div>
+
+    <div id="sajCompetitionPanel" class="hidden no-print" style="margin:12px 0">
+      <div class="card" style="margin:0">
+        <h3>SAJ公認大会カレンダー</h3>
+        <div class="row">
+          <div>
+            <label>シーズン</label>
+            <select id="sajCompetitionSeason"></select>
+          </div>
+          <div style="align-self:end">
+            <button class="btn primary" onclick="loadSajCompetitions()">大会情報を取得</button>
+          </div>
+        </div>
+        <div id="sajCompetitionStatus" class="muted" style="margin:8px 0">SAJ競技データバンクから大会情報を取得します。</div>
+        <div id="sajCompetitionList"></div>
+        <div class="toolbar" id="sajCompetitionActions" style="display:none">
+          <button class="btn ok" onclick="importSelectedSajCompetitions()">チェックした大会を年間予定へ反映</button>
+          <button class="btn" onclick="toggleSajCompetitions()">閉じる</button>
+        </div>
+      </div>
     </div>
     <div id="eventForm" class="hidden no-print">
       <div class="grid g3">
@@ -212,10 +234,21 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 </section>
 
 <section id="ranking">
-  <div class="grid g3">
-    <div class="card"><h3>SLランキング</h3><div id="rankSL"></div></div>
-    <div class="card"><h3>GSランキング</h3><div id="rankGS"></div></div>
-    <div class="card"><h3>SGランキング</h3><div id="rankSG"></div></div>
+  <div class="card">
+    <h2>チームランキング</h2>
+    <h3>男子</h3>
+    <div class="grid g3">
+      <div class="card"><h3>SL</h3><div id="rankMaleSL"></div></div>
+      <div class="card"><h3>GS</h3><div id="rankMaleGS"></div></div>
+      <div class="card"><h3>SG</h3><div id="rankMaleSG"></div></div>
+    </div>
+
+    <h3 style="margin-top:22px">女子</h3>
+    <div class="grid g3">
+      <div class="card"><h3>SL</h3><div id="rankFemaleSL"></div></div>
+      <div class="card"><h3>GS</h3><div id="rankFemaleGS"></div></div>
+      <div class="card"><h3>SG</h3><div id="rankFemaleSG"></div></div>
+    </div>
   </div>
 </section>
 
@@ -294,7 +327,7 @@ function renderAll(){
   document.getElementById('teamHeader').textContent=db.team.name||'TEAM未設定';
   document.getElementById('teamName').value=db.team.name||'';
   if(document.getElementById('sajApiUrl')) document.getElementById('sajApiUrl').value=db.team.sajApiUrl||'https://snowtech-saj-api.take6583.workers.dev';
-  renderCoaches();renderAthletes();renderSchedule();renderEvents();renderRanking();renderHome();refreshSelects();
+  renderCoaches();renderAthletes();renderSchedule();renderEvents();renderRanking();renderHome();refreshSelects();initSajCompetitionSeason();
 }
 
 function renderHome(){
@@ -341,8 +374,113 @@ function renderEvents(){
     return `<div class="card" style="margin:10px 0"><h3>${e.title}</h3>
       <div>${fmt(e.start)}${e.end&&e.end!==e.start?'〜'+fmt(e.end):''} / ${e.place||'-'} / ${e.disc||'-'}</div>
       <div class="muted">締切: ${fmt(e.deadline)} / 出場: ${names.join('・')||'未設定'} / 引率: ${coaches.join('・')||'未設定'}</div>
+      ${e.sajKey?'<div class="muted">SAJ公認大会カレンダー取得</div>':''}
       <div style="margin-top:8px">${checks}</div></div>`;
   }).join('')||'<div class="muted">大会なし</div>';
+}
+
+
+let sajCompetitionCache=[];
+
+function currentSkiSeasonCode(){
+  const now=new Date();
+  return (now.getMonth()+1)>=7 ? now.getFullYear()+1 : now.getFullYear();
+}
+
+function initSajCompetitionSeason(){
+  const el=document.getElementById('sajCompetitionSeason');
+  if(!el || el.options.length)return;
+  const cur=currentSkiSeasonCode();
+  [cur,cur-1,cur+1].forEach(s=>{
+    const o=document.createElement('option');
+    o.value=String(s);
+    o.textContent=`${s-1}/${s}`;
+    if(s===cur)o.selected=true;
+    el.appendChild(o);
+  });
+}
+
+function toggleSajCompetitions(){
+  initSajCompetitionSeason();
+  sajCompetitionPanel.classList.toggle('hidden');
+}
+
+async function loadSajCompetitions(){
+  initSajCompetitionSeason();
+  const base=apiBase();
+  const season=sajCompetitionSeason.value;
+  if(!base){
+    alert('SAJ連携API URLが設定されていません');
+    return;
+  }
+  sajCompetitionStatus.textContent='SAJ公認大会情報を取得中...';
+  sajCompetitionList.innerHTML='';
+  sajCompetitionActions.style.display='none';
+  try{
+    const r=await fetch(`${base}/api/saj-competitions?season=${encodeURIComponent(season)}`);
+    const j=await r.json();
+    if(!r.ok || !j.ok)throw new Error(j.error||`HTTP ${r.status}`);
+    sajCompetitionCache=j.competitions||[];
+    renderSajCompetitionCandidates();
+    sajCompetitionStatus.textContent=`${j.seasonLabel||''}：${sajCompetitionCache.length}大会を取得`;
+    sajCompetitionActions.style.display=sajCompetitionCache.length?'flex':'none';
+  }catch(e){
+    sajCompetitionStatus.textContent=`取得失敗：${e.message}`;
+  }
+}
+
+function renderSajCompetitionCandidates(){
+  if(!sajCompetitionCache.length){
+    sajCompetitionList.innerHTML='<div class="muted">大会情報はありません</div>';
+    return;
+  }
+  sajCompetitionList.innerHTML=`<div style="overflow:auto"><table>
+    <thead><tr><th>選択</th><th>日程</th><th>大会名</th><th>開催地</th><th>種目</th></tr></thead>
+    <tbody>${sajCompetitionCache.map((c,i)=>{
+      const exists=db.events.some(e=>e.sajKey && e.sajKey===c.key);
+      return `<tr>
+        <td><input class="saj-comp-check" type="checkbox" value="${i}" ${exists?'disabled':''}></td>
+        <td>${fmt(c.start)}${c.end&&c.end!==c.start?'〜'+fmt(c.end):''}</td>
+        <td><b>${c.title||'-'}</b>${exists?'<br><span class="status-ok">登録済み</span>':''}</td>
+        <td>${c.place||'-'}</td>
+        <td>${c.disc||'-'}</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div>`;
+}
+
+function importSelectedSajCompetitions(){
+  const idxs=[...document.querySelectorAll('.saj-comp-check:checked')].map(x=>Number(x.value));
+  if(!idxs.length){
+    alert('参加希望の大会にチェックを入れてください');
+    return;
+  }
+  let added=0;
+  idxs.forEach(i=>{
+    const c=sajCompetitionCache[i];
+    if(!c)return;
+    if(db.events.some(e=>e.sajKey===c.key))return;
+    db.events.push({
+      id:uid(),
+      title:c.title||'SAJ公認大会',
+      start:c.start||'',
+      end:c.end||c.start||'',
+      place:c.place||'',
+      disc:c.disc||'',
+      deadline:'',
+      athleteIds:[],
+      coachIds:[],
+      checks:{entry:false,fee:false,hotel:false,travel:false,parents:false,athlete:false},
+      note:'SAJ公認大会カレンダーから取得',
+      sajKey:c.key,
+      sajUrl:c.url||'',
+      sajSeason:c.season||''
+    });
+    added++;
+  });
+  save();
+  renderSajCompetitionCandidates();
+  sajCompetitionStatus.textContent=`${added}大会を年間予定へ反映しました`;
 }
 
 function openAthleteForm(){athleteForm.classList.remove('hidden')} function closeAthleteForm(){athleteForm.classList.add('hidden')}
@@ -367,10 +505,17 @@ function mockSajRefresh(){
 }
 
 function renderRanking(){
-  ['SL','GS','SG'].forEach(d=>{
-    const key=d.toLowerCase();const arr=db.athletes.filter(a=>a[key]!=null).sort((a,b)=>a[key]-b[key]);
-    document.getElementById('rank'+d).innerHTML=arr.map((a,i)=>`<div class="list-item"><b>${i+1}. ${a.name}</b><span style="float:right">${a[key]}</span><br><span class="muted">${a.school} ${a.grade}</span></div>`).join('')||'<span class="muted">データなし</span>';
-  })
+  const renderGroup=(sex,prefix)=>{
+    ['SL','GS','SG'].forEach(d=>{
+      const key=d.toLowerCase();
+      const arr=db.athletes.filter(a=>a.sex===sex && a[key]!=null).sort((a,b)=>a[key]-b[key]);
+      const el=document.getElementById(prefix+d);
+      if(!el)return;
+      el.innerHTML=arr.map((a,i)=>`<div class="list-item"><b>${i+1}. ${a.name}</b><span style="float:right">${a[key]}</span><br><span class="muted">${a.school||''} ${a.grade||''}</span></div>`).join('')||'<span class="muted">データなし</span>';
+    });
+  };
+  renderGroup('男','rankMale');
+  renderGroup('女','rankFemale');
 }
 
 function renderCoaches(){
