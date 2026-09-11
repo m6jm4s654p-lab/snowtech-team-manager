@@ -55,6 +55,14 @@ section{display:none} section.active{display:block}
 .venue-item-name{font-weight:700;line-height:1.3}
 .venue-item-pref{display:block;color:var(--muted);font-size:11px;font-weight:400;margin-top:2px}
 .venue-official{padding:6px 10px!important;font-size:11px!important;white-space:nowrap}
+.venue-race-badge{
+  display:inline-block;margin-top:5px;padding:2px 6px;border-radius:999px;
+  font-size:10px;font-weight:800;line-height:1.2;
+  background:#123a58;border:1px solid #2b74a5;color:#8fd8ff;
+}
+.venue-note{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5}
+.venue-event-titles{font-size:11px;color:var(--muted);line-height:1.45;margin-top:5px}
+.venue-season-empty{padding:20px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);text-align:center}
 .athlete-table-wrap{width:100%;max-width:100%}
 .athlete-table-wrap table{width:max-content;min-width:1160px}
 .athlete-table-wrap th,.athlete-table-wrap td{white-space:nowrap}
@@ -167,19 +175,16 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
   position:fixed;inset:0;z-index:20000;
   display:flex;align-items:center;justify-content:center;
   padding:24px;
-  background:
-    radial-gradient(circle at 20% 20%, rgba(45,136,255,.20), transparent 35%),
-    radial-gradient(circle at 80% 80%, rgba(0,210,255,.12), transparent 35%),
-    #06101a;
+  background:#ffffff;
 }
 .tool-portal.hidden{display:none}
 .tool-portal-card{
   width:min(760px,100%);
-  background:linear-gradient(180deg,#0b1c2c,#081521);
-  border:1px solid #24445f;
+  background:#ffffff;
+  border:1px solid #dce7ef;
   border-radius:20px;
   padding:28px;
-  box-shadow:0 24px 70px rgba(0,0,0,.45);
+  box-shadow:0 18px 50px rgba(20,55,85,.14);
   text-align:center;
 }
 .tool-portal-logo{
@@ -190,16 +195,16 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
   display:block;width:100%;height:auto;
   filter:drop-shadow(0 7px 18px rgba(0,0,0,.38));
 }
-.tool-portal-sub{color:var(--muted);font-size:13px;margin-bottom:26px}
+.tool-portal-sub{color:#587086;font-size:13px;margin-bottom:26px}
 .tool-choice-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .tool-choice{
-  appearance:none;border:1px solid #31536e;background:#0d2234;color:#fff;
+  appearance:none;border:1px solid #cbdce8;background:#f7fbfe;color:#12314b;
   border-radius:16px;padding:24px 18px;text-align:left;cursor:pointer;
   transition:.15s transform,.15s border-color,.15s background;
 }
-.tool-choice:hover{transform:translateY(-2px);border-color:#55baff;background:#102b43}
+.tool-choice:hover{transform:translateY(-2px);border-color:#55aee8;background:#eef8ff}
 .tool-choice-title{font-size:20px;font-weight:900;margin-bottom:8px}
-.tool-choice-desc{font-size:12px;color:#a9bdcc;line-height:1.6}
+.tool-choice-desc{font-size:12px;color:#60798d;line-height:1.6}
 .tool-choice.setter .tool-choice-title{color:#65c8ff}
 .tool-choice.manager .tool-choice-title{color:#7ce7c8}
 .portal-back-btn{padding:6px 10px!important;font-size:11px!important}
@@ -242,7 +247,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end">
       <button class="btn portal-back-btn no-print" type="button" onclick="showToolPortal()">ツール選択</button>
-      <span class="muted" style="font-size:12px;font-weight:700">v0.7.9</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.8.2</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
   </div>
@@ -347,65 +352,14 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 <section id="venues">
   <div class="card">
     <h2>会場情報</h2>
-    <div class="muted">日本の主要スキー場を地域別に掲載しています。青い「公式」ボタンから各スキー場の公式ホームページを開きます。</div><div class="venue-region"><h3>北海道</h3><div class="venue-grid"><div class="venue-item"><div class="venue-item-name">ニセコ東急 グラン・ヒラフ<span class="venue-item-pref">北海道</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.grand-hirafu.jp/snow/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">富良野スキー場<span class="venue-item-pref">北海道</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.princehotels.co.jp/ski/furano/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">ルスツリゾート<span class="venue-item-pref">北海道</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://rusutsu.com/winter/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">サッポロテイネ<span class="venue-item-pref">北海道</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://sapporo-teine.com/snow/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">札幌国際スキー場<span class="venue-item-pref">北海道</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.sapporo-kokusai.jp/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">カムイスキーリンクス<span class="venue-item-pref">北海道</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.kamui-skilinks.com/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">キロロスノーワールド<span class="venue-item-pref">北海道</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.kiroro.co.jp/ja/snowworld/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">星野リゾート トマム スキー場<span class="venue-item-pref">北海道</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.snowtomamu.jp/winter/ski/','_blank','noopener,noreferrer')">公式</button></div></div></div><div class="venue-region"><h3>東北</h3><div class="venue-grid"><div class="venue-item"><div class="venue-item-name">雫石スキー場<span class="venue-item-pref">岩手県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.princehotels.co.jp/ski/shizukuishi/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">安比高原スキー場<span class="venue-item-pref">岩手県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.appi.co.jp/snow-mountain-resort/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">夏油高原スキー場<span class="venue-item-pref">岩手県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.getokogen.com/winter/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">岩手高原スノーパーク<span class="venue-item-pref">岩手県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://iwatekogen.jp/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">八幡平リゾート<span class="venue-item-pref">岩手県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.hachimantai.co.jp/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">たざわ湖スキー場<span class="venue-item-pref">秋田県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.tazawako-ski.com/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">阿仁スキー場<span class="venue-item-pref">秋田県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.aniski.jp/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">蔵王温泉スキー場<span class="venue-item-pref">山形県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.zao-ski.or.jp/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">蔵王ライザワールド<span class="venue-item-pref">山形県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.zaoliza.co.jp/wntr/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">オニコウベスキー場<span class="venue-item-pref">宮城県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.onikoube.com/','_blank','noopener,noreferrer')">公式</button></div></div></div><div class="venue-region"><h3>関東</h3><div class="venue-grid"><div class="venue-item"><div class="venue-item-name">ハンターマウンテン塩原<span class="venue-item-pref">栃木県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.hunter.co.jp/winter/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">丸沼高原スキー場<span class="venue-item-pref">群馬県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.marunuma.jp/winter/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">川場スキー場<span class="venue-item-pref">群馬県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.kawaba.co.jp/snow/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">たんばらスキーパーク<span class="venue-item-pref">群馬県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.tambara.co.jp/winter/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">ノルンみなかみスキー場<span class="venue-item-pref">群馬県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.norn.co.jp/winter/','_blank','noopener,noreferrer')">公式</button></div></div></div><div class="venue-region"><h3>甲信越</h3><div class="venue-grid"><div class="venue-item"><div class="venue-item-name">苗場スキー場<span class="venue-item-pref">新潟県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.princehotels.co.jp/ski/naeba/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">かぐらスキー場<span class="venue-item-pref">新潟県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.princehotels.co.jp/ski/kagura/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">石打丸山スキー場<span class="venue-item-pref">新潟県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://ishiuchi.or.jp/winter/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">赤倉観光リゾートスキー場<span class="venue-item-pref">新潟県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://akr-ski.com/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">妙高杉ノ原スキー場<span class="venue-item-pref">新潟県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.princehotels.co.jp/ski/myoko/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">野沢温泉スキー場<span class="venue-item-pref">長野県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://nozawaski.com/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">志賀高原スキー場<span class="venue-item-pref">長野県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.shigakogen-ski.or.jp/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">白馬八方尾根スキー場<span class="venue-item-pref">長野県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.happo-one.jp/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">Hakuba47 Winter Sports Park<span class="venue-item-pref">長野県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.hakuba47.co.jp/winter/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">エイブル白馬五竜<span class="venue-item-pref">長野県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.hakubaescal.com/winter/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">つがいけマウンテンリゾート<span class="venue-item-pref">長野県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.tsugaike.gr.jp/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">HAKUBA VALLEY 鹿島槍<span class="venue-item-pref">長野県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.kashimayari.net/snow/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">菅平高原スノーリゾート<span class="venue-item-pref">長野県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://sugadaira-snowresort.com/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">斑尾高原スキー場<span class="venue-item-pref">長野県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.madarao.jp/ski/','_blank','noopener,noreferrer')">公式</button></div></div></div><div class="venue-region"><h3>北陸</h3><div class="venue-grid"><div class="venue-item"><div class="venue-item-name">スキージャム勝山<span class="venue-item-pref">福井県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.skijam.jp/winter/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">白山一里野温泉スキー場<span class="venue-item-pref">石川県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://sam-hakusan.com/ichirino/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">IOX-AROSA<span class="venue-item-pref">富山県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://iox-arosa.jp/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">たいらスキー場<span class="venue-item-pref">富山県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://gokayama-taira.com/','_blank','noopener,noreferrer')">公式</button></div></div></div><div class="venue-region"><h3>東海</h3><div class="venue-grid"><div class="venue-item"><div class="venue-item-name">高鷲スノーパーク<span class="venue-item-pref">岐阜県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.takasu.gr.jp/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">ダイナランド<span class="venue-item-pref">岐阜県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.dynaland.co.jp/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">鷲ヶ岳スキー場<span class="venue-item-pref">岐阜県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://ski.washigatake.jp/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">ウイングヒルズ白鳥リゾート<span class="venue-item-pref">岐阜県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://winghills.net/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">ほおのき平スキー場<span class="venue-item-pref">岐阜県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://hounoki-daira.or.jp/','_blank','noopener,noreferrer')">公式</button></div></div></div><div class="venue-region"><h3>近畿</h3><div class="venue-grid"><div class="venue-item"><div class="venue-item-name">グランスノー奥伊吹<span class="venue-item-pref">滋賀県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.okuibuki.co.jp/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">びわ湖バレイ<span class="venue-item-pref">滋賀県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.biwako-valley.com/winter/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">ハチ・ハチ北スキー場<span class="venue-item-pref">兵庫県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.hachi-hachikita.co.jp/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">スカイバレイスキー場<span class="venue-item-pref">兵庫県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://skyvalley.jp/','_blank','noopener,noreferrer')">公式</button></div></div></div><div class="venue-region"><h3>中国</h3><div class="venue-grid"><div class="venue-item"><div class="venue-item-name">だいせんホワイトリゾート<span class="venue-item-pref">鳥取県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.daisen-resort.jp/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">休暇村奥大山 鏡ヶ成スキー場<span class="venue-item-pref">鳥取県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.qkamura.or.jp/daisen/ski/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">ユートピアサイオト<span class="venue-item-pref">広島県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.saioto.co.jp/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">瑞穂ハイランド<span class="venue-item-pref">島根県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.mizuhohighland.com/','_blank','noopener,noreferrer')">公式</button></div></div></div><div class="venue-region"><h3>四国</h3><div class="venue-grid"><div class="venue-item"><div class="venue-item-name">石鎚スキー場<span class="venue-item-pref">愛媛県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.ishizuchi.com/ski/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">井川スキー場 腕山<span class="venue-item-pref">徳島県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.ikawaski.jp/','_blank','noopener,noreferrer')">公式</button></div><div class="venue-item"><div class="venue-item-name">久万スキーランド<span class="venue-item-pref">愛媛県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://kumax.co.jp/','_blank','noopener,noreferrer')">公式</button></div></div></div><div class="venue-region"><h3>九州</h3><div class="venue-grid"><div class="venue-item"><div class="venue-item-name">九重森林公園スキー場<span class="venue-item-pref">大分県</span></div>
-            <button class="btn primary venue-official" onclick="window.open('https://www.kujyuski.co.jp/','_blank','noopener,noreferrer')">公式</button></div></div></div></div></section>
+    <div id="venueSeasonInfo" class="muted"></div>
+    <div class="venue-note">
+      大会管理で登録した大会の開催会場だけを表示します。年間予定の「表示シーズン」と連動します。
+      毎シーズン開催会場が変わっても、登録した大会から自動で一覧を作成します。
+    </div>
+    <div id="venueRegisteredList" style="margin-top:14px"></div>
+  </div>
+</section>
 
 <section id="athletes">
   <div class="card">
@@ -564,6 +518,160 @@ function initToolPortal(){
   p.classList.remove('hidden');
 }
 
+
+const VENUE_OFFICIAL_REGISTRY=[
+  {keys:['岩手高原'],name:'岩手高原スノーパーク',region:'東北',url:'https://iwatekogen.jp/'},
+  {keys:['雫石'],name:'雫石スキー場',region:'東北',url:'https://www.princehotels.co.jp/ski/shizukuishi/'},
+  {keys:['安比'],name:'安比高原スキー場',region:'東北',url:'https://www.appi.co.jp/snow-mountain-resort/'},
+  {keys:['花輪','アルパス'],name:'花輪スキー場（アルパス）',region:'東北',url:'https://r.goope.jp/alpas/'},
+  {keys:['たざわ湖','田沢湖'],name:'たざわ湖スキー場',region:'東北',url:'https://www.tazawako-ski.com/'},
+  {keys:['赤倉温泉','最上'],name:'赤倉温泉スキー場',region:'東北',url:'https://kanko-mogami.jp/spot/akakuraski/'},
+  {keys:['蔵王ライザ','ライザ'],name:'蔵王ライザワールド',region:'東北',url:'https://www.zaoliza.co.jp/wntr/'},
+  {keys:['猪苗代'],name:'猪苗代スキー場',region:'東北',url:'https://inawashiro-ski.com/'},
+  {keys:['フェアリーランドかねやま','かねやま'],name:'フェアリーランドかねやまスキー場',region:'東北',url:'https://www.aizukaneyama.co.jp/ski/skitop.html'},
+
+  {keys:['カムイスキーリンクス','カムイ'],name:'カムイスキーリンクス',region:'北海道',url:'https://www.kamui-skilinks.com/'},
+  {keys:['ぬかびら'],name:'ぬかびら源泉郷スキー場',region:'北海道',url:'https://ichida54.wixsite.com/nukabiraskijyo'},
+  {keys:['サッポロテイネ','テイネ'],name:'サッポロテイネ',region:'北海道',url:'https://sapporo-teine.com/snow/'},
+  {keys:['富良野'],name:'富良野スキー場',region:'北海道',url:'https://www.princehotels.co.jp/ski/furano/'},
+  {keys:['ルスツ'],name:'ルスツリゾート',region:'北海道',url:'https://rusutsu.com/winter/'},
+
+  {keys:['尾瀬戸倉','戸倉'],name:'スノーパーク尾瀬戸倉',region:'関東',url:'https://www.ozetokura.co.jp/'},
+  {keys:['丸沼'],name:'丸沼高原スキー場',region:'関東',url:'https://www.marunuma.jp/winter/'},
+  {keys:['川場'],name:'川場スキー場',region:'関東',url:'https://www.kawaba.co.jp/snow/'},
+
+  {keys:['菅平','パインビーク'],name:'菅平高原パインビークスキー場',region:'甲信越',url:'https://pinebeak.jp/'},
+  {keys:['野沢温泉'],name:'野沢温泉スキー場',region:'甲信越',url:'https://nozawaski.com/'},
+  {keys:['西舘山','志賀高原'],name:'志賀高原スキー場',region:'甲信越',url:'https://www.shigakogen-ski.or.jp/'},
+  {keys:['戸隠'],name:'戸隠スキー場',region:'甲信越',url:'https://www.togakusi.com/ski/'},
+  {keys:['八方尾根','白馬八方'],name:'白馬八方尾根スキー場',region:'甲信越',url:'https://www.happo-one.jp/'},
+  {keys:['よませ'],name:'よませ温泉スキー場',region:'甲信越',url:'https://x-jam.jp/yomase/'},
+  {keys:['アライ','ARAI'],name:'ロッテアライリゾート',region:'甲信越',url:'https://www.lottehotel.com/arai-resort/ja'},
+  {keys:['赤倉観光'],name:'赤倉観光リゾートスキー場',region:'甲信越',url:'https://akr-ski.com/'},
+  {keys:['苗場'],name:'苗場スキー場',region:'甲信越',url:'https://www.princehotels.co.jp/ski/naeba/'},
+
+  {keys:['あわすの'],name:'あわすのスキー場',region:'北陸',url:'https://awasuno.com/'},
+  {keys:['白峰'],name:'白峰アルペン競技場',region:'北陸',url:'https://shiramine-ss.com/'},
+  {keys:['たいら'],name:'たいらスキー場',region:'北陸',url:'https://gokayama-taira.com/'},
+  {keys:['IOX','イオックス'],name:'IOX-AROSA',region:'北陸',url:'https://iox-arosa.jp/'},
+
+  {keys:['ほおのき'],name:'ほおのき平スキー場',region:'東海',url:'https://hounoki-daira.com/'},
+  {keys:['モンデウス','位山'],name:'モンデウス飛騨位山スノーパーク',region:'東海',url:'https://www.montdeus.jp/'},
+  {keys:['高鷲'],name:'高鷲スノーパーク',region:'東海',url:'https://www.takasu.gr.jp/'},
+  {keys:['ダイナランド'],name:'ダイナランド',region:'東海',url:'https://www.dynaland.co.jp/'},
+
+  {keys:['ハチ北','ハチ・ハチ北','ハチ高原'],name:'ハチ・ハチ北スキー場',region:'近畿',url:'https://www.hachi-hachikita.co.jp/'},
+  {keys:['奥伊吹'],name:'グランスノー奥伊吹',region:'近畿',url:'https://www.okuibuki.co.jp/'},
+
+  {keys:['だいせん','大山'],name:'だいせんホワイトリゾート',region:'中国',url:'https://www.daisen-resort.jp/'},
+  {keys:['若桜氷ノ山','氷ノ山'],name:'若桜氷ノ山スキー場',region:'中国',url:'https://www.hyounosen.co.jp/'},
+  {keys:['サイオト'],name:'ユートピアサイオト',region:'中国',url:'https://www.saioto.co.jp/'},
+
+  {keys:['石鎚'],name:'石鎚スキー場',region:'四国',url:'https://www.ishizuchi.com/ski/'},
+  {keys:['井川','腕山'],name:'井川スキー場 腕山',region:'四国',url:'https://www.ikawaski.jp/'},
+  {keys:['九重'],name:'九重森林公園スキー場',region:'九州・沖縄',url:'https://www.kujyuski.co.jp/'}
+];
+
+function eventSeasonStartYear(e){
+  if(e && e.sajSeason){
+    const n=Number(e.sajSeason);
+    if(Number.isFinite(n) && n>2000) return n-1;
+  }
+  return seasonStartYearFromDate(e?.start||'');
+}
+function findVenueRegistry(place){
+  const p=String(place||'').toLowerCase();
+  return VENUE_OFFICIAL_REGISTRY.find(v=>v.keys.some(k=>p.includes(String(k).toLowerCase())))||null;
+}
+function guessVenueRegion(place){
+  const p=String(place||'');
+  const groups=[
+    ['北海道',['北海道']],
+    ['東北',['青森','岩手','宮城','秋田','山形','福島']],
+    ['関東',['茨城','栃木','群馬','埼玉','千葉','東京','神奈川']],
+    ['甲信越',['新潟','山梨','長野']],
+    ['北陸',['富山','石川','福井']],
+    ['東海',['岐阜','静岡','愛知','三重']],
+    ['近畿',['滋賀','京都','大阪','兵庫','奈良','和歌山']],
+    ['中国',['鳥取','島根','岡山','広島','山口']],
+    ['四国',['徳島','香川','愛媛','高知']],
+    ['九州・沖縄',['福岡','佐賀','長崎','熊本','大分','宮崎','鹿児島','沖縄']]
+  ];
+  for(const [name,prefs] of groups) if(prefs.some(x=>p.includes(x))) return name;
+  return 'その他';
+}
+function registeredVenueName(place,reg){
+  // Preserve the exact SAJ/registered place text so yearly changes are visible.
+  return String(place||'会場未設定').trim();
+}
+function renderVenues(){
+  const list=document.getElementById('venueRegisteredList');
+  const info=document.getElementById('venueSeasonInfo');
+  if(!list||!info)return;
+
+  const selected=Number(document.getElementById('scheduleSeason')?.value)
+    || Number(db.team?.scheduleSeasonYear)
+    || currentSeasonStartYear();
+
+  info.textContent=`表示対象：${selected}/${selected+1}シーズン（年間予定の表示シーズンと連動）`;
+
+  const events=(db.events||[]).filter(e=>{
+    return !!String(e.place||'').trim() && eventSeasonStartYear(e)===selected;
+  });
+
+  if(!events.length){
+    list.innerHTML='<div class="venue-season-empty">このシーズンに登録された大会会場はありません。<br>大会管理で大会を登録すると、ここへ自動表示されます。</div>';
+    return;
+  }
+
+  const map=new Map();
+  events.forEach(e=>{
+    const place=String(e.place||'').trim();
+    const key=place.replace(/\s+/g,' ').toLowerCase();
+    if(!map.has(key)) map.set(key,{place,events:[]});
+    map.get(key).events.push(e);
+  });
+
+  const venues=[...map.values()].map(v=>{
+    const reg=findVenueRegistry(v.place);
+    return {
+      ...v,
+      reg,
+      region:reg?.region||guessVenueRegion(v.place),
+      display:registeredVenueName(v.place,reg)
+    };
+  });
+
+  const regionOrder=['北海道','東北','関東','甲信越','北陸','東海','近畿','中国','四国','九州・沖縄','その他'];
+  venues.sort((a,b)=>{
+    const ra=regionOrder.indexOf(a.region), rb=regionOrder.indexOf(b.region);
+    return (ra-rb)||a.display.localeCompare(b.display,'ja');
+  });
+
+  const grouped=new Map();
+  venues.forEach(v=>{
+    if(!grouped.has(v.region)) grouped.set(v.region,[]);
+    grouped.get(v.region).push(v);
+  });
+
+  list.innerHTML=regionOrder.filter(r=>grouped.has(r)).map(region=>{
+    const cards=grouped.get(region).map(v=>{
+      const titles=[...new Set(v.events.map(e=>e.title).filter(Boolean))];
+      const official=v.reg?.url
+        ? `<button class="btn primary venue-official" onclick="window.open('${v.reg.url}','_blank','noopener,noreferrer')">公式</button>`
+        : `<span class="muted" style="font-size:10px">公式リンク未登録</span>`;
+      return `<div class="venue-item">
+        <div class="venue-item-name">${esc(v.display)}
+          <span class="venue-item-pref">${v.events.length}大会登録</span>
+          <div class="venue-event-titles">${titles.map(esc).join('<br>')}</div>
+        </div>
+        ${official}
+      </div>`;
+    }).join('');
+    return `<div class="venue-region"><h3>${region}</h3><div class="venue-grid">${cards}</div></div>`;
+  }).join('');
+}
+
 const KEY='snowtech_alpine_team_v1';
 let db=JSON.parse(localStorage.getItem(KEY)||'null')||{
   team:{name:'ESS',sajApiUrl:'https://snowtech-saj-api.take6583.workers.dev'},
@@ -679,6 +787,7 @@ function initScheduleSeason(){
   if(lock) lock.checked=isLocked;
 
   renderScheduleBoard();
+  renderVenues();
 }
 function onScheduleSeasonChange(){
   const sel=document.getElementById('scheduleSeason');
@@ -687,6 +796,7 @@ function onScheduleSeasonChange(){
   db.team.scheduleSeasonYear=Number(sel.value);
   localStorage.setItem(KEY,JSON.stringify(db));
   renderScheduleBoard();
+  renderVenues();
 }
 function toggleScheduleSeasonLock(){
   const sel=document.getElementById('scheduleSeason');
@@ -819,7 +929,7 @@ document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
 function renderAll(){
   document.getElementById('teamHeader').textContent=db.team.name||'TEAM未設定';
   document.getElementById('teamName').value=db.team.name||'';
-  renderCoaches();renderAthletes();renderSchedule();renderEvents();renderRanking();refreshSelects();initSajCompetitionSeason();initScheduleSeason();renderSajRegionFilters();
+  renderCoaches();renderAthletes();renderSchedule();renderEvents();renderRanking();refreshSelects();initSajCompetitionSeason();initScheduleSeason();renderSajRegionFilters();renderVenues();
 }
 
 function openScheduleForm(){scheduleForm.classList.remove('hidden')} function closeScheduleForm(){scheduleForm.classList.add('hidden')}
@@ -1088,6 +1198,7 @@ function importSelectedSajCompetitions(){
       start:c.start||'',
       end:c.end||c.start||'',
       place:c.place||'',
+      prefecture:c.prefecture||'',
       disc:c.disc||'',
       deadline:'',
       athleteIds:[],
@@ -1137,12 +1248,20 @@ function showAthlete(id){
       <div><b>PL No.</b><br>${a.pointListNumber!=null?`No.${a.pointListNumber}`:'—'}${a.pointSeasonLabel?`<br><span class="muted">${esc(a.pointSeasonLabel)}</span>`:''}</div>
     </div>
     <div style="margin-top:18px">
-      <h3>大会履歴</h3>
-      ${(a.results||[]).length
-        ? `<table><thead><tr><th>日付</th><th>大会</th><th>種目</th><th>順位</th><th>ポイント</th></tr></thead><tbody>${
-            (a.results||[]).map(r=>`<tr><td>${esc(r.date||'—')}</td><td>${esc(r.title||'—')}</td><td>${esc(r.disc||'—')}</td><td>${esc(String(r.rank??'—'))}</td><td>${esc(String(r.point??'—'))}</td></tr>`).join('')
-          }</tbody></table>`
-        : '<div class="muted">大会履歴なし</div>'}
+      <h3>過去大会成績</h3>
+      <div class="athlete-table-wrap">
+        <table>
+          <thead><tr><th>日付</th><th>大会</th><th>種目</th><th>順位</th><th>タイム</th><th>獲得P</th></tr></thead>
+          <tbody>${(a.results||[]).map(r=>`<tr>
+            <td>${r.date?fmt(r.date):'—'}</td>
+            <td>${esc(r.race||r.title||'—')}</td>
+            <td>${esc(r.disc||'—')}</td>
+            <td>${esc(String(r.rank??'—'))}</td>
+            <td>${esc(String(r.time??'—'))}</td>
+            <td>${esc(String(r.point??'—'))}</td>
+          </tr>`).join('')||'<tr><td colspan="6">成績データなし</td></tr>'}</tbody>
+        </table>
+      </div>
     </div>`;
   document.querySelectorAll('main > section').forEach(s=>s.classList.remove('active'));
   document.getElementById('athleteDetailScreen').classList.add('active');
