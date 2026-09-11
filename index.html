@@ -45,9 +45,11 @@ section{display:none} section.active{display:block}
 .season-board{width:100%;border-collapse:collapse;table-layout:fixed;font-size:11px}
 .season-board th,.season-board td{border:1px solid var(--line);padding:4px 5px;vertical-align:top}
 .season-board th{background:#0a1724;text-align:center}
-.season-board .day-col{width:68px;white-space:nowrap}
-.season-board .month-col{width:calc((100% - 68px)/6)}
+.season-board .month-col{width:calc(100%/6)}
 .season-board .board-day{font-size:10px;color:var(--muted);margin-bottom:3px;font-weight:700}
+.season-board .day-sun,.season-board .day-holiday{color:#ff6b6b!important}
+.season-board .day-sat{color:#69a7ff!important}
+.saj-comp-link,.saj-comp-link:visited,.saj-comp-link:hover,.saj-comp-link:active{color:#fff!important;text-decoration:underline}
 .season-board .board-item{display:block;line-height:1.2;margin-bottom:2px;word-break:break-word}
 .season-board .empty{background:rgba(255,255,255,.03)}
 .board-caption{font-size:12px;color:var(--muted);margin:8px 0 10px}
@@ -76,7 +78,13 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
   .season-board th,.season-board td{padding:2px 3px}
   .season-board .board-day{font-size:8px;color:#333;margin-bottom:2px}
   .season-board .board-item{font-size:8px;line-height:1.15;margin-bottom:1px}
-  .season-board .day-col{width:48px}
+  .season-board,.season-board *{background:#fff!important}
+  .season-board{color:#000!important}
+  .season-board th,.season-board td{color:#000!important;border-color:#777!important}
+  .season-board .board-item{color:#000!important}
+  .season-board .day-sun,.season-board .day-holiday{color:#d00000!important}
+  .season-board .day-sat{color:#005bbb!important}
+  .saj-comp-link,.saj-comp-link:visited,.saj-comp-link:hover,.saj-comp-link:active{color:#000!important}
   .board-caption{font-size:11px;color:#444;margin:4px 0 6px}
   @page{size:A4 landscape;margin:8mm}
 }
@@ -90,7 +98,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
       <small id="teamHeader">TEAM未設定</small>
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.5.4</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.5.6</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
   </div>
@@ -189,7 +197,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
             </div>
           </div>
           <div id="sajRegionFilters" class="checks" style="margin-top:8px"></div>
-          <div class="muted" style="margin-top:6px">絶対出場しない地域だけチェックを外してください。設定はこの端末に保存されます。</div>
+          <div class="muted" style="margin-top:6px">大会出場するエリアにチェックを入れてください。設定はこの端末に保存されます。</div>
         </div>
         <div id="sajCompetitionStatus" class="muted" style="margin:8px 0">SAJ競技データバンクから大会情報を取得します。</div>
         <div id="sajCompetitionList"></div>
@@ -367,6 +375,21 @@ function textOrDash(v){return v===undefined||v===null||v===''?'-':v}
 function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function pad2(n){return String(n).padStart(2,'0')}
 const JP_WD=['日','月','火','水','木','金','土'];
+const JP_HOLIDAYS=new Set([
+  // 2026 official holidays relevant to SnowTech season display
+  '2026-01-01','2026-01-12','2026-02-11','2026-02-23','2026-03-20','2026-04-29',
+  '2026-11-03','2026-11-23',
+  // 2027 official holidays relevant to SnowTech season display
+  '2027-01-01','2027-01-11','2027-02-11','2027-02-23','2027-03-21','2027-03-22','2027-04-29',
+  '2027-11-03','2027-11-23'
+]);
+function dayClass(dateStr,y,m,d){
+  const dow=new Date(y,m-1,d).getDay();
+  if(JP_HOLIDAYS.has(dateStr)) return 'day-holiday';
+  if(dow===0) return 'day-sun';
+  if(dow===6) return 'day-sat';
+  return '';
+}
 function currentSeasonStartYear(){const t=new Date(),y=t.getFullYear(),m=t.getMonth()+1;return m>=11?y:y-1}
 function seasonStartYearFromDate(dateStr){
   if(!dateStr)return null;
@@ -469,7 +492,7 @@ function renderScheduleBoard(){
   cap.textContent=`${startYear}/${startYear+1}シーズン　縦軸：日付 / 横軸：月`;
   let rows='';
   for(let day=1;day<=31;day++){
-    rows += `<tr><th class="day-col">${day}日</th>`;
+    rows += `<tr>`;
     months.forEach(meta=>{
       if(!validDateParts(meta.y,meta.m,day)){
         rows += `<td class="empty"></td>`;
@@ -477,16 +500,16 @@ function renderScheduleBoard(){
       }
       const dateStr=ymd(meta.y,meta.m,day);
       const wd=JP_WD[new Date(meta.y,meta.m-1,day).getDay()];
+      const cls=dayClass(dateStr,meta.y,meta.m,day);
       const items=(map.get(dateStr)||[]).map(v=>`<span class="board-item">・${esc(v)}</span>`).join('');
-      rows += `<td class="month-col"><div class="board-day">${day}日(${wd})</div>${items||''}</td>`;
+      rows += `<td class="month-col"><div class="board-day ${cls}">${day}日(${wd})</div>${items||''}</td>`;
     });
     rows += `</tr>`;
   }
   box.innerHTML = `<table class="season-board">
     <thead>
       <tr>
-        <th class="day-col">日付</th>
-        ${months.map(m=>`<th class="month-col">${m.label}<br><span style="font-weight:400;font-size:10px">予定</span></th>`).join('')}
+        ${months.map(m=>`<th class="month-col">${m.label}</th>`).join('')}
       </tr>
     </thead>
     <tbody>${rows}</tbody>
@@ -733,7 +756,7 @@ function renderSajCompetitionCandidates(){
         <td>${fmt(c.start)}${c.end&&c.end!==c.start?'〜'+fmt(c.end):''}</td>
         <td>${
           c.url
-            ? `<a href="${c.url}" target="_blank" rel="noopener noreferrer" style="font-weight:700;text-decoration:underline">${c.title||'-'}</a>`
+            ? `<a class="saj-comp-link" href="${c.url}" target="_blank" rel="noopener noreferrer" style="font-weight:700">${c.title||'-'}</a>`
             : `<b>${c.title||'-'}</b>`
         }${exists?'<br><span class="status-ok">登録済み</span>':''}</td>
         <td>${c.place||'-'}</td>
