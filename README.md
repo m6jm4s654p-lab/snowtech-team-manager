@@ -220,3 +220,20 @@ SnowTech → 管理 → `SAJ連携API URL` にWorker URLを入力 → 保存。
 - `/api/saj-competitions` はSAJ内部JSON API `/api/search_competitions` 方式のみを使用
 - `sports_code=AL`（アルペン）固定
 - worker.js / index.html JavaScript 構文チェック済み
+
+## v0.5.3
+- SAJ公認大会一覧の大会名をクリック可能に変更
+- クリックするとSAJ競技データバンクの実際の大会情報ページを新しいタブで開く
+- `target="_blank"` + `rel="noopener noreferrer"`
+- URL未取得時は通常テキスト表示
+- ヘッダー v0.5.3
+
+## v0.5.4
+- 年間予定表をA4横1枚向けの11月〜4月カレンダー形式へ追加
+- 縦軸=日付、横軸=月（11月 / 12月 / 1月 / 2月 / 3月 / 4月）
+- 各セルに `1日(月)` と当日の予定を表示
+- 予定一覧に加え、年間予定表プレビューを画面表示
+- 表示シーズン選択を追加（YYYY/YYYY+1）
+- 印刷時は年間予定一覧を非表示にし、A4横の年間予定表を優先表示
+- ボタン名を `A4年間予定表PDF` へ変更
+- ヘッダー v0.5.4
