@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>SnowTech Alpine Team Manager</title>
+<meta name="theme-color" content="#0b1220">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+:root{
+  --bg:#07111f;--panel:#0d1b2a;--panel2:#11263b;--line:#244057;
+  --text:#f4f7fb;--muted:#9fb1c3;--accent:#5fc9ff;--ok:#39d98a;
+  --warn:#ffb84d;--danger:#ff6b6b;--chip:#17324a;
+}
+*{box-sizing:border-box} body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:linear-gradient(180deg,#07111f,#0b1727);color:var(--text)}
+header{position:sticky;top:0;z-index:20;background:rgba(7,17,31,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding:14px 18px}
+.brand{display:flex;justify-content:space-between;align-items:center;gap:14px;max-width:1200px;margin:auto}
+.brand h1{font-size:20px;margin:0}.brand small{color:var(--muted)}
+.sync{font-size:12px;color:var(--ok)}
+main{max-width:1200px;margin:auto;padding:18px 16px 80px}
+nav{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:16px}
+nav button,.btn{border:1px solid var(--line);background:var(--panel);color:var(--text);padding:11px 12px;border-radius:10px;cursor:pointer}
+nav button.active,.btn.primary{background:var(--accent);color:#00131f;border-color:transparent;font-weight:700}
+.btn.ok{background:var(--ok);color:#03150d;border:none}.btn.warn{background:var(--warn);color:#1e1200;border:none}.btn.danger{background:var(--danger);color:white;border:none}
+.grid{display:grid;gap:14px}.g2{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.card{background:rgba(13,27,42,.96);border:1px solid var(--line);border-radius:14px;padding:16px}
+.card h2,.card h3{margin:0 0 12px}.muted{color:var(--muted)}
+.kpi{font-size:28px;font-weight:800}.tag{display:inline-block;background:var(--chip);padding:4px 8px;border-radius:999px;font-size:12px;margin:2px 4px 2px 0}
+.status-ok{color:var(--ok)}.status-warn{color:var(--warn)}.status-danger{color:var(--danger)}
+table{width:100%;border-collapse:collapse;font-size:14px} th,td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top} th{color:#c7d6e4}
+input,select,textarea{width:100%;background:#071522;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:10px}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}.row{display:flex;gap:10px;align-items:center}.row>*{flex:1}
+section{display:none} section.active{display:block}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 14px}.toolbar .btn{width:auto}
+.click{color:var(--accent);cursor:pointer;text-decoration:underline}
+.checks{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.check{display:flex;gap:8px;align-items:center;background:#0a1724;border:1px solid var(--line);padding:8px;border-radius:9px}.check input{width:auto}
+.list-item{padding:10px 0;border-bottom:1px solid var(--line)} .list-item:last-child{border-bottom:none}
+.calendar-list{display:grid;gap:10px}.event{display:grid;grid-template-columns:115px 90px 1fr 160px;gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:10px;background:#0a1724}
+.type{font-size:12px;font-weight:700;padding:5px 8px;border-radius:999px;text-align:center;background:var(--chip)}
+.hidden{display:none!important}
+footer{color:var(--muted);text-align:center;padding:24px 0}
+@media(max-width:800px){
+  nav{grid-template-columns:repeat(3,1fr)}
+  .g2,.g3{grid-template-columns:1fr}
+  .event{grid-template-columns:1fr 1fr}.event .event-main{grid-column:1/-1}
+  .checks{grid-template-columns:1fr 1fr}
+  table{font-size:12px} th,td{padding:8px 5px}
+}
+@media print{
+  header,nav,.no-print,.btn{display:none!important}
+  body{background:#fff;color:#000}
+  main{max-width:none;padding:0}
+  .card{border:none;background:#fff;color:#000;padding:0}
+  section{display:none!important}
+  section.print-target{display:block!important}
+  table th,table td{border:1px solid #aaa;color:#000}
+  .muted{color:#444}
+  .tag{border:1px solid #aaa;background:#fff;color:#000}
+  @page{size:A4 landscape;margin:10mm}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div>
+      <h1>SnowTech Alpine Team Manager</h1>
+      <small id="teamHeader">TEAM未設定</small>
+    </div>
+    <div class="sync" id="syncState">● ローカル保存</div>
+  </div>
+</header>
+
+<main>
+<nav class="no-print">
+  <button data-tab="home" class="active">HOME</button>
+  <button data-tab="schedule">年間予定</button>
+  <button data-tab="events">大会</button>
+  <button data-tab="athletes">選手</button>
+  <button data-tab="ranking">ランキング</button>
+  <button data-tab="settings">管理</button>
+</nav>
+
+<section id="home" class="active">
+  <div class="grid g3">
+    <div class="card"><div class="muted">所属選手</div><div class="kpi" id="kpiAthletes">0</div></div>
+    <div class="card"><div class="muted">年間活動予定</div><div class="kpi" id="kpiSchedules">0</div></div>
+    <div class="card"><div class="muted">未処理</div><div class="kpi status-warn" id="kpiPending">0</div></div>
+  </div>
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card"><h2>次の活動</h2><div id="nextActivity" class="muted">予定なし</div></div>
+    <div class="card"><h2>要確認</h2><div id="pendingList" class="muted">未処理なし</div></div>
+  </div>
+</section>
+
+<section id="schedule">
+  <div class="card">
+    <h2>年間活動スケジュール</h2>
+    <div class="toolbar no-print">
+      <button class="btn primary" onclick="openScheduleForm()">予定追加</button>
+      <button class="btn" onclick="printSection('schedule')">年間スケジュールPDF</button>
+      <select id="scheduleFilter" style="max-width:180px" onchange="renderSchedule()">
+        <option value="">全活動</option><option>大会</option><option>練習</option><option>合宿</option><option>遠征</option><option>ミーティング</option><option>休養</option><option>その他</option>
+      </select>
+    </div>
+    <div id="scheduleForm" class="hidden no-print">
+      <div class="grid g3">
+        <div><label>日付</label><input id="sDate" type="date"></div>
+        <div><label>区分</label><select id="sType"><option>大会</option><option>練習</option><option>合宿</option><option>遠征</option><option>ミーティング</option><option>休養</option><option>その他</option></select></div>
+        <div><label>名称</label><input id="sTitle"></div>
+        <div><label>場所</label><input id="sPlace"></div>
+        <div><label>対象</label><input id="sTarget" placeholder="全員 / U16 / 選抜など"></div>
+        <div><label>担当コーチ</label><select id="sCoach"></select></div>
+      </div>
+      <div style="margin-top:10px"><label>備考</label><textarea id="sNote"></textarea></div>
+      <div class="toolbar"><button class="btn ok" onclick="saveSchedule()">保存</button><button class="btn" onclick="closeScheduleForm()">閉じる</button></div>
+    </div>
+    <div id="scheduleList" class="calendar-list"></div>
+  </div>
+</section>
+
+<section id="events">
+  <div class="card">
+    <h2>大会管理</h2>
+    <div class="toolbar no-print">
+      <button class="btn primary" onclick="openEventForm()">大会追加</button>
+      <button class="btn" onclick="printSection('events')">大会スケジュールPDF</button>
+    </div>
+    <div id="eventForm" class="hidden no-print">
+      <div class="grid g3">
+        <div><label>大会名</label><input id="eTitle"></div>
+        <div><label>開始日</label><input id="eStart" type="date"></div>
+        <div><label>終了日</label><input id="eEnd" type="date"></div>
+        <div><label>会場</label><input id="ePlace"></div>
+        <div><label>種目</label><input id="eDisc" placeholder="GS / SL"></div>
+        <div><label>申込締切</label><input id="eDeadline" type="date"></div>
+      </div>
+      <div style="margin-top:10px"><label>参加選手（Ctrl/⌘で複数選択）</label><select id="eAthletes" multiple size="5"></select></div>
+      <div style="margin-top:10px"><label>引率コーチ（Ctrl/⌘で複数選択）</label><select id="eCoaches" multiple size="4"></select></div>
+      <div class="checks" style="margin-top:10px">
+        <label class="check"><input id="ckEntry" type="checkbox">大会申込</label>
+        <label class="check"><input id="ckFee" type="checkbox">参加費</label>
+        <label class="check"><input id="ckHotel" type="checkbox">宿泊手配</label>
+        <label class="check"><input id="ckTravel" type="checkbox">交通手配</label>
+        <label class="check"><input id="ckParents" type="checkbox">保護者連絡</label>
+        <label class="check"><input id="ckAthlete" type="checkbox">選手確認</label>
+      </div>
+      <div style="margin-top:10px"><label>備考</label><textarea id="eNote"></textarea></div>
+      <div class="toolbar"><button class="btn ok" onclick="saveEvent()">保存</button><button class="btn" onclick="closeEventForm()">閉じる</button></div>
+    </div>
+    <div id="eventList"></div>
+  </div>
+</section>
+
+<section id="athletes">
+  <div class="card">
+    <h2>所属選手</h2>
+    <div class="toolbar no-print">
+      <button class="btn primary" onclick="openAthleteForm()">選手追加</button>
+      <button class="btn" onclick="mockSajRefresh()">SAJデータ更新（モック）</button>
+<button class="btn" onclick="openSajPointList()">SAJポイントリストを開く</button>
+    </div>
+    <div id="athleteForm" class="hidden no-print">
+      <div class="grid g3">
+        <div><label>SAJ登録番号</label><input id="aSaj" placeholder="030xxxxx"></div>
+        <div><label>氏名</label><input id="aName"></div>
+        <div><label>学校</label><input id="aSchool"></div>
+        <div><label>学年</label><input id="aGrade" placeholder="中3 / 高1"></div>
+        <div><label>SLポイント</label><input id="aSL" type="number" step="0.01"></div>
+        <div><label>GSポイント</label><input id="aGS" type="number" step="0.01"></div>
+        <div><label>SGポイント</label><input id="aSG" type="number" step="0.01"></div>
+      </div>
+      <div class="toolbar"><button class="btn ok" onclick="saveAthlete()">保存</button><button class="btn" onclick="closeAthleteForm()">閉じる</button></div>
+    </div>
+    <table>
+      <thead><tr><th>氏名</th><th>学校・学年</th><th>SAJ No.</th><th>SL</th><th>GS</th><th>SG</th><th>更新</th></tr></thead>
+      <tbody id="athleteRows"></tbody>
+    </table>
+    <div id="athleteDetail" class="card hidden" style="margin-top:14px"></div>
+  </div>
+</section>
+
+<section id="ranking">
+  <div class="grid g3">
+    <div class="card"><h3>SLランキング</h3><div id="rankSL"></div></div>
+    <div class="card"><h3>GSランキング</h3><div id="rankGS"></div></div>
+    <div class="card"><h3>SGランキング</h3><div id="rankSG"></div></div>
+  </div>
+</section>
+
+<section id="settings">
+  <div class="grid g2">
+    <div class="card">
+      <h2>チーム設定</h2>
+      <label>チーム名</label><input id="teamName">
+      <div class="toolbar"><button class="btn primary" onclick="saveTeam()">保存</button></div>
+    </div>
+    <div class="card">
+      <h2>所属コーチ</h2>
+      <div class="row">
+        <div><label>氏名</label><input id="coachName"></div>
+        <div><label>役割</label><input id="coachRole" placeholder="監督 / GS担当"></div>
+      </div>
+      <div class="toolbar"><button class="btn primary" onclick="addCoach()">コーチ追加</button></div>
+      <div id="coachList"></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <h2>データ</h2>
+    <div class="toolbar">
+      <button class="btn" onclick="exportJson()">バックアップ書き出し</button>
+      <label class="btn" style="display:inline-block">バックアップ読込<input class="hidden" type="file" accept=".json" onchange="importJson(event)"></label>
+      <button class="btn danger" onclick="resetAll()">全データ削除</button>
+    </div>
+    <p class="muted">データは端末内へ保存します。PWAとして設置した場合は、インターネットがなくても読み込み済みデータの閲覧・編集・印刷が可能です。通信復帰後のクラウド同期は次段階で接続できます。</p>
+  </div>
+</section>
+
+<footer>SnowTech Alpine Team Manager Prototype</footer>
+</main>
+
+<script>
+const KEY='snowtech_alpine_team_v1';
+let db=JSON.parse(localStorage.getItem(KEY)||'null')||{
+  team:{name:'ESS'},
+  coaches:[{id:uid(),name:'佐藤コーチ',role:'ヘッドコーチ'}],
+  athletes:[
+    {id:uid(),saj:'03010001',name:'山田 太郎',school:'○○中学校',grade:'中3',sl:54.03,gs:61.44,sg:118.20,updated:'2026-09-11',results:[
+      {date:'2026-03-26',race:'JOC 全日本ジュニア',disc:'SL',rank:'8位',time:'1:28.09',point:'68.32'},
+      {date:'2026-03-25',race:'JOC 全日本ジュニア',disc:'GS',rank:'12位',time:'1:56.42',point:'92.15'}
+    ]},
+    {id:uid(),saj:'03010002',name:'佐藤 一郎',school:'△△中学校',grade:'中2',sl:121.54,gs:76.98,sg:141.00,updated:'2026-09-11',results:[
+      {date:'2026-02-15',race:'○○杯',disc:'GS',rank:'5位',time:'1:42.20',point:'85.20'}
+    ]}
+  ],
+  schedules:[
+    {id:uid(),date:'2026-12-05',type:'練習',title:'GSトレーニング',place:'岩手高原',target:'全員',coach:'佐藤コーチ',note:''},
+    {id:uid(),date:'2026-12-12',type:'合宿',title:'シーズン前合宿',place:'安比高原',target:'全員',coach:'佐藤コーチ',note:'2日間'}
+  ],
+  events:[
+    {id:uid(),title:'○○アルペン大会',start:'2026-12-20',end:'2026-12-21',place:'雫石',disc:'GS / SL',deadline:'2026-12-10',
+     athleteIds:[],coachIds:[],checks:{entry:true,fee:true,hotel:false,travel:true,parents:true,athlete:true},note:''}
+  ]
+};
+function uid(){return Math.random().toString(36).slice(2,10)}
+function save(){localStorage.setItem(KEY,JSON.stringify(db));document.getElementById('syncState').textContent='● ローカル保存済み';renderAll()}
+function fmt(d){if(!d)return'-';return d.replaceAll('-','/')}
+function selectedValues(sel){return [...sel.selectedOptions].map(o=>o.value)}
+function textOrDash(v){return v===undefined||v===null||v===''?'-':v}
+
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('section').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');document.getElementById(b.dataset.tab).classList.add('active');
+});
+
+function renderAll(){
+  document.getElementById('teamHeader').textContent=db.team.name||'TEAM未設定';
+  document.getElementById('teamName').value=db.team.name||'';
+  renderCoaches();renderAthletes();renderSchedule();renderEvents();renderRanking();renderHome();refreshSelects();
+}
+
+function renderHome(){
+  kpiAthletes.textContent=db.athletes.length;kpiSchedules.textContent=db.schedules.length+db.events.length;
+  const pend=db.events.reduce((n,e)=>n+Object.values(e.checks).filter(v=>!v).length,0);kpiPending.textContent=pend;
+  const all=[...db.schedules.map(s=>({date:s.date,title:s.title,meta:`${s.type} / ${s.place}`})),
+             ...db.events.map(e=>({date:e.start,title:e.title,meta:`大会 / ${e.place}`}))].sort((a,b)=>a.date.localeCompare(b.date));
+  const today=new Date().toISOString().slice(0,10),next=all.find(x=>x.date>=today)||all[0];
+  nextActivity.innerHTML=next?`<b>${fmt(next.date)} ${next.title}</b><br><span class="muted">${next.meta}</span>`:'予定なし';
+  let rows=[];
+  db.events.forEach(e=>{
+    const map={entry:'大会申込',fee:'参加費',hotel:'宿泊',travel:'交通',parents:'保護者連絡',athlete:'選手確認'};
+    Object.entries(e.checks).forEach(([k,v])=>{if(!v)rows.push(`<div class="list-item"><b>${e.title}</b><br><span class="status-warn">⚠ ${map[k]} 未完了</span></div>`)})
+  });
+  pendingList.innerHTML=rows.join('')||'<span class="status-ok">未処理なし</span>';
+}
+
+function openScheduleForm(){scheduleForm.classList.remove('hidden')} function closeScheduleForm(){scheduleForm.classList.add('hidden')}
+function saveSchedule(){
+  db.schedules.push({id:uid(),date:sDate.value,type:sType.value,title:sTitle.value,place:sPlace.value,target:sTarget.value,coach:sCoach.value,note:sNote.value});
+  closeScheduleForm();save();
+}
+function renderSchedule(){
+  let type=scheduleFilter.value; let arr=[...db.schedules];
+  db.events.forEach(e=>arr.push({id:e.id,date:e.start,type:'大会',title:e.title,place:e.place,target:`参加 ${e.athleteIds.length}名`,coach:e.coachIds.map(id=>db.coaches.find(c=>c.id===id)?.name).filter(Boolean).join('・'),note:e.disc}));
+  if(type)arr=arr.filter(x=>x.type===type);arr.sort((a,b)=>a.date.localeCompare(b.date));
+  scheduleList.innerHTML=arr.map(s=>`<div class="event"><div>${fmt(s.date)}</div><div class="type">${s.type}</div><div class="event-main"><b>${s.title}</b><br><span class="muted">${s.place||'-'} / ${s.target||'-'} ${s.note?'/ '+s.note:''}</span></div><div>${s.coach||'-'}</div></div>`).join('')||'<div class="muted">予定なし</div>';
+}
+
+function openEventForm(){eventForm.classList.remove('hidden')} function closeEventForm(){eventForm.classList.add('hidden')}
+function saveEvent(){
+  db.events.push({id:uid(),title:eTitle.value,start:eStart.value,end:eEnd.value,place:ePlace.value,disc:eDisc.value,deadline:eDeadline.value,
+    athleteIds:selectedValues(eAthletes),coachIds:selectedValues(eCoaches),
+    checks:{entry:ckEntry.checked,fee:ckFee.checked,hotel:ckHotel.checked,travel:ckTravel.checked,parents:ckParents.checked,athlete:ckAthlete.checked},
+    note:eNote.value});
+  closeEventForm();save();
+}
+function renderEvents(){
+  const labels={entry:'申込',fee:'参加費',hotel:'宿泊',travel:'交通',parents:'保護者',athlete:'選手確認'};
+  eventList.innerHTML=db.events.sort((a,b)=>a.start.localeCompare(b.start)).map(e=>{
+    const names=e.athleteIds.map(id=>db.athletes.find(a=>a.id===id)?.name).filter(Boolean);
+    const coaches=e.coachIds.map(id=>db.coaches.find(c=>c.id===id)?.name).filter(Boolean);
+    const checks=Object.entries(e.checks).map(([k,v])=>`<span class="tag ${v?'status-ok':'status-warn'}">${labels[k]} ${v?'✓':'未'}</span>`).join('');
+    return `<div class="card" style="margin:10px 0"><h3>${e.title}</h3>
+      <div>${fmt(e.start)}${e.end&&e.end!==e.start?'〜'+fmt(e.end):''} / ${e.place||'-'} / ${e.disc||'-'}</div>
+      <div class="muted">締切: ${fmt(e.deadline)} / 出場: ${names.join('・')||'未設定'} / 引率: ${coaches.join('・')||'未設定'}</div>
+      <div style="margin-top:8px">${checks}</div></div>`;
+  }).join('')||'<div class="muted">大会なし</div>';
+}
+
+function openAthleteForm(){athleteForm.classList.remove('hidden')} function closeAthleteForm(){athleteForm.classList.add('hidden')}
+function saveAthlete(){
+  db.athletes.push({id:uid(),saj:aSaj.value,name:aName.value,school:aSchool.value,grade:aGrade.value,
+    sl:num(aSL.value),gs:num(aGS.value),sg:num(aSG.value),updated:new Date().toISOString().slice(0,10),results:[]});
+  closeAthleteForm();save();
+}
+function num(v){return v===''?null:Number(v)}
+function renderAthletes(){
+  athleteRows.innerHTML=db.athletes.map(a=>`<tr>
+    <td><span class="click" onclick="showAthlete('${a.id}')">${a.name}</span></td><td>${a.school} ${a.grade}</td><td>${a.saj}</td>
+    <td>${textOrDash(a.sl)}</td><td>${textOrDash(a.gs)}</td><td>${textOrDash(a.sg)}</td><td>${fmt(a.updated)}</td></tr>`).join('');
+}
+function showAthlete(id){
+  const a=db.athletes.find(x=>x.id===id);if(!a)return;
+  athleteDetail.classList.remove('hidden');
+  athleteDetail.innerHTML=`<h2>${a.name}</h2><div class="muted">${a.school} ${a.grade} / SAJ No. ${a.saj}</div>
+  <div class="toolbar"><span class="tag">SL ${textOrDash(a.sl)}</span><span class="tag">GS ${textOrDash(a.gs)}</span><span class="tag">SG ${textOrDash(a.sg)}</span></div>
+  <h3>過去大会成績</h3><table><thead><tr><th>日付</th><th>大会</th><th>種目</th><th>順位</th><th>タイム</th><th>獲得P</th></tr></thead>
+  <tbody>${(a.results||[]).map(r=>`<tr><td>${fmt(r.date)}</td><td>${r.race}</td><td>${r.disc}</td><td>${r.rank}</td><td>${r.time}</td><td>${r.point}</td></tr>`).join('')||'<tr><td colspan="6">成績データなし</td></tr>'}</tbody></table>`;
+}
+function mockSajRefresh(){
+  db.athletes.forEach(a=>a.updated=new Date().toISOString().slice(0,10));
+  alert('モック更新です。実運用ではSAJ公開データ取得API/スクレイパーへ接続します。');save();
+}
+
+function renderRanking(){
+  ['SL','GS','SG'].forEach(d=>{
+    const key=d.toLowerCase();const arr=db.athletes.filter(a=>a[key]!=null).sort((a,b)=>a[key]-b[key]);
+    document.getElementById('rank'+d).innerHTML=arr.map((a,i)=>`<div class="list-item"><b>${i+1}. ${a.name}</b><span style="float:right">${a[key]}</span><br><span class="muted">${a.school} ${a.grade}</span></div>`).join('')||'<span class="muted">データなし</span>';
+  })
+}
+
+function renderCoaches(){
+  coachList.innerHTML=db.coaches.map(c=>`<div class="list-item"><b>${c.name}</b><br><span class="muted">${c.role||''}</span></div>`).join('')||'<span class="muted">未登録</span>';
+}
+function addCoach(){if(!coachName.value)return;db.coaches.push({id:uid(),name:coachName.value,role:coachRole.value});coachName.value='';coachRole.value='';save()}
+function saveTeam(){db.team.name=teamName.value;save()}
+function refreshSelects(){
+  sCoach.innerHTML='<option value="">未設定</option>'+db.coaches.map(c=>`<option>${c.name}</option>`).join('');
+  eAthletes.innerHTML=db.athletes.map(a=>`<option value="${a.id}">${a.name}（${a.school} ${a.grade}）</option>`).join('');
+  eCoaches.innerHTML=db.coaches.map(c=>`<option value="${c.id}">${c.name} / ${c.role}</option>`).join('');
+}
+function printSection(id){
+  document.querySelectorAll('section').forEach(s=>s.classList.remove('print-target'));
+  document.getElementById(id).classList.add('print-target');window.print();
+}
+function exportJson(){
+  const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='snowtech-backup.json';a.click();URL.revokeObjectURL(a.href);
+}
+function importJson(ev){
+  const f=ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{db=JSON.parse(r.result);save();alert('読込完了')}catch{alert('JSONを読めませんでした')}};r.readAsText(f)
+}
+function resetAll(){if(confirm('保存データをすべて削除しますか？')){localStorage.removeItem(KEY);location.reload()}}
+
+// ===== v0.2 enhancements =====
+let editingScheduleId=null, editingEventId=null, editingAthleteId=null;
+
+function onlineState(){
+  const el=document.getElementById('syncState');
+  if(!el)return;
+  el.textContent=navigator.onLine?'● オンライン / 端末保存':'○ オフライン / 端末保存';
+  el.className='sync '+(navigator.onLine?'status-ok':'status-warn');
+}
+window.addEventListener('online',onlineState);
+window.addEventListener('offline',onlineState);
+
+function openSajPointList(){
+  window.open('https://sajdb.shikuminet.jp/alpine/point/list','_blank','noopener');
+}
+
+const _oldRenderAll = renderAll;
+renderAll = function(){
+  _oldRenderAll();
+  onlineState();
+};
+
+openScheduleForm = function(){
+  editingScheduleId=null;
+  sDate.value='';sType.value='大会';sTitle.value='';sPlace.value='';sTarget.value='';sCoach.value='';sNote.value='';
+  scheduleForm.classList.remove('hidden');
+};
+function editSchedule(id){
+  const s=db.schedules.find(x=>x.id===id); if(!s)return;
+  editingScheduleId=id;
+  sDate.value=s.date||'';sType.value=s.type||'その他';sTitle.value=s.title||'';sPlace.value=s.place||'';
+  sTarget.value=s.target||'';sCoach.value=s.coach||'';sNote.value=s.note||'';
+  scheduleForm.classList.remove('hidden'); scheduleForm.scrollIntoView({behavior:'smooth',block:'start'});
+}
+saveSchedule = function(){
+  const item={date:sDate.value,type:sType.value,title:sTitle.value,place:sPlace.value,target:sTarget.value,coach:sCoach.value,note:sNote.value};
+  if(!item.date || !item.title){alert('日付と名称を入力してください');return}
+  if(editingScheduleId){
+    const i=db.schedules.findIndex(x=>x.id===editingScheduleId);
+    if(i>=0) db.schedules[i]={...db.schedules[i],...item};
+  }else db.schedules.push({id:uid(),...item});
+  editingScheduleId=null; closeScheduleForm(); save();
+};
+function deleteSchedule(id){
+  if(!confirm('この予定を削除しますか？'))return;
+  db.schedules=db.schedules.filter(x=>x.id!==id);save();
+}
+renderSchedule = function(){
+  let type=scheduleFilter.value; let arr=[...db.schedules.map(s=>({...s,source:'schedule'}))];
+  db.events.forEach(e=>arr.push({id:e.id,date:e.start,type:'大会',title:e.title,place:e.place,target:`参加 ${e.athleteIds.length}名`,coach:e.coachIds.map(id=>db.coaches.find(c=>c.id===id)?.name).filter(Boolean).join('・'),note:e.disc,source:'event'}));
+  if(type)arr=arr.filter(x=>x.type===type);arr.sort((a,b)=>a.date.localeCompare(b.date));
+  scheduleList.innerHTML=arr.map(s=>`<div class="event">
+    <div>${fmt(s.date)}</div><div class="type">${s.type}</div>
+    <div class="event-main"><b>${s.title}</b><br><span class="muted">${s.place||'-'} / ${s.target||'-'} ${s.note?'/ '+s.note:''}</span></div>
+    <div>${s.coach||'-'}${s.source==='schedule'?`<div class="no-print" style="margin-top:6px"><button class="btn" onclick="editSchedule('${s.id}')">編集</button> <button class="btn danger" onclick="deleteSchedule('${s.id}')">削除</button></div>`:''}</div>
+  </div>`).join('')||'<div class="muted">予定なし</div>';
+};
+
+openEventForm = function(){
+  editingEventId=null;
+  eTitle.value='';eStart.value='';eEnd.value='';ePlace.value='';eDisc.value='';eDeadline.value='';eNote.value='';
+  [ckEntry,ckFee,ckHotel,ckTravel,ckParents,ckAthlete].forEach(x=>x.checked=false);
+  [...eAthletes.options].forEach(o=>o.selected=false);[...eCoaches.options].forEach(o=>o.selected=false);
+  eventForm.classList.remove('hidden');
+};
+function editEvent(id){
+  const e=db.events.find(x=>x.id===id); if(!e)return;
+  editingEventId=id;
+  eTitle.value=e.title||'';eStart.value=e.start||'';eEnd.value=e.end||'';ePlace.value=e.place||'';eDisc.value=e.disc||'';eDeadline.value=e.deadline||'';eNote.value=e.note||'';
+  [...eAthletes.options].forEach(o=>o.selected=e.athleteIds.includes(o.value));
+  [...eCoaches.options].forEach(o=>o.selected=e.coachIds.includes(o.value));
+  ckEntry.checked=!!e.checks.entry;ckFee.checked=!!e.checks.fee;ckHotel.checked=!!e.checks.hotel;ckTravel.checked=!!e.checks.travel;ckParents.checked=!!e.checks.parents;ckAthlete.checked=!!e.checks.athlete;
+  eventForm.classList.remove('hidden'); eventForm.scrollIntoView({behavior:'smooth',block:'start'});
+}
+saveEvent = function(){
+  const item={title:eTitle.value,start:eStart.value,end:eEnd.value,place:ePlace.value,disc:eDisc.value,deadline:eDeadline.value,
+    athleteIds:selectedValues(eAthletes),coachIds:selectedValues(eCoaches),
+    checks:{entry:ckEntry.checked,fee:ckFee.checked,hotel:ckHotel.checked,travel:ckTravel.checked,parents:ckParents.checked,athlete:ckAthlete.checked},
+    note:eNote.value};
+  if(!item.title || !item.start){alert('大会名と開始日を入力してください');return}
+  if(editingEventId){
+    const i=db.events.findIndex(x=>x.id===editingEventId);
+    if(i>=0)db.events[i]={...db.events[i],...item};
+  }else db.events.push({id:uid(),...item});
+  editingEventId=null; closeEventForm(); save();
+};
+function deleteEvent(id){
+  if(!confirm('この大会を削除しますか？'))return;
+  db.events=db.events.filter(x=>x.id!==id);save();
+}
+function toggleEventCheck(id,key,val){
+  const e=db.events.find(x=>x.id===id);if(!e)return;e.checks[key]=val;save();
+}
+renderEvents = function(){
+  const labels={entry:'申込',fee:'参加費',hotel:'宿泊',travel:'交通',parents:'保護者',athlete:'選手確認'};
+  eventList.innerHTML=[...db.events].sort((a,b)=>a.start.localeCompare(b.start)).map(e=>{
+    const names=e.athleteIds.map(id=>db.athletes.find(a=>a.id===id)?.name).filter(Boolean);
+    const coaches=e.coachIds.map(id=>db.coaches.find(c=>c.id===id)?.name).filter(Boolean);
+    const checks=Object.entries(e.checks).map(([k,v])=>`<label class="tag ${v?'status-ok':'status-warn'}" style="cursor:pointer">
+      <input class="no-print" type="checkbox" ${v?'checked':''} onchange="toggleEventCheck('${e.id}','${k}',this.checked)" style="width:auto"> ${labels[k]} ${v?'✓':'未'}
+    </label>`).join('');
+    return `<div class="card" style="margin:10px 0"><h3>${e.title}</h3>
+      <div>${fmt(e.start)}${e.end&&e.end!==e.start?'〜'+fmt(e.end):''} / ${e.place||'-'} / ${e.disc||'-'}</div>
+      <div class="muted">締切: ${fmt(e.deadline)} / 出場: ${names.join('・')||'未設定'} / 引率: ${coaches.join('・')||'未設定'}</div>
+      <div style="margin-top:8px">${checks}</div>
+      <div class="toolbar no-print"><button class="btn" onclick="editEvent('${e.id}')">編集</button><button class="btn danger" onclick="deleteEvent('${e.id}')">削除</button></div>
+    </div>`;
+  }).join('')||'<div class="muted">大会なし</div>';
+};
+
+openAthleteForm = function(){
+  editingAthleteId=null;
+  aSaj.value='';aName.value='';aSchool.value='';aGrade.value='';aSL.value='';aGS.value='';aSG.value='';
+  athleteForm.classList.remove('hidden');
+};
+function editAthlete(id){
+  const a=db.athletes.find(x=>x.id===id); if(!a)return;
+  editingAthleteId=id;
+  aSaj.value=a.saj||'';aName.value=a.name||'';aSchool.value=a.school||'';aGrade.value=a.grade||'';
+  aSL.value=a.sl??'';aGS.value=a.gs??'';aSG.value=a.sg??'';
+  athleteForm.classList.remove('hidden');athleteForm.scrollIntoView({behavior:'smooth',block:'start'});
+}
+saveAthlete = function(){
+  const item={saj:aSaj.value.trim(),name:aName.value.trim(),school:aSchool.value.trim(),grade:aGrade.value.trim(),
+    sl:num(aSL.value),gs:num(aGS.value),sg:num(aSG.value),updated:new Date().toISOString().slice(0,10)};
+  if(!item.saj || !item.name){alert('SAJ登録番号と氏名を入力してください');return}
+  const duplicate=db.athletes.find(a=>a.saj===item.saj && a.id!==editingAthleteId);
+  if(duplicate){alert('同じSAJ登録番号の選手が登録されています');return}
+  if(editingAthleteId){
+    const i=db.athletes.findIndex(x=>x.id===editingAthleteId);
+    if(i>=0) db.athletes[i]={...db.athletes[i],...item};
+  }else db.athletes.push({id:uid(),...item,results:[]});
+  editingAthleteId=null;closeAthleteForm();save();
+};
+function deleteAthlete(id){
+  const a=db.athletes.find(x=>x.id===id);if(!a)return;
+  if(!confirm(`${a.name} を削除しますか？`))return;
+  db.athletes=db.athletes.filter(x=>x.id!==id);
+  db.events.forEach(e=>e.athleteIds=e.athleteIds.filter(x=>x!==id));
+  save();
+}
+renderAthletes = function(){
+  athleteRows.innerHTML=db.athletes.map(a=>`<tr>
+    <td><span class="click" onclick="showAthlete('${a.id}')">${a.name}</span></td><td>${a.school} ${a.grade}</td><td>${a.saj}</td>
+    <td>${textOrDash(a.sl)}</td><td>${textOrDash(a.gs)}</td><td>${textOrDash(a.sg)}</td>
+    <td>${fmt(a.updated)}<div class="no-print" style="margin-top:4px"><button class="btn" onclick="editAthlete('${a.id}')">編集</button> <button class="btn danger" onclick="deleteAthlete('${a.id}')">削除</button></div></td></tr>`).join('');
+};
+
+function deleteCoach(id){
+  const c=db.coaches.find(x=>x.id===id);if(!c)return;
+  if(!confirm(`${c.name} を削除しますか？`))return;
+  db.coaches=db.coaches.filter(x=>x.id!==id);
+  db.events.forEach(e=>e.coachIds=e.coachIds.filter(x=>x!==id));
+  save();
+}
+renderCoaches = function(){
+  coachList.innerHTML=db.coaches.map(c=>`<div class="list-item"><b>${c.name}</b><br><span class="muted">${c.role||''}</span>
+    <button class="btn danger no-print" style="float:right" onclick="deleteCoach('${c.id}')">削除</button></div>`).join('')||'<span class="muted">未登録</span>';
+};
+
+function printSection(id){
+  document.querySelectorAll('section').forEach(s=>s.classList.remove('print-target'));
+  document.getElementById(id).classList.add('print-target');
+  const old=document.title;
+  document.title=(db.team.name||'SnowTech')+'_'+(id==='schedule'?'年間活動スケジュール':'大会スケジュール');
+  window.print();document.title=old;
+}
+
+if('serviceWorker' in navigator && location.protocol.startsWith('http')){
+  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
+
+renderAll();
+</script>
+</body>
+</html>
