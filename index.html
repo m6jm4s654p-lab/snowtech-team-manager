@@ -247,7 +247,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end">
       <button class="btn portal-back-btn no-print" type="button" onclick="showToolPortal()">ツール選択</button>
-      <span class="muted" style="font-size:12px;font-weight:700">v0.8.2</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.8.3</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
   </div>
@@ -674,25 +674,17 @@ function renderVenues(){
 
 const KEY='snowtech_alpine_team_v1';
 let db=JSON.parse(localStorage.getItem(KEY)||'null')||{
-  team:{name:'ESS',sajApiUrl:'https://snowtech-saj-api.take6583.workers.dev'},
-  coaches:[{id:uid(),name:'佐藤コーチ',role:'ヘッドコーチ'}],
-  athletes:[
-    {id:uid(),saj:'03010001',name:'山田 太郎',school:'○○中学校',grade:'中3',birth:'2011-04-10',sex:'男',sl:54.03,gs:61.44,sg:118.20,updated:'2026-09-11',results:[
-      {date:'2026-03-26',race:'JOC 全日本ジュニア',disc:'SL',rank:'8位',time:'1:28.09',point:'68.32'},
-      {date:'2026-03-25',race:'JOC 全日本ジュニア',disc:'GS',rank:'12位',time:'1:56.42',point:'92.15'}
-    ]},
-    {id:uid(),saj:'03010002',name:'佐藤 一郎',school:'△△中学校',grade:'中2',birth:'2012-05-15',sex:'男',sl:121.54,gs:76.98,sg:141.00,updated:'2026-09-11',results:[
-      {date:'2026-02-15',race:'○○杯',disc:'GS',rank:'5位',time:'1:42.20',point:'85.20'}
-    ]}
-  ],
-  schedules:[
-    {id:uid(),date:'2026-12-05',type:'練習',title:'GSトレーニング',place:'岩手高原',target:'全員',coach:'佐藤コーチ',note:''},
-    {id:uid(),date:'2026-12-12',type:'合宿',title:'シーズン前合宿',place:'安比高原',target:'全員',coach:'佐藤コーチ',note:'2日間'}
-  ],
-  events:[
-    {id:uid(),title:'○○アルペン大会',start:'2026-12-20',end:'2026-12-21',place:'雫石',disc:'GS / SL',deadline:'2026-12-10',
-     athleteIds:[],coachIds:[],checks:{entry:true,fee:true,hotel:false,travel:true,parents:true,athlete:true},note:''}
-  ]
+  team:{
+    name:'',
+    sajApiUrl:'',
+    scheduleSeasonLocked:false,
+    scheduleSeasonYear:null,
+    sajAutoRefreshDate:''
+  },
+  coaches:[],
+  athletes:[],
+  schedules:[],
+  events:[]
 };
 function uid(){return Math.random().toString(36).slice(2,10)}
 function save(){localStorage.setItem(KEY,JSON.stringify(db));document.getElementById('syncState').textContent='● ローカル保存済み';renderAll()}
