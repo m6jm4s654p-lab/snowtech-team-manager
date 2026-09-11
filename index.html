@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <title>SnowTech Alpine Team Manager</title>
 <meta name="theme-color" content="#0b1220">
 <link rel="manifest" href="manifest.webmanifest">
@@ -59,6 +59,26 @@ section{display:none} section.active{display:block}
 .season-board .board-item{display:block;line-height:1.2;margin-bottom:2px;word-break:break-word}
 .season-board .empty{background:rgba(255,255,255,.03)}
 .board-caption{font-size:12px;color:var(--muted);margin:8px 0 10px}
+.schedule-board-wrap{cursor:zoom-in}
+.calendar-fullscreen{
+  position:fixed;inset:0;z-index:9999;background:#07111f;color:var(--text);
+  display:none;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+}
+.calendar-fullscreen.open{display:block}
+.calendar-fullscreen-head{
+  position:sticky;top:0;z-index:3;background:rgba(7,17,31,.96);
+  border-bottom:1px solid var(--line);padding:10px 14px;font-size:13px;font-weight:700
+}
+.calendar-fullscreen-viewport{position:relative;overflow:auto;min-height:calc(100vh - 44px);padding:12px}
+.calendar-fullscreen-stage{position:relative}
+.calendar-fullscreen-content{transform-origin:0 0}
+.calendar-fullscreen-content .print-season-pages{display:none!important}
+.calendar-back-btn{
+  position:fixed;right:max(16px,env(safe-area-inset-right));bottom:max(16px,env(safe-area-inset-bottom));
+  z-index:10001;border:none;border-radius:999px;padding:13px 18px;background:#5fc9ff;color:#00131f;
+  font-weight:800;box-shadow:0 6px 20px rgba(0,0,0,.35)
+}
+body.calendar-open{overflow:hidden;touch-action:manipulation}
 footer{color:var(--muted);text-align:center;padding:24px 0}
 @media(max-width:800px){
   nav{grid-template-columns:repeat(3,1fr)}
@@ -68,7 +88,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
   table{font-size:12px} th,td{padding:8px 5px}
 }
 @media print{
-  header,nav,.no-print,.btn{display:none!important}
+  header,nav,.no-print,.btn,.calendar-fullscreen{display:none!important}
   body{background:#fff;color:#000}
   main{max-width:none;padding:0}
   .card{border:none;background:#fff;color:#000;padding:0}
@@ -113,7 +133,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
       <small id="teamHeader">TEAM未設定</small>
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.6.0</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.6.1</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
   </div>
@@ -151,7 +171,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
       <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap">
         <div>
           <h3 style="margin:0">年間予定表（画面：横スクロール / PDF：A4縦2枚）</h3>
-          <div class="board-caption" id="scheduleBoardCaption"></div>
+          <div class="board-caption" id="scheduleBoardCaption"></div><div class="muted no-print" style="font-size:11px">カレンダーをタップすると全画面表示</div>
         </div>
         <div class="no-print" style="min-width:220px">
           <label>表示シーズン</label>
@@ -330,6 +350,17 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
     <p class="muted">データは端末内へ保存します。PWAとして設置した場合は、インターネットがなくても読み込み済みデータの閲覧・編集・印刷が可能です。通信復帰後のクラウド同期は次段階で接続できます。</p>
   </div>
 </section>
+
+
+<div id="calendarFullscreen" class="calendar-fullscreen no-print" aria-hidden="true">
+  <div class="calendar-fullscreen-head">年間予定表　<span id="calendarZoomLabel">100%</span></div>
+  <div id="calendarFullscreenViewport" class="calendar-fullscreen-viewport">
+    <div id="calendarFullscreenStage" class="calendar-fullscreen-stage">
+      <div id="calendarFullscreenContent" class="calendar-fullscreen-content"></div>
+    </div>
+  </div>
+  <button id="calendarBackBtn" class="calendar-back-btn" type="button">戻る</button>
+</div>
 
 <footer>SnowTech Alpine Team Manager Prototype</footer>
 </main>
@@ -1122,6 +1153,100 @@ async function refreshAllSaj(){
 }
 
 
+
+let calendarFsScale=1;
+let calendarFsBaseW=0;
+let calendarFsBaseH=0;
+let calendarPinchStartDistance=0;
+let calendarPinchStartScale=1;
+
+function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
+function touchDistance(t1,t2){
+  const dx=t1.clientX-t2.clientX,dy=t1.clientY-t2.clientY;
+  return Math.hypot(dx,dy);
+}
+function updateCalendarFullscreenScale(nextScale){
+  const content=document.getElementById('calendarFullscreenContent');
+  const stage=document.getElementById('calendarFullscreenStage');
+  const label=document.getElementById('calendarZoomLabel');
+  if(!content||!stage)return;
+  calendarFsScale=clamp(nextScale,.7,2);
+  content.style.transform=`scale(${calendarFsScale})`;
+  stage.style.width=`${Math.ceil(calendarFsBaseW*calendarFsScale)}px`;
+  stage.style.height=`${Math.ceil(calendarFsBaseH*calendarFsScale)}px`;
+  if(label) label.textContent=`${Math.round(calendarFsScale*100)}%`;
+}
+function openCalendarFullscreen(){
+  const source=document.querySelector('#scheduleBoard .screen-season-board');
+  const overlay=document.getElementById('calendarFullscreen');
+  const content=document.getElementById('calendarFullscreenContent');
+  const viewport=document.getElementById('calendarFullscreenViewport');
+  if(!source||!overlay||!content||!viewport)return;
+
+  content.innerHTML='';
+  const clone=source.cloneNode(true);
+  clone.classList.remove('screen-season-board');
+  clone.style.minWidth='1180px';
+  content.appendChild(clone);
+
+  overlay.classList.add('open');
+  overlay.setAttribute('aria-hidden','false');
+  document.body.classList.add('calendar-open');
+
+  content.style.transform='scale(1)';
+  requestAnimationFrame(()=>{
+    calendarFsBaseW=content.scrollWidth;
+    calendarFsBaseH=content.scrollHeight;
+    updateCalendarFullscreenScale(1);
+    viewport.scrollLeft=0;
+    viewport.scrollTop=0;
+  });
+}
+function closeCalendarFullscreen(){
+  const overlay=document.getElementById('calendarFullscreen');
+  if(!overlay)return;
+  overlay.classList.remove('open');
+  overlay.setAttribute('aria-hidden','true');
+  document.body.classList.remove('calendar-open');
+}
+
+function initCalendarFullscreen(){
+  const wrap=document.getElementById('scheduleBoardWrap');
+  const overlay=document.getElementById('calendarFullscreen');
+  const viewport=document.getElementById('calendarFullscreenViewport');
+  const back=document.getElementById('calendarBackBtn');
+  if(!wrap||!overlay||!viewport||!back)return;
+
+  let downX=0,downY=0,moved=false;
+  wrap.addEventListener('pointerdown',e=>{downX=e.clientX;downY=e.clientY;moved=false});
+  wrap.addEventListener('pointermove',e=>{
+    if(Math.abs(e.clientX-downX)>8||Math.abs(e.clientY-downY)>8)moved=true;
+  });
+  wrap.addEventListener('pointerup',()=>{if(!moved)openCalendarFullscreen()});
+
+  back.addEventListener('click',e=>{e.stopPropagation();closeCalendarFullscreen()});
+
+  viewport.addEventListener('touchstart',e=>{
+    if(e.touches.length===2){
+      calendarPinchStartDistance=touchDistance(e.touches[0],e.touches[1]);
+      calendarPinchStartScale=calendarFsScale;
+      e.preventDefault();
+    }
+  },{passive:false});
+
+  viewport.addEventListener('touchmove',e=>{
+    if(e.touches.length===2 && calendarPinchStartDistance>0){
+      const d=touchDistance(e.touches[0],e.touches[1]);
+      updateCalendarFullscreenScale(calendarPinchStartScale*(d/calendarPinchStartDistance));
+      e.preventDefault();
+    }
+  },{passive:false});
+
+  viewport.addEventListener('touchend',e=>{
+    if(e.touches.length<2)calendarPinchStartDistance=0;
+  },{passive:true});
+}
+
 function localTodayYmd(){
   const d=new Date();
   return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
@@ -1180,6 +1305,7 @@ async function refreshAppCacheOnLaunch(){
 refreshAppCacheOnLaunch().catch(()=>{});
 
 renderAll();
+initCalendarFullscreen();
 setTimeout(()=>{ autoRefreshSajDaily().catch(()=>{}); },300);
 </script>
 </body>

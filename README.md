@@ -302,3 +302,13 @@ SnowTech → 管理 → `SAJ連携API URL` にWorker URLを入力 → 保存。
 - 起動時に `registration.update()` を実行
 - 新Service Workerは `skipWaiting()` + `clients.claim()` で即時切替
 - ヘッダー v0.6.0
+
+## v0.6.1
+- 年間予定表をタップすると全画面表示
+- 全画面右下に固定「戻る」ボタン
+- 全画面カレンダーのみ2本指ピンチで70〜200%拡大縮小
+- 通常UIは viewport の user-scalable=no / maximum-scale=1 でブラウザ拡大縮小をロック
+- 全画面カレンダーではブラウザズームではなくアプリ独自ズームを使用
+- 横スクロールは通常画面/全画面とも維持
+- PDF仕様への影響なし
+- ヘッダー v0.6.1
