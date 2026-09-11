@@ -45,6 +45,7 @@ section{display:none} section.active{display:block}
 .event-simple-list{display:grid;gap:8px;margin-top:12px}
 .event-simple-row{display:grid;grid-template-columns:150px 1fr auto;gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:10px;background:#0a1724}
 .event-simple-title{font-weight:700}
+.athlete-table-wrap{width:100%}
 .schedule-board-wrap{overflow-x:auto;overflow-y:hidden;margin-top:14px;-webkit-overflow-scrolling:touch}
 .season-board{width:100%;border-collapse:collapse;table-layout:fixed;font-size:11px}
 .season-board th,.season-board td{border:1px solid var(--line);padding:4px 5px;vertical-align:top}
@@ -90,6 +91,8 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
   .event{grid-template-columns:1fr 1fr}.event .event-main{grid-column:1/-1}
   .checks{grid-template-columns:1fr 1fr}
   .event-simple-row{grid-template-columns:110px 1fr auto;font-size:12px}
+  .athlete-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .athlete-table-wrap table{min-width:980px}
   table{font-size:12px} th,td{padding:8px 5px}
 }
 @media print{
@@ -142,7 +145,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
       <small id="teamHeader">TEAM未設定</small>
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.6.5</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.6.6</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
   </div>
