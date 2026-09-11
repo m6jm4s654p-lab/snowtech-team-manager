@@ -41,13 +41,16 @@ section{display:none} section.active{display:block}
 .calendar-list{display:grid;gap:10px}.event{display:grid;grid-template-columns:115px 90px 1fr 160px;gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:10px;background:#0a1724}
 .type{font-size:12px;font-weight:700;padding:5px 8px;border-radius:999px;text-align:center;background:var(--chip)}
 .hidden{display:none!important}
-.schedule-board-wrap{overflow:auto;margin-top:14px}
+.schedule-board-wrap{overflow-x:auto;overflow-y:hidden;margin-top:14px;-webkit-overflow-scrolling:touch}
 .season-board{width:100%;border-collapse:collapse;table-layout:fixed;font-size:11px}
 .season-board th,.season-board td{border:1px solid var(--line);padding:4px 5px;vertical-align:top}
 .season-board th{background:#0a1724;text-align:center}
+.screen-season-board{min-width:1180px}
+.screen-season-board .month-col{width:calc(100%/6)}
+.print-season-pages{display:none}
 .season-page{margin-bottom:18px}
 .season-page-title{font-size:13px;font-weight:700;margin:0 0 6px}
-.season-board .month-col{width:calc(100%/3)}
+.print-season-pages .month-col{width:calc(100%/3)}
 .season-board .board-day{font-size:10px;color:var(--muted);margin-bottom:3px;font-weight:700}
 .season-board .board-coach{font-size:9px;color:var(--muted);margin-top:2px}
 .season-board .day-sun,.season-board .day-holiday{color:#ff6b6b!important}
@@ -77,6 +80,8 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
   #scheduleList{display:none!important}
   #schedule .card > h2{margin-bottom:6px}
   #scheduleBoardWrap{overflow:visible}
+  .screen-season-board{display:none!important}
+  .print-season-pages{display:block!important}
   .season-board{font-size:9px}
   .season-board th,.season-board td{padding:2px 3px}
   .season-board .board-day{font-size:8px;color:#333;margin-bottom:2px}
@@ -108,7 +113,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
       <small id="teamHeader">TEAM未設定</small>
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.5.8</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.6.0</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
   </div>
@@ -145,7 +150,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
     <div class="card" id="scheduleBoardCard" style="margin-top:14px">
       <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap">
         <div>
-          <h3 style="margin:0">年間予定表（11月〜4月 / A4縦2枚）</h3>
+          <h3 style="margin:0">年間予定表（画面：横スクロール / PDF：A4縦2枚）</h3>
           <div class="board-caption" id="scheduleBoardCaption"></div>
         </div>
         <div class="no-print" style="min-width:220px">
@@ -252,13 +257,13 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
     </div>
     <h3 style="margin-top:18px">男子</h3>
     <table>
-      <thead><tr><th>氏名</th><th>生年月日</th><th>所属・学年</th><th>SAJ No.</th><th>SL</th><th>GS</th><th>SG</th><th>更新</th></tr></thead>
+      <thead><tr><th>氏名</th><th>生年月日</th><th>所属・学年</th><th>SAJ No.</th><th>SL</th><th>GS</th><th>SG</th><th>取得日</th><th>PL No.</th><th>操作</th></tr></thead>
       <tbody id="athleteRowsMale"></tbody>
     </table>
 
     <h3 style="margin-top:20px">女子</h3>
     <table>
-      <thead><tr><th>氏名</th><th>生年月日</th><th>所属・学年</th><th>SAJ No.</th><th>SL</th><th>GS</th><th>SG</th><th>更新</th></tr></thead>
+      <thead><tr><th>氏名</th><th>生年月日</th><th>所属・学年</th><th>SAJ No.</th><th>SL</th><th>GS</th><th>SG</th><th>取得日</th><th>PL No.</th><th>操作</th></tr></thead>
       <tbody id="athleteRowsFemale"></tbody>
     </table>
 
@@ -266,7 +271,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
       <h3>性別未取得</h3>
       <div class="muted" style="margin-bottom:8px">旧データなどで性別が未取得の選手です。「登録選手をSAJ更新」を実行してください。</div>
       <table>
-        <thead><tr><th>氏名</th><th>生年月日</th><th>所属・学年</th><th>SAJ No.</th><th>SL</th><th>GS</th><th>SG</th><th>更新</th></tr></thead>
+        <thead><tr><th>氏名</th><th>生年月日</th><th>所属・学年</th><th>SAJ No.</th><th>SL</th><th>GS</th><th>SG</th><th>取得日</th><th>PL No.</th><th>操作</th></tr></thead>
         <tbody id="athleteRowsUnknown"></tbody>
       </table>
     </div>
@@ -462,18 +467,15 @@ function renderScheduleBoard(){
   const sel=document.getElementById('scheduleSeason');
   if(!box || !cap || !sel) return;
   const startYear=Number(sel.value)||currentSeasonStartYear();
-  const pages=[
-    [
-      {y:startYear,m:11,label:'11月'},
-      {y:startYear,m:12,label:'12月'},
-      {y:startYear+1,m:1,label:'1月'}
-    ],
-    [
-      {y:startYear+1,m:2,label:'2月'},
-      {y:startYear+1,m:3,label:'3月'},
-      {y:startYear+1,m:4,label:'4月'}
-    ]
+  const allMonths=[
+    {y:startYear,m:11,label:'11月'},
+    {y:startYear,m:12,label:'12月'},
+    {y:startYear+1,m:1,label:'1月'},
+    {y:startYear+1,m:2,label:'2月'},
+    {y:startYear+1,m:3,label:'3月'},
+    {y:startYear+1,m:4,label:'4月'}
   ];
+  const printPages=[allMonths.slice(0,3),allMonths.slice(3,6)];
   const startDate=ymd(startYear,11,1);
   const endDate=ymd(startYear+1,4,30);
   const map=new Map();
@@ -482,16 +484,13 @@ function renderScheduleBoard(){
     item.dates.forEach(d=>{
       if(!d || d<startDate || d>endDate) return;
       if(!map.has(d)) map.set(d,[]);
-      map.get(d).push({
-        label:seasonBoardLabel(item),
-        coach:item.coach||''
-      });
+      map.get(d).push({label:seasonBoardLabel(item),coach:item.coach||''});
     });
   });
 
-  cap.textContent=`${startYear}/${startYear+1}シーズン　A4縦2枚（11月〜1月 / 2月〜4月）`;
+  cap.textContent=`${startYear}/${startYear+1}シーズン　画面：11月〜4月を横スクロール / PDF：A4縦2枚`;
 
-  function renderPage(months,pageNo){
+  function tableHtml(months,klass=''){
     let rows='';
     for(let day=1;day<=31;day++){
       rows += `<tr>`;
@@ -511,18 +510,24 @@ function renderScheduleBoard(){
       });
       rows += `</tr>`;
     }
-    return `<div class="season-page">
-      <div class="season-page-title">${startYear}/${startYear+1} 年間予定表　${pageNo===1?'11月〜1月':'2月〜4月'}</div>
-      <table class="season-board">
-        <thead>
-          <tr>${months.map(m=>`<th class="month-col">${m.label}</th>`).join('')}</tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
-    </div>`;
+    return `<table class="season-board ${klass}">
+      <thead><tr>${months.map(x=>`<th class="month-col">${x.label}</th>`).join('')}</tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
   }
 
-  box.innerHTML=pages.map((months,i)=>renderPage(months,i+1)).join('');
+  const screen=tableHtml(allMonths,'screen-season-board');
+  const print=`<div class="print-season-pages">
+    <div class="season-page">
+      <div class="season-page-title">${startYear}/${startYear+1} 年間予定表　11月〜1月</div>
+      ${tableHtml(printPages[0])}
+    </div>
+    <div class="season-page">
+      <div class="season-page-title">${startYear}/${startYear+1} 年間予定表　2月〜4月</div>
+      ${tableHtml(printPages[1])}
+    </div>
+  </div>`;
+  box.innerHTML=screen+print;
 }
 
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
@@ -796,7 +801,7 @@ function renderAthletes(){ /* overridden below */ }
 function showAthlete(id){
   const a=db.athletes.find(x=>x.id===id);if(!a)return;
   athleteDetail.classList.remove('hidden');
-  athleteDetail.innerHTML=`<h2>${a.name}</h2><div class="muted">${a.sex||'性別未取得'} / ${a.birth?fmt(a.birth):'生年月日未取得'} / ${a.school} ${a.grade} / SAJ No. ${a.saj}</div>
+  athleteDetail.innerHTML=`<h2>${a.name}</h2><div class="muted">${a.sex||'性別未取得'} / ${a.birth?fmt(a.birth):'生年月日未取得'} / ${a.school} ${a.grade} / SAJ No. ${a.saj}<br>SAJ取得日: ${a.updated?fmt(a.updated):'—'} / ポイントリスト: ${a.pointListNumber!=null?'No.'+a.pointListNumber:'—'} ${a.pointSeasonLabel?'/ '+a.pointSeasonLabel:''}</div>
   <div class="toolbar"><span class="tag">SL ${textOrDash(a.sl)}</span><span class="tag">GS ${textOrDash(a.gs)}</span><span class="tag">SG ${textOrDash(a.sg)}</span></div>
   <h3>過去大会成績</h3><table><thead><tr><th>日付</th><th>大会</th><th>種目</th><th>順位</th><th>タイム</th><th>獲得P</th></tr></thead>
   <tbody>${(a.results||[]).map(r=>`<tr><td>${fmt(r.date)}</td><td>${r.race}</td><td>${r.disc}</td><td>${r.rank}</td><td>${r.time}</td><td>${r.point}</td></tr>`).join('')||'<tr><td colspan="6">成績データなし</td></tr>'}</tbody></table>`;
@@ -974,15 +979,17 @@ renderAthletes = function(){
     <td>${a.school||'—'} ${a.grade||''}</td>
     <td>${a.saj}</td>
     <td>${textOrDash(a.sl)}</td><td>${textOrDash(a.gs)}</td><td>${textOrDash(a.sg)}</td>
-    <td>${fmt(a.updated)}<div class="no-print" style="margin-top:4px"><button class="btn" onclick="editAthlete('${a.id}')">編集</button> <button class="btn danger" onclick="deleteAthlete('${a.id}')">削除</button></div></td>
+    <td>${a.updated?fmt(a.updated):'—'}</td>
+    <td>${a.pointListNumber!=null?`No.${a.pointListNumber}`:'—'}${a.pointSeasonLabel?`<br><span class="muted">${a.pointSeasonLabel}</span>`:''}</td>
+    <td><div class="no-print"><button class="btn" onclick="editAthlete('${a.id}')">編集</button> <button class="btn danger" onclick="deleteAthlete('${a.id}')">削除</button></div></td>
   </tr>`;
 
   const males=db.athletes.filter(a=>a.sex==='男');
   const females=db.athletes.filter(a=>a.sex==='女');
   const unknown=db.athletes.filter(a=>a.sex!=='男' && a.sex!=='女');
 
-  athleteRowsMale.innerHTML=males.map(rowHtml).join('')||'<tr><td colspan="8" class="muted">男子選手は登録されていません</td></tr>';
-  athleteRowsFemale.innerHTML=females.map(rowHtml).join('')||'<tr><td colspan="8" class="muted">女子選手は登録されていません</td></tr>';
+  athleteRowsMale.innerHTML=males.map(rowHtml).join('')||'<tr><td colspan="10" class="muted">男子選手は登録されていません</td></tr>';
+  athleteRowsFemale.innerHTML=females.map(rowHtml).join('')||'<tr><td colspan="10" class="muted">女子選手は登録されていません</td></tr>';
 
   athleteUnknownWrap.classList.toggle('hidden', unknown.length===0);
   athleteRowsUnknown.innerHTML=unknown.map(rowHtml).join('');
@@ -1052,7 +1059,10 @@ async function registerAthleteFromSaj(){
       id:uid(),saj:a.saj||saj,name:a.name||'',school:a.team||a.organization||'',
       organization:a.organization||'',birth:a.birth||'',sex:a.sex||'',grade:inferGradeFromBirth(a.birth),
       dh:a.dh,sc:a.sc,sg:a.sg,gs:a.gs,sl:a.sl,
-      updated:new Date().toISOString().slice(0,10),sajSource:a.source||'',results:(a.results||[]).map(r=>({date:r.date,race:r.race,disc:r.disc,rank:r.rank,time:'',point:r.point??'-',season:r.season,category:r.category}))
+      updated:new Date().toISOString().slice(0,10),
+      pointListNumber:a.pointListNumber??null,
+      pointSeasonLabel:a.pointSeasonLabel||'',
+      sajSource:a.source||'',results:(a.results||[]).map(r=>({date:r.date,race:r.race,disc:r.disc,rank:r.rank,time:'',point:r.point??'-',season:r.season,category:r.category}))
     };
     if(!item.name) throw new Error('SAJデータから氏名を取得できませんでした');
     db.athletes.push(item);
@@ -1089,7 +1099,10 @@ async function refreshAthleteFromSaj(id,quiet=false){
       name:a.name||old.name,school:a.team||a.organization||old.school,
       organization:a.organization||old.organization||'',birth:a.birth||old.birth||'',sex:a.sex||old.sex||'',
       dh:a.dh,sc:a.sc,sg:a.sg,gs:a.gs,sl:a.sl,
-      updated:new Date().toISOString().slice(0,10),sajSource:a.source||old.sajSource||'',results:(a.results||old.results||[]).map(r=>r.race?{date:r.date,race:r.race,disc:r.disc,rank:r.rank,time:r.time||'',point:r.point??'-',season:r.season,category:r.category}:r)
+      updated:new Date().toISOString().slice(0,10),
+      pointListNumber:a.pointListNumber??old.pointListNumber??null,
+      pointSeasonLabel:a.pointSeasonLabel||old.pointSeasonLabel||'',
+      sajSource:a.source||old.sajSource||'',results:(a.results||old.results||[]).map(r=>r.race?{date:r.date,race:r.race,disc:r.disc,rank:r.rank,time:r.time||'',point:r.point??'-',season:r.season,category:r.category}:r)
     });
     if(!quiet) save();
     return true;
@@ -1108,11 +1121,66 @@ async function refreshAllSaj(){
   save();alert(`SAJ更新完了：成功 ${ok}名 / 失敗 ${ng}名`);
 }
 
-if('serviceWorker' in navigator && location.protocol.startsWith('http')){
-  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+
+function localTodayYmd(){
+  const d=new Date();
+  return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+}
+async function autoRefreshSajDaily(){
+  if(!db.athletes.length || !apiBase()) return;
+  db.team=db.team||{};
+  const today=localTodayYmd();
+  if(db.team.sajAutoRefreshDate===today) return;
+
+  // Mark today's attempt first so repeated reloads do not hammer SAJ if one athlete fails.
+  db.team.sajAutoRefreshDate=today;
+  localStorage.setItem(KEY,JSON.stringify(db));
+
+  let changed=false;
+  for(const a of db.athletes){
+    if(await refreshAthleteFromSaj(a.id,true)) changed=true;
+  }
+  if(changed){
+    localStorage.setItem(KEY,JSON.stringify(db));
+    renderAll();
+  }
 }
 
+async function refreshAppCacheOnLaunch(){
+  if(!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
+
+  // Clear only app delivery caches. LocalStorage/athlete/team data are preserved.
+  if('caches' in window){
+    try{
+      const keys=await caches.keys();
+      await Promise.all(keys.filter(k=>k.startsWith('snowtech-alpine-')).map(k=>caches.delete(k)));
+    }catch{}
+  }
+
+  try{
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=060',{updateViaCache:'none'});
+    try{ await reg.update(); }catch{}
+
+    if(reg.waiting){
+      reg.waiting.postMessage({type:'SKIP_WAITING'});
+    }
+
+    reg.addEventListener('updatefound',()=>{
+      const nw=reg.installing;
+      if(!nw) return;
+      nw.addEventListener('statechange',()=>{
+        if(nw.state==='installed' && navigator.serviceWorker.controller){
+          nw.postMessage({type:'SKIP_WAITING'});
+        }
+      });
+    });
+  }catch{}
+}
+
+refreshAppCacheOnLaunch().catch(()=>{});
+
 renderAll();
+setTimeout(()=>{ autoRefreshSajDaily().catch(()=>{}); },300);
 </script>
 </body>
 </html>

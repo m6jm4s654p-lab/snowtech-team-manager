@@ -279,3 +279,26 @@ SnowTech → 管理 → `SAJ連携API URL` にWorker URLを入力 → 保存。
 - PDF印刷はA4 portrait、ページ間で改ページ
 - 日曜・祝日=赤、土曜=青をPDFでも維持
 - ヘッダー v0.5.8
+
+## v0.5.9
+- 年間予定表の画面表示は11月〜4月の6か月横並びへ変更
+- 画面は横スクロールで閲覧
+- PDFだけA4縦2枚（11〜1月 / 2〜4月）で印刷
+- 引率者表示を画面/PDF双方で維持
+- 所属選手のSAJデータを端末起動時に1日1回自動更新
+- 同日中の再起動・再読込では自動更新しない
+- 選手一覧にSAJ取得日を表示
+- 選手一覧にポイントリストNo.を表示
+- 選手詳細にも取得日 / ポイントリストNo. / シーズンを表示
+- WorkerでSAJポイントリスト発行カレンダーのリストNo.を取得元ポイントに紐づけ
+- ヘッダー v0.5.9
+
+## v0.6.0
+- スマートフォンPWAで更新が反映されない問題への対策
+- アプリ起動時に `snowtech-alpine-*` の旧Cache Storageを削除
+- LocalStorageのチーム/選手/予定データは削除しない
+- Service Worker登録時に `updateViaCache: 'none'`
+- `sw.js?ver=060` でService Worker自体のキャッシュ回避
+- 起動時に `registration.update()` を実行
+- 新Service Workerは `skipWaiting()` + `clients.claim()` で即時切替
+- ヘッダー v0.6.0
