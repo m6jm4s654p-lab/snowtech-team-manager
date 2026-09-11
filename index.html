@@ -45,8 +45,11 @@ section{display:none} section.active{display:block}
 .season-board{width:100%;border-collapse:collapse;table-layout:fixed;font-size:11px}
 .season-board th,.season-board td{border:1px solid var(--line);padding:4px 5px;vertical-align:top}
 .season-board th{background:#0a1724;text-align:center}
-.season-board .month-col{width:calc(100%/6)}
+.season-page{margin-bottom:18px}
+.season-page-title{font-size:13px;font-weight:700;margin:0 0 6px}
+.season-board .month-col{width:calc(100%/3)}
 .season-board .board-day{font-size:10px;color:var(--muted);margin-bottom:3px;font-weight:700}
+.season-board .board-coach{font-size:9px;color:var(--muted);margin-top:2px}
 .season-board .day-sun,.season-board .day-holiday{color:#ff6b6b!important}
 .season-board .day-sat{color:#69a7ff!important}
 .saj-comp-link,.saj-comp-link:visited,.saj-comp-link:hover,.saj-comp-link:active{color:#fff!important;text-decoration:underline}
@@ -77,7 +80,14 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
   .season-board{font-size:9px}
   .season-board th,.season-board td{padding:2px 3px}
   .season-board .board-day{font-size:8px;color:#333;margin-bottom:2px}
+  .season-page{break-after:page;page-break-after:always;margin:0}
+  .season-page:last-child{break-after:auto;page-break-after:auto}
+  .season-page-title{font-size:10px;color:#000!important;margin:0 0 4px}
+  .season-board{font-size:9px}
+  .season-board th,.season-board td{padding:2px 3px}
+  .season-board .board-day{font-size:8px;margin-bottom:2px}
   .season-board .board-item{font-size:8px;line-height:1.15;margin-bottom:1px}
+  .season-board .board-coach{font-size:7px;line-height:1.1;color:#000!important}
   .season-board,.season-board *{background:#fff!important}
   .season-board{color:#000!important}
   .season-board th,.season-board td{color:#000!important;border-color:#777!important}
@@ -86,7 +96,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
   .season-board .day-sat{color:#005bbb!important}
   .saj-comp-link,.saj-comp-link:visited,.saj-comp-link:hover,.saj-comp-link:active{color:#000!important}
   .board-caption{font-size:11px;color:#444;margin:4px 0 6px}
-  @page{size:A4 landscape;margin:8mm}
+  @page{size:A4 portrait;margin:8mm}
 }
 </style>
 </head>
@@ -98,7 +108,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
       <small id="teamHeader">TEAM未設定</small>
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.5.7</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.5.8</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
   </div>
@@ -135,7 +145,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
     <div class="card" id="scheduleBoardCard" style="margin-top:14px">
       <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap">
         <div>
-          <h3 style="margin:0">年間予定表（11月〜4月 / A4横1枚）</h3>
+          <h3 style="margin:0">年間予定表（11月〜4月 / A4縦2枚）</h3>
           <div class="board-caption" id="scheduleBoardCaption"></div>
         </div>
         <div class="no-print" style="min-width:220px">
@@ -421,17 +431,23 @@ function buildSeasonBoardItems(){
       type:s.type||'その他',
       title:s.title||'',
       place:s.place||'',
-      note:s.note||''
+      note:s.note||'',
+      coach:s.coach||''
     });
   });
   db.events.forEach(e=>{
+    const coachNames=(e.coachIds||[])
+      .map(id=>db.coaches.find(c=>c.id===id)?.name)
+      .filter(Boolean)
+      .join('・');
     rows.push({
       source:'event',
       dates:enumerateDates(e.start,e.end||e.start),
       type:'大会',
       title:e.title||'',
       place:e.place||'',
-      note:e.disc||''
+      note:e.disc||'',
+      coach:coachNames
     });
   });
   return rows;
@@ -446,49 +462,67 @@ function renderScheduleBoard(){
   const sel=document.getElementById('scheduleSeason');
   if(!box || !cap || !sel) return;
   const startYear=Number(sel.value)||currentSeasonStartYear();
-  const months=[
-    {y:startYear,m:11,label:'11月'},
-    {y:startYear,m:12,label:'12月'},
-    {y:startYear+1,m:1,label:'1月'},
-    {y:startYear+1,m:2,label:'2月'},
-    {y:startYear+1,m:3,label:'3月'},
-    {y:startYear+1,m:4,label:'4月'}
+  const pages=[
+    [
+      {y:startYear,m:11,label:'11月'},
+      {y:startYear,m:12,label:'12月'},
+      {y:startYear+1,m:1,label:'1月'}
+    ],
+    [
+      {y:startYear+1,m:2,label:'2月'},
+      {y:startYear+1,m:3,label:'3月'},
+      {y:startYear+1,m:4,label:'4月'}
+    ]
   ];
   const startDate=ymd(startYear,11,1);
   const endDate=ymd(startYear+1,4,30);
   const map=new Map();
+
   buildSeasonBoardItems().forEach(item=>{
     item.dates.forEach(d=>{
       if(!d || d<startDate || d>endDate) return;
       if(!map.has(d)) map.set(d,[]);
-      map.get(d).push(seasonBoardLabel(item));
+      map.get(d).push({
+        label:seasonBoardLabel(item),
+        coach:item.coach||''
+      });
     });
   });
-  cap.textContent=`${startYear}/${startYear+1}シーズン　縦軸：日付 / 横軸：月`;
-  let rows='';
-  for(let day=1;day<=31;day++){
-    rows += `<tr>`;
-    months.forEach(meta=>{
-      if(!validDateParts(meta.y,meta.m,day)){
-        rows += `<td class="empty"></td>`;
-        return;
-      }
-      const dateStr=ymd(meta.y,meta.m,day);
-      const wd=JP_WD[new Date(meta.y,meta.m-1,day).getDay()];
-      const cls=dayClass(dateStr,meta.y,meta.m,day);
-      const items=(map.get(dateStr)||[]).map(v=>`<span class="board-item">・${esc(v)}</span>`).join('');
-      rows += `<td class="month-col"><div class="board-day ${cls}">${day}日(${wd})</div>${items||''}</td>`;
-    });
-    rows += `</tr>`;
+
+  cap.textContent=`${startYear}/${startYear+1}シーズン　A4縦2枚（11月〜1月 / 2月〜4月）`;
+
+  function renderPage(months,pageNo){
+    let rows='';
+    for(let day=1;day<=31;day++){
+      rows += `<tr>`;
+      months.forEach(meta=>{
+        if(!validDateParts(meta.y,meta.m,day)){
+          rows += `<td class="empty"></td>`;
+          return;
+        }
+        const dateStr=ymd(meta.y,meta.m,day);
+        const wd=JP_WD[new Date(meta.y,meta.m-1,day).getDay()];
+        const cls=dayClass(dateStr,meta.y,meta.m,day);
+        const items=(map.get(dateStr)||[]).map(v=>{
+          const coach=v.coach ? `<span class="board-coach">引率：${esc(v.coach)}</span>` : '';
+          return `<span class="board-item">・${esc(v.label)}${coach}</span>`;
+        }).join('');
+        rows += `<td class="month-col"><div class="board-day ${cls}">${day}日(${wd})</div>${items||''}</td>`;
+      });
+      rows += `</tr>`;
+    }
+    return `<div class="season-page">
+      <div class="season-page-title">${startYear}/${startYear+1} 年間予定表　${pageNo===1?'11月〜1月':'2月〜4月'}</div>
+      <table class="season-board">
+        <thead>
+          <tr>${months.map(m=>`<th class="month-col">${m.label}</th>`).join('')}</tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
   }
-  box.innerHTML = `<table class="season-board">
-    <thead>
-      <tr>
-        ${months.map(m=>`<th class="month-col">${m.label}</th>`).join('')}
-      </tr>
-    </thead>
-    <tbody>${rows}</tbody>
-  </table>`;
+
+  box.innerHTML=pages.map((months,i)=>renderPage(months,i+1)).join('');
 }
 
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
