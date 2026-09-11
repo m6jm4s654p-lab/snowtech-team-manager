@@ -53,7 +53,7 @@ section{display:none} section.active{display:block}
 .screen-season-board .month-col{width:calc(100%/6)}
 .print-season-pages{display:none}
 .season-page{margin-bottom:18px}
-.season-page-title{font-size:13px;font-weight:700;margin:0 0 6px}
+.season-page-head{height:46px;display:flex;flex-direction:column;justify-content:flex-start;margin:0 0 6px}.season-page-title{font-size:13px;font-weight:700;margin:0}.season-page-subtitle{font-size:11px;color:var(--muted);margin-top:2px}
 .print-season-pages .month-col{width:calc(100%/3)}
 .season-board .board-day{font-size:10px;color:var(--muted);margin-bottom:3px;font-weight:700}
 .season-board .board-coach{font-size:9px;color:var(--muted);margin-top:2px}
@@ -105,7 +105,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
   .muted{color:#444}
   .tag{border:1px solid #aaa;background:#fff;color:#000}
   #scheduleList{display:none!important}
-  #schedule .card > h2{margin-bottom:6px}
+  #schedule .card > h2{display:none!important}
   #scheduleBoardWrap{overflow:visible}
   .screen-season-board{display:none!important}
   .print-season-pages{display:block!important}
@@ -114,7 +114,9 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
   .season-board .board-day{font-size:8px;color:#333;margin-bottom:2px}
   .season-page{break-after:page;page-break-after:always;margin:0}
   .season-page:last-child{break-after:auto;page-break-after:auto}
-  .season-page-title{font-size:10px;color:#000!important;margin:0 0 4px}
+  .season-page-head{height:36px!important;margin:0 0 4px!important}
+  .season-page-title{font-size:11px;color:#000!important;margin:0!important;line-height:1.2}
+  .season-page-subtitle{font-size:9px;color:#000!important;margin-top:2px!important;line-height:1.2}
   .season-board{font-size:9px}
   .season-board th,.season-board td{padding:2px 3px}
   .season-board .board-day{font-size:8px;margin-bottom:2px}
@@ -140,7 +142,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
       <small id="teamHeader">TEAM未設定</small>
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.6.3</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.6.5</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
   </div>
@@ -196,8 +198,8 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
   <div class="card">
     <h2>大会管理</h2>
     <div class="toolbar no-print">
-      <button class="btn primary" onclick="toggleSajCompetitions()">公認大会情報取得</button>
-      <button class="btn" onclick="toggleOtherEventForm()">その他大会追加</button>
+      <button id="sajCompetitionToggleBtn" class="btn" onclick="toggleSajCompetitions()">公認大会情報取得</button>
+      <button id="otherEventToggleBtn" class="btn" onclick="toggleOtherEventForm()">その他大会追加</button>
       <button class="btn" onclick="printSection('events')">大会スケジュールPDF</button>
     </div>
 
@@ -548,13 +550,20 @@ function renderScheduleBoard(){
   }
 
   const screen=tableHtml(allMonths,'screen-season-board');
+  const teamTitle=esc(db.team.name||'SnowTech');
   const print=`<div class="print-season-pages">
     <div class="season-page">
-      <div class="season-page-title">${startYear}/${startYear+1} 年間予定表　11月〜1月</div>
+      <div class="season-page-head">
+        <div class="season-page-title">${teamTitle} 年間予定表</div>
+        <div class="season-page-subtitle">${startYear}/${startYear+1}シーズン　11月〜1月</div>
+      </div>
       ${tableHtml(printPages[0])}
     </div>
     <div class="season-page">
-      <div class="season-page-title">${startYear}/${startYear+1} 年間予定表　2月〜4月</div>
+      <div class="season-page-head">
+        <div class="season-page-title">${teamTitle} 年間予定表</div>
+        <div class="season-page-subtitle">${startYear}/${startYear+1}シーズン　2月〜4月</div>
+      </div>
       ${tableHtml(printPages[1])}
     </div>
   </div>`;
@@ -580,7 +589,7 @@ function saveSchedule(){
 }
 function renderSchedule(){ renderScheduleBoard(); }
 
-function openEventForm(){eventForm.classList.remove('hidden')} function closeEventForm(){eventForm.classList.add('hidden')}
+function openEventForm(){setEventMode('other')} function closeEventForm(){setEventMode(null)}
 function saveEvent(){
   db.events.push({id:uid(),title:eTitle.value,start:eStart.value,end:eEnd.value,place:ePlace.value,disc:eDisc.value,deadline:eDeadline.value,
     athleteIds:[],coachIds:[],note:''});
@@ -690,10 +699,40 @@ function initSajCompetitionSeason(){
   });
 }
 
+function setEventMode(mode){
+  const sajBtn=document.getElementById('sajCompetitionToggleBtn');
+  const otherBtn=document.getElementById('otherEventToggleBtn');
+
+  if(mode==='saj'){
+    initSajCompetitionSeason();
+    renderSajRegionFilters();
+    sajCompetitionPanel.classList.remove('hidden');
+    eventForm.classList.add('hidden');
+    if(sajBtn)sajBtn.classList.add('primary');
+    if(otherBtn)otherBtn.classList.remove('primary');
+    editingEventId=null;
+    return;
+  }
+
+  if(mode==='other'){
+    sajCompetitionPanel.classList.add('hidden');
+    resetOtherEventForm();
+    eventForm.classList.remove('hidden');
+    if(sajBtn)sajBtn.classList.remove('primary');
+    if(otherBtn)otherBtn.classList.add('primary');
+    return;
+  }
+
+  sajCompetitionPanel.classList.add('hidden');
+  eventForm.classList.add('hidden');
+  if(sajBtn)sajBtn.classList.remove('primary');
+  if(otherBtn)otherBtn.classList.remove('primary');
+  editingEventId=null;
+}
+
 function toggleSajCompetitions(){
-  initSajCompetitionSeason();
-  renderSajRegionFilters();
-  sajCompetitionPanel.classList.toggle('hidden');
+  const isOpen=!sajCompetitionPanel.classList.contains('hidden');
+  setEventMode(isOpen?null:'saj');
 }
 
 async function loadSajCompetitions(){
@@ -850,7 +889,7 @@ function renderRanking(){
       const arr=db.athletes.filter(a=>a.sex===sex && a[key]!=null).sort((a,b)=>a[key]-b[key]);
       const el=document.getElementById(prefix+d);
       if(!el)return;
-      el.innerHTML=arr.map((a,i)=>`<div class="list-item"><b>${i+1}. ${a.name}</b><span style="float:right">${a[key]}</span><br><span class="muted">SAJ No. ${a.saj||'—'} / ${a.school||''} ${a.grade||''}</span></div>`).join('')||'<span class="muted">データなし</span>';
+      el.innerHTML=arr.map((a,i)=>`<div class="list-item"><b>${i+1}. ${a.name}</b><span class="muted" style="margin-left:8px">${a.birth?fmt(a.birth):'—'}</span><span style="float:right;font-weight:800">${a[key]}</span><br><span class="muted">SAJ No. ${a.saj||'—'} / ${a.school||''} ${a.grade||''}</span></div>`).join('')||'<span class="muted">データなし</span>';
     });
   };
   renderGroup('男','rankMale');
@@ -934,19 +973,16 @@ function resetOtherEventForm(){
   eTitle.value='';eStart.value='';eEnd.value='';ePlace.value='';eDisc.value='';eDeadline.value='';
 }
 function toggleOtherEventForm(){
-  const opening=eventForm.classList.contains('hidden');
-  if(opening){
-    resetOtherEventForm();
-    eventForm.classList.remove('hidden');
-    eventForm.scrollIntoView({behavior:'smooth',block:'start'});
+  const isOpen=!eventForm.classList.contains('hidden');
+  if(isOpen){
+    setEventMode(null);
   }else{
-    eventForm.classList.add('hidden');
-    editingEventId=null;
+    setEventMode('other');
+    eventForm.scrollIntoView({behavior:'smooth',block:'start'});
   }
 }
 openEventForm = function(){
-  resetOtherEventForm();
-  eventForm.classList.remove('hidden');
+  setEventMode('other');
 };
 function editEvent(id){
   const e=db.events.find(x=>x.id===id); if(!e)return;
@@ -962,7 +998,7 @@ saveEvent = function(){
     const i=db.events.findIndex(x=>x.id===editingEventId);
     if(i>=0)db.events[i]={...db.events[i],...item};
   }else db.events.push({id:uid(),...item});
-  editingEventId=null; closeEventForm(); save();
+  editingEventId=null; setEventMode(null); save();
 };
 function deleteEvent(id){
   if(!confirm('この大会を削除しますか？'))return;
@@ -1067,7 +1103,7 @@ function printSection(id){
   document.querySelectorAll('section').forEach(s=>s.classList.remove('print-target'));
   document.getElementById(id).classList.add('print-target');
   const old=document.title;
-  document.title=(db.team.name||'SnowTech')+'_'+(id==='schedule'?'年間活動スケジュール':'大会スケジュール');
+  document.title=(db.team.name||'SnowTech')+'_'+(id==='schedule'?'年間予定表':'大会スケジュール');
   window.print();document.title=old;
 }
 
