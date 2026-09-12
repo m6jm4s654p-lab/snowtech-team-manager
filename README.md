@@ -906,3 +906,12 @@ SnowTech → 管理 → `SAJ連携API URL` にWorker URLを入力 → 保存。
 - 代表コーチ1名・端末内管理という前提では、クラウドDB/Auth/RLSは不要
 - 最大の運用リスクは端末故障・ブラウザデータ消去なので、定期バックアップを重視
 - WorkerはSAJ公開情報の中継のみで、チームDBは保持しない
+
+## v0.12.6
+- ALGE Timingの起動方式を再変更
+- `target="_blank"` を廃止
+- JavaScriptも使わず、通常の同一画面リンク `href="http://116.58.169.162/alge/"` で直接移動
+- iPhoneホーム画面PWA / standaloneモードで、新規ウインドウからHTTPへ遷移できないケースを回避
+- SEIKO SPORTSLINKは従来どおり別画面で開く
+- ALGEを開いた後はブラウザ/端末の戻る操作でアプリへ戻る
+- Service Workerをv0.12.6へ更新
