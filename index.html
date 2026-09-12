@@ -259,11 +259,11 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 }
 
 
-/* v0.11.1 branding */
+/* v0.11.5 branding */
 .tool-portal-logo img{width:min(100%,1100px);height:auto;object-fit:contain;display:block;margin:0 auto}
 
 
-/* v0.11.1 top navigation: HOME + 操作ナビ / team name below */
+/* v0.11.5 top navigation: HOME + 操作ナビ / team name below */
 .top-nav-block{
   width:min(560px,100%);
   margin:0 auto 16px;
@@ -311,7 +311,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 }
 
 
-/* v0.11.1: team name is shown below HOME / 操作ナビ */
+/* v0.11.5: team name is shown below HOME / 操作ナビ */
 header .team-name,
 header .team-title,
 header #teamName,
@@ -672,6 +672,172 @@ header [data-team-name],header #teamHeader{display:none!important}
   .calendar-edit-scope-buttons{grid-template-columns:1fr}
 }
 
+
+.ranking-athlete-link{
+  appearance:none;
+  border:0;
+  background:transparent;
+  color:#7dd8e6;
+  padding:0;
+  margin:0;
+  font:inherit;
+  font-weight:900;
+  text-decoration:underline;
+  text-underline-offset:3px;
+  cursor:pointer;
+}
+.ranking-athlete-link:hover{filter:brightness(1.15)}
+
+
+.athlete-results-mobile{display:none}
+.athlete-result-card{
+  border:1px solid #314653;
+  border-radius:13px;
+  background:linear-gradient(180deg,rgba(16,39,53,.98),rgba(8,25,36,.98));
+  padding:13px;
+  margin-top:10px;
+  box-shadow:0 6px 16px rgba(0,0,0,.14);
+}
+.athlete-result-card-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.athlete-result-date{
+  font-size:12px;
+  font-weight:800;
+  color:#a9bbc6;
+}
+.athlete-result-disc{
+  flex:0 0 auto;
+  border:1px solid #356b78;
+  border-radius:999px;
+  padding:3px 9px;
+  background:rgba(58,155,173,.12);
+  color:#83d9e7;
+  font-size:11px;
+  font-weight:900;
+}
+.athlete-result-race{
+  margin-top:9px;
+  font-size:15px;
+  line-height:1.45;
+  font-weight:900;
+  overflow-wrap:anywhere;
+}
+.athlete-result-main{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+  margin-top:12px;
+}
+.athlete-result-main>div{
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:9px;
+  padding:8px 7px;
+  background:rgba(255,255,255,.025);
+  min-width:0;
+}
+.athlete-result-label{
+  color:#8fa4b1;
+  font-size:10px;
+  margin-bottom:3px;
+}
+.athlete-result-value{
+  font-size:14px;
+  font-weight:800;
+  overflow-wrap:anywhere;
+}
+.athlete-result-value.rank{
+  font-size:18px;
+  color:#fff;
+}
+.athlete-result-value.point{
+  color:#8fd9a8;
+}
+.athlete-results-empty{
+  color:var(--muted);
+  padding:14px 0;
+}
+@media(max-width:680px){
+  .athlete-results-desktop{display:none}
+  .athlete-results-mobile{display:block}
+}
+@media(min-width:681px){
+  .athlete-results-desktop{display:block}
+  .athlete-results-mobile{display:none}
+}
+
+
+.race-live-choice-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+  margin-top:12px;
+}
+.race-live-choice-btn{
+  min-height:128px;
+  border-radius:14px;
+  padding:18px 16px;
+  text-align:left;
+  cursor:pointer;
+  color:#fff;
+  border:1px solid #355060;
+  box-shadow:0 8px 22px rgba(0,0,0,.18);
+}
+.race-live-choice-btn.seiko{
+  background:linear-gradient(180deg,#123856,#0b2238);
+}
+.race-live-choice-btn.alge{
+  background:linear-gradient(180deg,#244b36,#112b20);
+}
+.race-live-choice-btn strong{
+  display:block;
+  font-size:19px;
+  line-height:1.25;
+  margin-bottom:8px;
+}
+.race-live-choice-btn span{
+  display:block;
+  font-size:13px;
+  line-height:1.45;
+  color:#d6e2e8;
+}
+.race-live-choice-btn small{
+  display:block;
+  margin-top:12px;
+  font-size:11px;
+  font-weight:800;
+  opacity:.78;
+}
+.race-live-choice-btn:hover{filter:brightness(1.08)}
+@media(max-width:620px){
+  .race-live-choice-grid{grid-template-columns:1fr}
+  .race-live-choice-btn{min-height:108px}
+}
+
+
+/* v0.11.5: smartphone / PWA status-bar safe area */
+header{
+  padding-top:calc(10px + env(safe-area-inset-top, 0px));
+}
+@supports(padding-top:max(0px)){
+  header{
+    padding-top:max(10px, calc(env(safe-area-inset-top, 0px) + 10px));
+  }
+}
+@media(max-width:760px){
+  header{
+    padding-top:calc(16px + env(safe-area-inset-top, 0px));
+  }
+  @supports(padding-top:max(0px)){
+    header{
+      padding-top:max(16px, calc(env(safe-area-inset-top, 0px) + 16px));
+    }
+  }
+}
+
 </style>
 </head>
 <body>
@@ -698,7 +864,7 @@ header [data-team-name],header #teamHeader{display:none!important}
 <header>
   <div class="header-inner">
     <div class="header-meta-row">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.11.1</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.11.5</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
     <div class="header-title-row">
@@ -746,7 +912,7 @@ header [data-team-name],header #teamHeader{display:none!important}
     <div class="home-menu-grid home-category-grid">
       <button class="home-menu-btn" onclick="openTab('venues')"><strong>会場情報</strong><span>登録大会の会場情報</span></button>
       <button class="home-menu-btn" onclick="openTab('weather')"><strong>天気・積雪</strong><span>大会会場の予報</span></button>
-      <button class="home-menu-btn race-live-btn" onclick="openRaceLive()"><strong>レース速報</strong><span>SEIKO SPORTSLINK</span></button>
+      <button class="home-menu-btn race-live-btn" onclick="openTab('raceLive')"><strong>レース速報</strong><span>SEIKO / ALGE</span></button>
       <button class="home-menu-btn" onclick="showToolPortal()"><strong>ツール切り替え</strong><span>セッター／マネージメント</span></button>
     </div>
   </div>
@@ -1013,6 +1179,27 @@ header [data-team-name],header #teamHeader{display:none!important}
   </div>
 </section>
 
+<section id="raceLive">
+  <div class="card">
+    <h2>レース速報</h2>
+    <div class="muted" style="margin-bottom:14px">速報サイトを選択してください。別画面で開きます。</div>
+
+    <div class="race-live-choice-grid no-print">
+      <button class="race-live-choice-btn seiko" type="button" onclick="openSeikoSportsLink()">
+        <strong>SEIKO SPORTSLINK</strong>
+        <span>アルペンスキー競技速報・リザルト</span>
+        <small>別画面で開く ↗</small>
+      </button>
+
+      <button class="race-live-choice-btn alge" type="button" onclick="openAlgeTiming()">
+        <strong>THA&amp;KS ALGE Timing</strong>
+        <span>ALGE Timing レース速報</span>
+        <small>別画面で開く ↗</small>
+      </button>
+    </div>
+  </div>
+</section>
+
 <section id="ranking">
   <div class="card">
     <h2>チームランキング</h2>
@@ -1037,7 +1224,7 @@ header [data-team-name],header #teamHeader{display:none!important}
 <section id="athleteDetailScreen">
   <div class="card">
     <div class="toolbar no-print" style="justify-content:space-between">
-      <button class="btn" onclick="backToAthletes()">← 所属選手一覧へ戻る</button>
+      <button id="athleteDetailBackBtn" class="btn" onclick="backFromAthleteDetail()">← 所属選手一覧へ戻る</button>
     </div>
     <div id="athleteDetailPage"></div>
   </div>
@@ -1665,9 +1852,16 @@ function renderScheduleBoard(){
 
   box.innerHTML=screen+print;
 }
-function openRaceLive(){
+function openSeikoSportsLink(){
   window.open(
     'https://seikosportslink.com/seiko/ssl/sportslink?a=portal&s=as',
+    '_blank',
+    'noopener,noreferrer'
+  );
+}
+function openAlgeTiming(){
+  window.open(
+    'http://116.58.169.162/alge/',
     '_blank',
     'noopener,noreferrer'
   );
@@ -1689,7 +1883,7 @@ function openTab(tabId){
 document.querySelectorAll('nav button[data-tab]').forEach(b=>b.onclick=()=>openTab(b.dataset.tab));
 
 
-// ===== v0.11.1 Weather / Team Board =====
+// ===== v0.11.5 Weather / Team Board =====
 const PREF_REGION={
   '北海道':'北海道',
   '青森':'東北','岩手':'東北','宮城':'東北','秋田':'東北','山形':'東北','福島':'東北',
@@ -2436,9 +2630,21 @@ function saveAthlete(){
 }
 function num(v){return v===''?null:Number(v)}
 function renderAthletes(){ /* overridden below */ }
-function showAthlete(id){
+let athleteDetailReturnTarget='athletes';
+
+function showAthlete(id,source='athletes'){
   const a=db.athletes.find(x=>x.id===id);
   if(!a)return;
+
+  athleteDetailReturnTarget=source==='ranking'?'ranking':'athletes';
+
+  const backBtn=document.getElementById('athleteDetailBackBtn');
+  if(backBtn){
+    backBtn.textContent=athleteDetailReturnTarget==='ranking'
+      ? '← チームランキングへ戻る'
+      : '← 所属選手一覧へ戻る';
+  }
+
   athleteDetailPage.innerHTML=`<h2>${esc(a.name)}</h2>
     <div class="grid g3">
       <div><b>SAJ No.</b><br>${esc(a.saj||'—')}</div>
@@ -2453,28 +2659,74 @@ function showAthlete(id){
     </div>
     <div style="margin-top:18px">
       <h3>過去大会成績</h3>
-      <div class="athlete-table-wrap">
-        <table>
-          <thead><tr><th>日付</th><th>大会</th><th>種目</th><th>順位</th><th>タイム</th><th>獲得P</th></tr></thead>
-          <tbody>${(a.results||[]).map(r=>`<tr>
-            <td>${r.date?fmt(r.date):'—'}</td>
-            <td>${esc(r.race||r.title||'—')}</td>
-            <td>${esc(r.disc||'—')}</td>
-            <td>${esc(String(r.rank??'—'))}</td>
-            <td>${esc(String(r.time??'—'))}</td>
-            <td>${esc(String(r.point??'—'))}</td>
-          </tr>`).join('')||'<tr><td colspan="6">成績データなし</td></tr>'}</tbody>
-        </table>
+
+      <div class="athlete-results-desktop">
+        <div class="athlete-table-wrap">
+          <table>
+            <thead><tr><th>日付</th><th>大会</th><th>種目</th><th>順位</th><th>タイム</th><th>獲得P</th></tr></thead>
+            <tbody>${(a.results||[]).map(r=>`<tr>
+              <td>${r.date?fmt(r.date):'—'}</td>
+              <td>${esc(r.race||r.title||'—')}</td>
+              <td>${esc(r.disc||'—')}</td>
+              <td>${esc(String(r.rank??'—'))}</td>
+              <td>${esc(String(r.time??'—'))}</td>
+              <td>${esc(String(r.point??'—'))}</td>
+            </tr>`).join('')||'<tr><td colspan="6">成績データなし</td></tr>'}</tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="athlete-results-mobile">
+        ${(a.results||[]).length
+          ? (a.results||[]).map(r=>`
+            <div class="athlete-result-card">
+              <div class="athlete-result-card-head">
+                <div class="athlete-result-date">${r.date?fmt(r.date):'—'}</div>
+                <div class="athlete-result-disc">${esc(r.disc||'—')}</div>
+              </div>
+              <div class="athlete-result-race">${esc(r.race||r.title||'—')}</div>
+              <div class="athlete-result-main">
+                <div>
+                  <div class="athlete-result-label">順位</div>
+                  <div class="athlete-result-value rank">${esc(String(r.rank??'—'))}</div>
+                </div>
+                <div>
+                  <div class="athlete-result-label">タイム</div>
+                  <div class="athlete-result-value">${esc(String(r.time??'—'))}</div>
+                </div>
+                <div>
+                  <div class="athlete-result-label">獲得P</div>
+                  <div class="athlete-result-value point">${esc(String(r.point??'—'))}</div>
+                </div>
+              </div>
+            </div>`).join('')
+          : '<div class="athlete-results-empty">成績データなし</div>'}
       </div>
     </div>`;
-  document.querySelectorAll('main > section').forEach(s=>s.classList.remove('active'));
+
+  document.querySelectorAll('main > section').forEach(sec=>sec.classList.remove('active'));
   document.getElementById('athleteDetailScreen').classList.add('active');
   window.scrollTo({top:0,behavior:'smooth'});
 }
-function backToAthletes(){
-  document.querySelectorAll('main > section').forEach(s=>s.classList.remove('active'));
-  document.getElementById('athletes').classList.add('active');
+
+function backFromAthleteDetail(){
+  document.querySelectorAll('main > section').forEach(sec=>sec.classList.remove('active'));
+  const target=document.getElementById(athleteDetailReturnTarget==='ranking'?'ranking':'athletes');
+  if(target)target.classList.add('active');
+
+  document.querySelectorAll('[data-tab]').forEach(btn=>btn.classList.remove('active'));
+  if(athleteDetailReturnTarget==='ranking'){
+    const rankingBtn=document.querySelector('[data-tab="ranking"]');
+    if(rankingBtn)rankingBtn.classList.add('active');
+    renderRanking();
+  }
+
   window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function backToAthletes(){
+  athleteDetailReturnTarget='athletes';
+  backFromAthleteDetail();
 }
 function mockSajRefresh(){
   db.athletes.forEach(a=>a.updated=new Date().toISOString().slice(0,10));
@@ -2488,7 +2740,7 @@ function renderRanking(){
       const arr=db.athletes.filter(a=>a.sex===sex && a[key]!=null).sort((a,b)=>a[key]-b[key]);
       const el=document.getElementById(prefix+d);
       if(!el)return;
-      el.innerHTML=arr.map((a,i)=>`<div class="list-item"><b>${i+1}. ${a.name}</b><span class="muted" style="margin-left:8px">${a.birth?fmt(a.birth):'—'}</span><span style="float:right;font-weight:800">${a[key]}</span><br><span class="muted">SAJ No. ${a.saj||'—'} / ${a.school||''} ${a.grade||''}</span></div>`).join('')||'<span class="muted">データなし</span>';
+      el.innerHTML=arr.map((a,i)=>`<div class="list-item"><b>${i+1}. <button class="ranking-athlete-link" type="button" onclick='showAthlete(${JSON.stringify(a.id)},"ranking")'>${esc(a.name)}</button></b><span class="muted" style="margin-left:8px">${a.birth?fmt(a.birth):'—'}</span><span style="float:right;font-weight:800">${a[key]}</span><br><span class="muted">SAJ No. ${esc(a.saj||'—')} / ${esc(a.school||'')} ${esc(a.grade||'')}</span></div>`).join('')||'<span class="muted">データなし</span>';
     });
   };
   renderGroup('男','rankMale');
@@ -2940,7 +3192,7 @@ async function directPdfDownload(id){
 }
 function printSection(id){return directPdfDownload(id);}
 
-// ===== v0.11.1 SAJ list athlete registration =====
+// ===== v0.11.5 SAJ list athlete registration =====
 let sajAthleteListCache=[];
 
 function setAthleteRegisterMode(mode){
@@ -3646,7 +3898,7 @@ async function refreshAppCacheOnLaunch(){
   }
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=0111',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=0115',{updateViaCache:'none'});
     try{ await reg.update(); }catch{}
 
     if(reg.waiting){
