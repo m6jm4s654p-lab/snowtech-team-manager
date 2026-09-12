@@ -22,7 +22,7 @@ header{position:sticky;top:0;z-index:20;background:rgba(7,17,31,.95);backdrop-fi
 .brand h1{font-size:20px;margin:0}.brand small{color:var(--muted)}
 .sync{font-size:12px;color:var(--ok)}
 main{max-width:1200px;margin:auto;padding:18px 16px 80px}
-nav{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+nav{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
 nav button,.btn{border:1px solid var(--line);background:var(--panel);color:var(--text);padding:11px 12px;border-radius:10px;cursor:pointer}
 .btn-compact{padding:5px 9px!important;font-size:11px!important;line-height:1.1!important;min-height:auto!important;white-space:nowrap}
 
@@ -119,7 +119,7 @@ section{display:none} section.active{display:block}
 body.calendar-open{overflow:hidden;touch-action:manipulation}
 footer{color:var(--muted);text-align:center;padding:24px 0}
 @media(max-width:800px){
-  nav{grid-template-columns:repeat(3,1fr)}
+  nav{grid-template-columns:repeat(2,1fr)}
   .g2,.g3{grid-template-columns:1fr}
   .event{grid-template-columns:1fr 1fr}.event .event-main{grid-column:1/-1}
   .checks{grid-template-columns:1fr 1fr}
@@ -261,7 +261,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 
       <button class="tool-choice manager" type="button" onclick="enterManagerTool()">
         <div class="tool-choice-title">マネージメントツール</div>
-        <div class="tool-choice-desc">年間予定・大会・会場情報・選手・ランキング・チーム管理</div>
+        <div class="tool-choice-desc">年間予定・大会管理・大会会場・天気・積雪・選手管理・ランキング・チームボード・チーム設定</div>
       </button>
     </div>
   </div>
@@ -274,7 +274,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
       <small id="teamHeader">TEAM未設定</small>
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.8.8</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.8.9</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
   </div>
@@ -283,14 +283,16 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 <main>
 <nav class="no-print">
   <button data-tab="schedule" class="active">年間予定</button>
-  <button data-tab="events">大会</button>
-  <button data-tab="venues">会場情報</button>
-  <button data-tab="athletes">選手</button>
+  <button data-tab="events">大会管理</button>
+  <button data-tab="venues">大会会場</button>
+  <button data-tab="weather">天気・積雪</button>
+  <button data-tab="athletes">選手管理</button>
   <button data-tab="ranking">ランキング</button>
-  <button data-tab="settings">チーム管理</button>
+  <button data-tab="dashboard">チームボード</button>
+  <button data-tab="settings">チーム設定</button>
 </nav>
 <div class="tool-select-bar no-print">
-  <button class="btn portal-back-btn" type="button" onclick="showToolPortal()">ツール選択</button>
+  <button class="btn portal-back-btn" type="button" onclick="showToolPortal()">ツール切替</button>
 </div>
 
 
@@ -389,6 +391,32 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
       毎シーズン開催会場が変わっても、登録した大会から自動で一覧を作成します。
     </div>
     <div id="venueRegisteredList" style="margin-top:14px"></div>
+  </div>
+</section>
+
+
+<section id="weather">
+  <div class="card">
+    <h2>天気・積雪</h2>
+    <p class="muted">登録済み大会の会場を選択して、最新の予報を確認します。天気情報の取得にはインターネット接続が必要です。</p>
+    <div class="grid g3 no-print">
+      <div><label>大会会場</label><select id="weatherVenue"></select></div>
+      <div><label>検索地名（必要時に修正）</label><input id="weatherQuery" placeholder="例：雫石スキー場 岩手県"></div>
+      <div style="display:flex;align-items:end"><button class="btn primary" style="width:100%" onclick="loadVenueWeather()">天気を取得</button></div>
+    </div>
+    <div id="weatherStatus" class="muted" style="margin-top:10px">大会会場を選択してください。</div>
+    <div id="weatherCards" class="grid g3" style="margin-top:14px"></div>
+  </div>
+</section>
+
+<section id="dashboard">
+  <div class="card">
+    <h2>チームボード</h2>
+    <div id="teamBoardSummary" class="grid g3"></div>
+  </div>
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card"><h3>次の予定</h3><div id="teamBoardNextSchedules"></div></div>
+    <div class="card"><h3>次の大会</h3><div id="teamBoardNextEvents"></div></div>
   </div>
 </section>
 
@@ -1007,10 +1035,82 @@ document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
   b.classList.add('active');document.getElementById(b.dataset.tab).classList.add('active');
 });
 
+
+// ===== v0.8.9 Weather / Team Board =====
+function uniqueRegisteredVenues(){
+  const start=Number(db.team?.scheduleSeasonYear)||currentSeasonStartYear();
+  const seen=new Set(), out=[];
+  (db.events||[]).forEach(e=>{
+    if(eventSeasonStartYear(e)!==start || !e.place)return;
+    const key=String(e.place).trim().toLowerCase();
+    if(seen.has(key))return;
+    seen.add(key);
+    out.push({place:String(e.place).trim(),prefecture:e.prefecture||'',title:e.title||''});
+  });
+  return out;
+}
+function renderWeatherVenues(){
+  const sel=document.getElementById('weatherVenue'); if(!sel)return;
+  const current=sel.value;
+  const venues=uniqueRegisteredVenues();
+  sel.innerHTML='<option value="">会場を選択</option>'+venues.map((v,i)=>`<option value="${i}">${esc(v.place)}</option>`).join('');
+  if(current && [...sel.options].some(o=>o.value===current))sel.value=current;
+  sel.onchange=()=>{
+    const v=venues[Number(sel.value)];
+    const q=document.getElementById('weatherQuery');
+    if(q)q.value=v?[v.place,v.prefecture].filter(Boolean).join(' '):'';
+  };
+}
+function weatherLabel(code){
+  if(code===0)return'快晴'; if([1,2].includes(code))return'晴れ・薄曇り'; if(code===3)return'曇り';
+  if([45,48].includes(code))return'霧'; if([51,53,55,56,57,61,63,65,66,67,80,81,82].includes(code))return'雨';
+  if([71,73,75,77,85,86].includes(code))return'雪'; if([95,96,99].includes(code))return'雷'; return'—';
+}
+async function loadVenueWeather(){
+  const status=document.getElementById('weatherStatus'), cards=document.getElementById('weatherCards');
+  const q=(document.getElementById('weatherQuery')?.value||'').trim();
+  if(!q){status.textContent='大会会場を選択するか、検索地名を入力してください。';return;}
+  status.textContent='位置情報と天気予報を取得しています…'; cards.innerHTML='';
+  try{
+    const gr=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=1&language=ja&format=json`);
+    const gj=await gr.json(); const loc=gj.results?.[0];
+    if(!loc)throw new Error('会場の位置を特定できません。検索地名を「スキー場名 都道府県」のように修正してください。');
+    const u=`https://api.open-meteo.com/v1/forecast?latitude=${loc.latitude}&longitude=${loc.longitude}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,snowfall_sum,wind_speed_10m_max,wind_gusts_10m_max&timezone=Asia%2FTokyo&forecast_days=7`;
+    const wr=await fetch(u), w=await wr.json();
+    if(!wr.ok||!w.daily)throw new Error('天気予報を取得できませんでした。');
+    status.textContent=`${loc.name}${loc.admin1?' / '+loc.admin1:''}　7日間予報`;
+    cards.innerHTML=w.daily.time.map((d,i)=>`<div class="card" style="margin:0">
+      <strong>${esc(d)}</strong><div style="font-size:20px;margin:7px 0">${weatherLabel(w.daily.weather_code[i])}</div>
+      <div>気温 ${w.daily.temperature_2m_min[i]}〜${w.daily.temperature_2m_max[i]}℃</div>
+      <div>降水確率 ${w.daily.precipitation_probability_max[i]??'—'}%</div>
+      <div>予想降雪 ${w.daily.snowfall_sum[i]??0} cm</div>
+      <div>最大風速 ${w.daily.wind_speed_10m_max[i]??'—'} km/h</div>
+      <div class="muted">最大瞬間風速 ${w.daily.wind_gusts_10m_max[i]??'—'} km/h</div>
+    </div>`).join('');
+  }catch(e){status.textContent=e.message||'天気情報の取得に失敗しました。';}
+}
+function renderTeamBoard(){
+  const sum=document.getElementById('teamBoardSummary'); if(!sum)return;
+  const today=new Date().toISOString().slice(0,10);
+  const futureSchedules=(db.schedules||[]).filter(x=>(x.date||'')>=today).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  const futureEvents=(db.events||[]).filter(x=>(x.end||x.start||'')>=today).sort((a,b)=>(a.start||'').localeCompare(b.start||''));
+  const nextE=futureEvents[0];
+  const days=nextE?.start?Math.ceil((new Date(nextE.start+'T00:00:00')-new Date(today+'T00:00:00'))/86400000):null;
+  sum.innerHTML=[
+    ['所属選手',(db.athletes||[]).length+'名'],
+    ['登録大会',futureEvents.length+'大会'],
+    ['次の大会',nextE?(days<=0?'本日':`あと${days}日`):'予定なし']
+  ].map(x=>`<div class="card" style="margin:0"><div class="muted">${x[0]}</div><div style="font-size:24px;font-weight:800;margin-top:5px">${esc(x[1])}</div></div>`).join('');
+  const sl=document.getElementById('teamBoardNextSchedules');
+  sl.innerHTML=futureSchedules.slice(0,5).map(x=>`<div style="padding:8px 0;border-bottom:1px solid var(--line)"><strong>${esc(x.date||'')}</strong>　${esc(x.title||x.type||'予定')}</div>`).join('')||'<span class="muted">今後の予定はありません</span>';
+  const el=document.getElementById('teamBoardNextEvents');
+  el.innerHTML=futureEvents.slice(0,5).map(x=>`<div style="padding:8px 0;border-bottom:1px solid var(--line)"><strong>${esc(x.start||'')}</strong>　${esc(x.title||'大会')}<div class="muted">${esc(x.place||'')}</div></div>`).join('')||'<span class="muted">今後の大会はありません</span>';
+}
+
 function renderAll(){
   document.getElementById('teamHeader').textContent=db.team.name||'TEAM未設定';
   document.getElementById('teamName').value=db.team.name||'';
-  renderCoaches();renderAthletes();renderSchedule();renderEvents();renderRanking();refreshSelects();initSajCompetitionSeason();initScheduleSeason();renderSajRegionFilters();renderVenues();
+  renderCoaches();renderAthletes();renderSchedule();renderEvents();renderRanking();refreshSelects();initSajCompetitionSeason();initScheduleSeason();renderSajRegionFilters();renderVenues();renderWeatherVenues();renderTeamBoard();
 }
 
 function openScheduleForm(){scheduleForm.classList.remove('hidden')} function closeScheduleForm(){scheduleForm.classList.add('hidden')}
@@ -1614,7 +1714,7 @@ function printSection(id){
 
 
 
-// ===== v0.8.8 SAJ list athlete registration =====
+// ===== v0.8.9 SAJ list athlete registration =====
 let sajAthleteListCache=[];
 
 function setAthleteRegisterMode(mode){
