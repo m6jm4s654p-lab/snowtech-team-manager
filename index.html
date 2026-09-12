@@ -259,8 +259,15 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 }
 
 
-/* v0.9.5 branding */
+/* v0.9.7 branding */
 .tool-portal-logo img{width:min(100%,1100px);height:auto;object-fit:contain;display:block;margin:0 auto}
+
+
+/* v0.9.7 persistent navigation: Home + Tool switch only */
+.main-nav{grid-template-columns:minmax(150px,240px)!important;justify-content:center!important}
+.main-nav .nav-btn{width:100%}
+.tool-switch-wrap{display:flex;justify-content:center}
+.tool-switch-wrap button{width:min(240px,100%)}
 
 </style>
 </head>
@@ -292,7 +299,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
       <small id="teamHeader">TEAM未設定</small>
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.9.5</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.9.7</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
   </div>
@@ -300,14 +307,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 
 <main>
 <nav class="no-print">
-  <button data-tab="home" class="active">ホーム</button>
-  <button data-tab="schedule">年間予定</button>
-  <button data-tab="events">大会管理</button>
-  <button data-tab="venues">大会会場</button>
-  <button data-tab="weather">天気・積雪</button>
-  <button data-tab="athletes">選手管理</button>
-  <button data-tab="ranking">ランキング</button>
-  <button data-tab="settings">チーム設定</button>
+<button data-tab="home" class="active">ホーム</button>
 </nav>
 <div class="tool-select-bar no-print">
   <button class="btn portal-back-btn" type="button" onclick="showToolPortal()">ツール切替</button>
@@ -446,7 +446,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 <section id="weather">
   <div class="card">
     <h2>天気・積雪</h2>
-    <p class="muted">登録済み大会の会場を選択して、最新の予報を確認します。天気情報の取得にはインターネット接続が必要です。</p>
+    <p class="muted">登録済み大会の会場を選択すると、位置情報を確認できたスキー場だけを候補表示します。天気情報の取得にはインターネット接続が必要です。</p>
     <div class="grid g3 no-print">
       <div><label>登録大会の会場</label><select id="weatherVenue"></select></div>
       <div><label>スキー場候補</label><select id="weatherSkiArea"><option value="">大会会場を先に選択</option></select></div>
@@ -1138,7 +1138,7 @@ function openTab(tabId){
 document.querySelectorAll('nav button[data-tab]').forEach(b=>b.onclick=()=>openTab(b.dataset.tab));
 
 
-// ===== v0.9.5 Weather / Team Board =====
+// ===== v0.9.7 Weather / Team Board =====
 const PREF_REGION={
   '北海道':'北海道',
   '青森':'東北','岩手':'東北','宮城':'東北','秋田':'東北','山形':'東北','福島':'東北',
@@ -1186,6 +1186,27 @@ function uniqueRegisteredVenues(){
   });
   return out;
 }
+const WEATHER_GEO_CACHE_KEY='alpine_team_manager_weather_geo_v1';
+
+function weatherGeoCache(){
+  try{return JSON.parse(localStorage.getItem(WEATHER_GEO_CACHE_KEY)||'{}')||{};}
+  catch{return{};}
+}
+function saveWeatherGeoCache(cache){
+  try{localStorage.setItem(WEATHER_GEO_CACHE_KEY,JSON.stringify(cache));}catch{}
+}
+function weatherCandidateAliases(x){
+  const out=[x.name,...(x.keys||[])];
+  const stripped=String(x.name||'')
+    .replace(/（.*?）/g,'')
+    .replace(/スキー場/g,'')
+    .replace(/スノーパーク/g,'')
+    .replace(/スキーリンクス/g,'')
+    .replace(/リゾート/g,'')
+    .trim();
+  if(stripped)out.push(stripped);
+  return [...new Set(out.map(v=>String(v||'').trim()).filter(Boolean))];
+}
 function weatherCandidatesForVenue(v){
   if(!v)return[];
   const pref=normalizePrefecture(v.prefecture);
@@ -1212,30 +1233,147 @@ function weatherCandidatesForVenue(v){
   });
   return arr;
 }
-function renderWeatherSkiAreas(v){
+function waitWeatherGeo(ms){return new Promise(r=>setTimeout(r,ms));}
+
+async function resolveWeatherCandidate(candidate,venue){
+  const pref=normalizePrefecture(candidate.prefecture||venue?.prefecture||'');
+  const cache=weatherGeoCache();
+  const cacheKey=`${candidate.name}|${pref}`;
+  const cached=cache[cacheKey];
+  if(cached && Number.isFinite(cached.latitude) && Number.isFinite(cached.longitude)){
+    return {...candidate,...cached};
+  }
+
+  const aliases=weatherCandidateAliases(candidate);
+  const queries=[];
+  for(const alias of aliases){
+    if(pref)queries.push(`${alias}, ${pref}県`);
+    queries.push(alias);
+  }
+
+  // Prefer OpenStreetMap/Nominatim because resort/facility names are indexed
+  // more reliably than city-only geocoders. Limit attempts to avoid excess traffic.
+  for(const q of [...new Set(queries)].slice(0,4)){
+    try{
+      const url=`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&countrycodes=jp&accept-language=ja&q=${encodeURIComponent(q)}`;
+      const r=await fetch(url,{headers:{'Accept':'application/json'}});
+      if(r.ok){
+        const list=await r.json();
+        if(Array.isArray(list) && list.length){
+          const wantedPref=pref;
+          const hit=list.find(n=>{
+            const dn=String(n.display_name||'');
+            if(!wantedPref)return true;
+            return dn.includes(wantedPref) || dn.includes(wantedPref+'県');
+          }) || list[0];
+          const latitude=Number(hit.lat), longitude=Number(hit.lon);
+          if(Number.isFinite(latitude)&&Number.isFinite(longitude)){
+            const resolved={
+              latitude,longitude,
+              resolvedName:candidate.name,
+              geocodeName:String(hit.name||candidate.name),
+              geocodeLabel:String(hit.display_name||'')
+            };
+            cache[cacheKey]=resolved;
+            saveWeatherGeoCache(cache);
+            return {...candidate,...resolved};
+          }
+        }
+      }
+    }catch{}
+    await waitWeatherGeo(250);
+  }
+
+  // Final fallback: Open-Meteo GeoNames geocoding using short aliases.
+  // Only accept Japanese results and, where possible, the requested prefecture.
+  for(const alias of aliases.slice(0,3)){
+    try{
+      const q=pref?`${alias}, ${pref}県`:alias;
+      const r=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=10&language=ja&countryCode=JP&format=json`);
+      if(!r.ok)continue;
+      const j=await r.json(), results=j.results||[];
+      const hit=results.find(x=>!pref || normalizePrefecture(x.admin1)===pref);
+      if(hit && Number.isFinite(Number(hit.latitude)) && Number.isFinite(Number(hit.longitude))){
+        const resolved={
+          latitude:Number(hit.latitude),longitude:Number(hit.longitude),
+          resolvedName:candidate.name,
+          geocodeName:String(hit.name||candidate.name),
+          geocodeLabel:[hit.name,hit.admin1].filter(Boolean).join(' / ')
+        };
+        cache[cacheKey]=resolved;
+        saveWeatherGeoCache(cache);
+        return {...candidate,...resolved};
+      }
+    }catch{}
+  }
+  return null;
+}
+
+let weatherCandidateRequestId=0;
+async function renderWeatherSkiAreas(v){
   const ski=document.getElementById('weatherSkiArea');
   const info=document.getElementById('weatherFilterInfo');
+  const status=document.getElementById('weatherStatus');
   if(!ski)return;
+
+  const requestId=++weatherCandidateRequestId;
   if(!v){
     ski.innerHTML='<option value="">大会会場を先に選択</option>';
+    ski.dataset.candidates='[]';
     if(info)info.textContent='';
     return;
   }
-  const candidates=weatherCandidatesForVenue(v);
-  ski.innerHTML='<option value="">スキー場を選択</option>'+candidates.map((x,i)=>`<option value="${i}">${esc(x.name)}${x.prefecture?'（'+esc(x.prefecture)+'）':''}</option>`).join('');
-  const matched=matchOfficialVenue(v.place);
-  if(matched){
-    const idx=candidates.findIndex(x=>x.name===matched.name);
-    if(idx>=0)ski.value=String(idx);
-  }else if(candidates.length===1){
-    ski.value='0';
-  }
-  ski.dataset.candidates=JSON.stringify(candidates);
+
+  const raw=weatherCandidatesForVenue(v);
+  ski.disabled=true;
+  ski.innerHTML='<option value="">取得可能なスキー場を確認中…</option>';
+  ski.dataset.candidates='[]';
+  if(status)status.textContent='スキー場候補の位置情報を確認しています…';
   if(info){
     const scope=v.prefecture?`${v.prefecture}県`:(v.region||'登録会場周辺');
-    info.textContent=`「${v.place}」から ${scope} の候補を ${candidates.length}件に絞り込みました。`;
+    info.textContent=`${scope} の候補 ${raw.length}件から、天気取得可能なスキー場だけを確認しています。`;
+  }
+
+  const resolved=[];
+  // Sequential resolution keeps requests modest and avoids temporary rate limiting.
+  for(let i=0;i<raw.length;i++){
+    if(requestId!==weatherCandidateRequestId)return;
+    if(status)status.textContent=`スキー場候補を確認中… ${i+1}/${raw.length}`;
+    const hit=await resolveWeatherCandidate(raw[i],v);
+    if(hit)resolved.push(hit);
+  }
+
+  if(requestId!==weatherCandidateRequestId)return;
+  ski.disabled=false;
+  ski.dataset.candidates=JSON.stringify(resolved);
+
+  if(!resolved.length){
+    ski.innerHTML='<option value="">取得可能な候補が見つかりません</option>';
+    if(info)info.textContent='この会場周辺では位置情報を確認できるスキー場候補が見つかりませんでした。';
+    if(status)status.textContent='大会会場名の登録内容を確認してください。';
+    return;
+  }
+
+  ski.innerHTML='<option value="">スキー場を選択</option>'+resolved.map((x,i)=>
+    `<option value="${i}">${esc(x.name)}${x.prefecture?'（'+esc(x.prefecture)+'）':''}</option>`
+  ).join('');
+
+  const matched=matchOfficialVenue(v.place);
+  if(matched){
+    const idx=resolved.findIndex(x=>x.name===matched.name);
+    if(idx>=0)ski.value=String(idx);
+  }else if(resolved.length===1){
+    ski.value='0';
+  }
+
+  if(info){
+    info.textContent=`${raw.length}候補のうち、位置情報を確認できた ${resolved.length}件だけを表示しています。`;
+  }
+  if(status){
+    status.textContent='候補一覧は位置情報確認済みです。スキー場を選択して「天気を取得」を押してください。';
   }
 }
+
 function renderWeatherVenues(){
   const sel=document.getElementById('weatherVenue'); if(!sel)return;
   const current=sel.value;
@@ -1243,23 +1381,25 @@ function renderWeatherVenues(){
   sel.innerHTML='<option value="">会場を選択</option>'+venues.map((v,i)=>`<option value="${i}">${esc(v.place)}${v.prefecture?'（'+esc(v.prefecture)+'）':''}</option>`).join('');
   sel.dataset.venues=JSON.stringify(venues);
   if(current && [...sel.options].some(o=>o.value===current))sel.value=current;
-  sel.onchange=()=>{
+
+  sel.onchange=async()=>{
     const list=JSON.parse(sel.dataset.venues||'[]');
     const v=list[Number(sel.value)];
-    renderWeatherSkiAreas(v||null);
-    const status=document.getElementById('weatherStatus');
-    if(status)status.textContent=v?'候補からスキー場を選択して「天気を取得」を押してください。':'登録大会の会場を選択してください。';
+    await renderWeatherSkiAreas(v||null);
   };
+
   if(sel.value){
     const list=JSON.parse(sel.dataset.venues||'[]');
     renderWeatherSkiAreas(list[Number(sel.value)]||null);
   }else renderWeatherSkiAreas(null);
 }
+
 function weatherLabel(code){
   if(code===0)return'快晴'; if([1,2].includes(code))return'晴れ・薄曇り'; if(code===3)return'曇り';
   if([45,48].includes(code))return'霧'; if([51,53,55,56,57,61,63,65,66,67,80,81,82].includes(code))return'雨';
   if([71,73,75,77,85,86].includes(code))return'雪'; if([95,96,99].includes(code))return'雷'; return'—';
 }
+
 async function loadVenueWeather(){
   const status=document.getElementById('weatherStatus'), cards=document.getElementById('weatherCards');
   const venueSel=document.getElementById('weatherVenue');
@@ -1268,30 +1408,21 @@ async function loadVenueWeather(){
   let candidates=[]; try{candidates=JSON.parse(skiSel?.dataset.candidates||'[]')}catch{}
   const venue=venues[Number(venueSel?.value)];
   const ski=candidates[Number(skiSel?.value)];
+
   if(!venue){status.textContent='登録大会の会場を選択してください。';return;}
-  if(!ski){status.textContent='候補一覧からスキー場を選択してください。';return;}
-  const q=[ski.name,ski.prefecture||venue.prefecture].filter(Boolean).join(' ');
-  status.textContent=`${ski.name} の位置情報と天気予報を取得しています…`; cards.innerHTML='';
+  if(!ski){status.textContent='位置情報確認済みの候補からスキー場を選択してください。';return;}
+  if(!Number.isFinite(Number(ski.latitude))||!Number.isFinite(Number(ski.longitude))){
+    status.textContent='この候補の位置情報がありません。会場を選び直してください。';return;
+  }
+
+  status.textContent=`${ski.name} の天気予報を取得しています…`;
+  cards.innerHTML='';
   try{
-    let loc=null;
-    // Ski-area names are better resolved by OpenStreetMap. Open-Meteo geocoding remains a fallback.
-    try{
-      const nr=await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&accept-language=ja&q=${encodeURIComponent(q)}`);
-      const nj=await nr.json();
-      if(Array.isArray(nj)&&nj.length){
-        const n=nj[0]; loc={latitude:Number(n.lat),longitude:Number(n.lon),name:ski.name,admin1:ski.prefecture||venue.prefecture||''};
-      }
-    }catch{}
-    if(!loc){
-      const gr=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=5&language=ja&format=json`);
-      const gj=await gr.json(),results=gj.results||[],wantedPref=normalizePrefecture(ski.prefecture||venue.prefecture);
-      loc=results.find(x=>!wantedPref || normalizePrefecture(x.admin1)===wantedPref) || results[0] || null;
-    }
-    if(!loc)throw new Error('選択したスキー場の位置を特定できませんでした。');
-    const u=`https://api.open-meteo.com/v1/forecast?latitude=${loc.latitude}&longitude=${loc.longitude}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,snowfall_sum,wind_speed_10m_max,wind_gusts_10m_max&wind_speed_unit=ms&timezone=Asia%2FTokyo&forecast_days=7`;
+    const u=`https://api.open-meteo.com/v1/forecast?latitude=${ski.latitude}&longitude=${ski.longitude}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,snowfall_sum,wind_speed_10m_max,wind_gusts_10m_max&wind_speed_unit=ms&timezone=Asia%2FTokyo&forecast_days=7`;
     const wr=await fetch(u), w=await wr.json();
     if(!wr.ok||!w.daily)throw new Error('天気予報を取得できませんでした。');
-    status.textContent=`${ski.name} / ${loc.name}${loc.admin1?' / '+loc.admin1:''}　7日間予報`;
+
+    status.textContent=`${ski.name}${ski.geocodeName&&ski.geocodeName!==ski.name?' / '+ski.geocodeName:''}　7日間予報`;
     cards.innerHTML=w.daily.time.map((d,i)=>`<div class="card" style="margin:0">
       <strong>${esc(d)}</strong><div style="font-size:20px;margin:7px 0">${weatherLabel(w.daily.weather_code[i])}</div>
       <div>気温 ${w.daily.temperature_2m_min[i]}〜${w.daily.temperature_2m_max[i]}℃</div>
@@ -1300,7 +1431,9 @@ async function loadVenueWeather(){
       <div>最大風速 ${w.daily.wind_speed_10m_max[i]??'—'} m/s</div>
       <div class="muted">最大瞬間風速 ${w.daily.wind_gusts_10m_max[i]??'—'} m/s</div>
     </div>`).join('');
-  }catch(e){status.textContent=e.message||'天気情報の取得に失敗しました。';}
+  }catch(e){
+    status.textContent=e.message||'天気情報の取得に失敗しました。';
+  }
 }
 
 function homeYmd(d){
@@ -2178,7 +2311,7 @@ async function directPdfDownload(id){
 }
 function printSection(id){return directPdfDownload(id);}
 
-// ===== v0.9.5 SAJ list athlete registration =====
+// ===== v0.9.7 SAJ list athlete registration =====
 let sajAthleteListCache=[];
 
 function setAthleteRegisterMode(mode){
@@ -2635,7 +2768,7 @@ async function refreshAppCacheOnLaunch(){
   }
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=095',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=097',{updateViaCache:'none'});
     try{ await reg.update(); }catch{}
 
     if(reg.waiting){
