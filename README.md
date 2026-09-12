@@ -1018,3 +1018,25 @@ SnowTech → 管理 → `SAJ連携API URL` にWorker URLを入力 → 保存。
   1行目：YYYY/MM/DD～YYYY/MM/DD
   2行目：大会名
 - Service Workerをv0.13.5へ更新
+
+## v0.13.6 manual competition integration
+- 「その他大会追加」で入力した大会を保存後すぐ登録済み大会一覧へ追加
+- 手入力大会も年間予定カレンダーへ自動反映
+- HOMEの直近予定にも反映
+- 会場情報 / 天気会場候補にも可能な範囲で即時反映
+- 手入力大会に seasonStartYear を保存
+- 既存の手入力大会で seasonStartYear が無い場合は開始日からシーズン判定
+- 編集時は既存の出場選手・コーチ紐付けを保持
+- Service Workerをv0.13.6へ更新
+
+## v0.13.7 competition font sizing
+- 登録済み大会一覧の日付・男女人数・大会名のフォントサイズを11pxへ統一
+- 「詳細」「選手」ボタン内の文字サイズと同一に調整
+- Service Workerをv0.13.7へ更新
+
+## v0.13.8 competition title wrapping
+- 登録済み大会の大会名は画面右端まで使用し、到達したら自動改行
+- 大会名は複数行表示を許可
+- 1行省略表示と省略記号を撤廃
+- 長い連続文字列も折り返せるようoverflow-wrap / word-break対応
+- Service Workerをv0.13.8へ更新

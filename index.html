@@ -261,11 +261,11 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 }
 
 
-/* v0.13.5 branding */
+/* v0.13.8 branding */
 .tool-portal-logo img{width:min(100%,1100px);height:auto;object-fit:contain;display:block;margin:0 auto}
 
 
-/* v0.13.5 top navigation: HOME + 操作ナビ / team name below */
+/* v0.13.8 top navigation: HOME + 操作ナビ / team name below */
 .top-nav-block{
   width:min(560px,100%);
   margin:0 auto 16px;
@@ -313,7 +313,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 }
 
 
-/* v0.13.5: team name is shown below HOME / 操作ナビ */
+/* v0.13.8: team name is shown below HOME / 操作ナビ */
 header .team-name,
 header .team-title,
 header #teamName,
@@ -820,7 +820,7 @@ header [data-team-name],header #teamHeader{display:none!important}
 }
 
 
-/* v0.13.5: smartphone / PWA status-bar safe area */
+/* v0.13.8: smartphone / PWA status-bar safe area */
 header{
   padding-top:calc(10px + env(safe-area-inset-top, 0px));
 }
@@ -1043,7 +1043,7 @@ header{
 }
 
 
-/* v0.13.5 two-line competition rows */
+/* v0.13.8 two-line competition rows */
 .event-simple-list{
   width:100%;
   overflow-x:auto;
@@ -1113,7 +1113,7 @@ header{
 .event-two-date{
   grid-column:4 / span 2;
   grid-row:1;
-  font-size:12px;
+  font-size:11px;
   line-height:1.25;
   text-align:left;
   white-space:nowrap;
@@ -1122,7 +1122,7 @@ header{
   grid-column:4 / span 2;
   grid-row:2;
   min-width:0;
-  font-size:13px;
+  font-size:11px;
   line-height:1.3;
   text-align:left;
   cursor:pointer;
@@ -1148,7 +1148,7 @@ header{
     grid-template-columns:38px 38px 40px 88px var(--event-title-width, 320px) !important;
   }
 }
-/* v0.13.5 settings alignment */
+/* v0.13.8 settings alignment */
 #coachList .list-item{
   display:flex;
   align-items:center;
@@ -1177,6 +1177,38 @@ header{
   margin:0 !important;
 }
 
+
+/* v0.13.8 registered competition typography */
+.event-two-male,
+.event-two-female,
+.event-two-date,
+.event-two-title,
+.event-two-title-name{
+  font-size:11px !important;
+}
+
+
+/* v0.13.8 competition title wrapping */
+.event-two-title{
+  white-space:normal !important;
+  overflow:visible !important;
+  min-width:0;
+  max-width:calc(100vw - 190px);
+}
+.event-two-title-name{
+  white-space:normal !important;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+  text-overflow:clip !important;
+  overflow:visible !important;
+  line-height:1.35;
+}
+@media(max-width:520px){
+  .event-two-title{
+    max-width:calc(100vw - 176px);
+  }
+}
+
 </style>
 </head>
 <body>
@@ -1203,7 +1235,7 @@ header{
 <header>
   <div class="header-inner">
     <div class="header-meta-row">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.13.5</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.13.8</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
     <div class="header-title-row">
@@ -1801,11 +1833,28 @@ const VENUE_OFFICIAL_REGISTRY=[
 ];
 
 function eventSeasonStartYear(e){
-  if(e && e.sajSeason){
-    const n=Number(e.sajSeason);
-    if(Number.isFinite(n) && n>2000) return n-1;
+  const explicit=Number(e?.seasonStartYear);
+  if(Number.isFinite(explicit) && explicit>2000)return explicit;
+
+  const sajSeason=String(e?.sajSeason||'').match(/(\d{4})/g);
+  if(sajSeason?.length){
+    const years=sajSeason.map(Number).filter(Number.isFinite);
+    if(years.length){
+      const max=Math.max(...years);
+      const min=Math.min(...years);
+      if(max-min===1)return min;
+      if(max>2000)return max-1;
+    }
   }
-  return seasonStartYearFromDate(e?.start||'');
+
+  const date=String(e?.start||'');
+  const m=date.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(m){
+    const y=Number(m[1]),mon=Number(m[2]);
+    // App's season rollover is July.
+    return mon>=7?y:y-1;
+  }
+  return selectedGlobalSeasonYear();
 }
 function findVenueRegistry(place){
   const p=String(place||'').toLowerCase();
@@ -2385,7 +2434,7 @@ function openTab(tabId){
 document.querySelectorAll('nav button[data-tab]').forEach(b=>b.onclick=()=>openTab(b.dataset.tab));
 
 
-// ===== v0.13.5 Weather / Team Board =====
+// ===== v0.13.8 Weather / Team Board =====
 const PREF_REGION={
   '北海道':'北海道',
   '青森':'東北','岩手':'東北','宮城':'東北','秋田':'東北','山形':'東北','福島':'東北',
@@ -3485,14 +3534,54 @@ function editEvent(id){
   eventForm.classList.remove('hidden'); eventForm.scrollIntoView({behavior:'smooth',block:'start'});
 }
 saveEvent = function(){
-  const item={title:eTitle.value,start:eStart.value,end:eEnd.value,place:ePlace.value,disc:eDisc.value,deadline:eDeadline.value,
-    athleteIds:[],coachIds:[],note:''};
-  if(!item.title || !item.start){alert('大会名と開始日を入力してください');return}
+  const start=eStart.value;
+  const end=eEnd.value||eStart.value;
+  const item={
+    title:eTitle.value.trim(),
+    start,
+    end,
+    place:ePlace.value.trim(),
+    disc:eDisc.value.trim(),
+    deadline:eDeadline.value,
+    athleteIds:[],
+    coachIds:[],
+    note:'',
+    manualEvent:true,
+    seasonStartYear:selectedGlobalSeasonYear()
+  };
+
+  if(!item.title || !item.start){
+    alert('大会名と開始日を入力してください');
+    return;
+  }
+  if(item.end && item.end<item.start){
+    alert('終了日は開始日以降を指定してください');
+    return;
+  }
+
   if(editingEventId){
     const i=db.events.findIndex(x=>x.id===editingEventId);
-    if(i>=0)db.events[i]={...db.events[i],...item};
-  }else db.events.push({id:uid(),...item});
-  editingEventId=null; setEventMode(null); save();
+    if(i>=0){
+      item.athleteIds=[...(db.events[i].athleteIds||[])];
+      item.coachIds=[...(db.events[i].coachIds||[])];
+      db.events[i]={...db.events[i],...item};
+    }
+  }else{
+    db.events.push({id:uid(),...item});
+  }
+
+  editingEventId=null;
+  setEventMode(null);
+  persistDb({silent:true});
+
+  // Manual competition must appear immediately everywhere the same as imported SAJ events.
+  renderEvents();
+  renderScheduleBoard();
+  renderHome();
+  renderVenueRegisteredList?.();
+  renderWeatherVenues?.();
+
+  alert('大会を追加しました。大会一覧と年間予定に反映しました。');
 };
 
 let eventAthleteEditingId='';
@@ -3639,7 +3728,7 @@ renderEvents = function(){
     const femaleCount=selectedAthletes.filter(a=>a.sex==='女').length;
     const id=encodeURIComponent(String(e.id||''));
 
-    return `<div class="event-simple-row event-two-line-row" style="--event-title-width:${titleWidth}px">
+    return `<div class="event-simple-row event-two-line-row" style="--event-title-width:min(${titleWidth}px, calc(100vw - 190px))">
       <div class="event-two-detail">${
         safeSajUrl(e.sajUrl)
           ? `<button class="btn primary event-two-btn no-print" onclick="openCompetitionDetail(decodeURIComponent('${encodeURIComponent(safeSajUrl(e.sajUrl))}'))"><span class="stack">詳</span><span class="stack">細</span></button>`
@@ -4050,7 +4139,7 @@ async function directPdfDownload(id){
 }
 function printSection(id){return directPdfDownload(id);}
 
-// ===== v0.13.5 SAJ list athlete registration =====
+// ===== v0.13.8 SAJ list athlete registration =====
 let sajAthleteListCache=[];
 
 function setAthleteRegisterMode(mode){
@@ -4858,7 +4947,7 @@ async function refreshAppCacheOnLaunch(){
   if(!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=0135',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=0138',{updateViaCache:'none'});
     try{ await reg.update(); }catch{}
 
     if(reg.waiting){
