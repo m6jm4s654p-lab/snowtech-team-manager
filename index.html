@@ -50,7 +50,7 @@ section{display:none} section.active{display:block}
 .event-simple-title{font-weight:700}
 .venue-region{margin-top:16px}
 .venue-region h3{margin-bottom:8px}
-.venue-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.venue-grid{display:grid;grid-template-columns:minmax(160px,260px);gap:8px}
 .venue-item{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#0a1724;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
 .venue-item-name{font-weight:700;line-height:1.3}
 .venue-item-pref{display:block;color:var(--muted);font-size:11px;font-weight:400;margin-top:2px}
@@ -259,11 +259,11 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 }
 
 
-/* v0.9.8 branding */
+/* v0.10.0 branding */
 .tool-portal-logo img{width:min(100%,1100px);height:auto;object-fit:contain;display:block;margin:0 auto}
 
 
-/* v0.9.8 persistent navigation: HOME + Tool switch */
+/* v0.10.0 persistent navigation: HOME + Tool switch */
 .top-action-row{
   display:grid;
   grid-template-columns:repeat(2,minmax(0,1fr));
@@ -319,7 +319,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
       <small id="teamHeader">TEAM未設定</small>
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.9.8</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.10.0</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
   </div>
@@ -327,8 +327,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 
 <main>
 <div class="top-action-row no-print">
-  <button data-tab="home" class="active top-action-btn">HOME</button>
-  <button class="top-action-btn" type="button" onclick="showToolPortal()">ツール切替</button>
+  <button id="homeButton" data-tab="home" class="active top-action-btn" type="button" onclick="goHome()">HOME</button>
 </div>
 
 
@@ -1155,7 +1154,7 @@ function openTab(tabId){
 document.querySelectorAll('nav button[data-tab]').forEach(b=>b.onclick=()=>openTab(b.dataset.tab));
 
 
-// ===== v0.9.8 Weather / Team Board =====
+// ===== v0.10.0 Weather / Team Board =====
 const PREF_REGION={
   '北海道':'北海道',
   '青森':'東北','岩手':'東北','宮城':'東北','秋田':'東北','山形':'東北','福島':'東北',
@@ -2329,7 +2328,7 @@ async function directPdfDownload(id){
 }
 function printSection(id){return directPdfDownload(id);}
 
-// ===== v0.9.8 SAJ list athlete registration =====
+// ===== v0.10.0 SAJ list athlete registration =====
 let sajAthleteListCache=[];
 
 function setAthleteRegisterMode(mode){
@@ -2786,7 +2785,7 @@ async function refreshAppCacheOnLaunch(){
   }
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=098',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=0100',{updateViaCache:'none'});
     try{ await reg.update(); }catch{}
 
     if(reg.waiting){
@@ -2811,6 +2810,25 @@ renderAll();
 initCalendarFullscreen();
 initToolPortal();
 setTimeout(()=>{ autoRefreshSajDaily().catch(()=>{}); },300);
+
+function goHome(){
+  document.querySelectorAll('main section').forEach(sec=>sec.classList.remove('active'));
+  const home=document.getElementById('home');
+  if(home)home.classList.add('active');
+
+  document.querySelectorAll('[data-tab]').forEach(btn=>btn.classList.remove('active'));
+  const homeBtn=document.getElementById('homeButton');
+  if(homeBtn)homeBtn.classList.add('active');
+
+  try{
+    window.scrollTo({top:0,left:0,behavior:'smooth'});
+  }catch{
+    window.scrollTo(0,0);
+  }
+
+  if(typeof renderHome==='function')renderHome();
+}
+
 </script>
 </body>
 </html>

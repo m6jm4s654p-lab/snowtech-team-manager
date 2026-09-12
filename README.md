@@ -663,3 +663,19 @@ SnowTech → 管理 → `SAJ連携API URL` にWorker URLを入力 → 保存。
   - 正しい祝日Set `JP_HOLIDAYS` を参照するよう修正
 - 年間予定PDFの対象月生成チェックを追加
 - Service Workerをv0.9.8へ更新
+
+## v0.9.9
+- HOMEボタンの動作を修正
+- どの機能ページに滞在中でもHOMEを押すとホーム画面へ戻る
+- 現在表示中のsectionを解除し、#homeをactiveにする専用goHome()を追加
+- HOMEボタンのactive状態も復元
+- ホーム表示時にrenderHome()を再実行して直近1週間予定などを更新
+- 画面上部へスクロールして戻る
+- Service Workerをv0.9.9へ更新
+
+## v0.10.0
+- 上部の「ツール切替」ボタンを削除
+- 上部常時表示ボタンは「HOME」のみ
+- ホーム画面内8ボタンの「ツール切替」は維持
+- HOMEボタンの戻る動作はv0.9.9を維持
+- Service Workerをv0.10.0へ更新
