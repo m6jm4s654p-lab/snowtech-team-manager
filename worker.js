@@ -16,7 +16,7 @@ export default {
 
     if (request.method === "OPTIONS") return cors(new Response(null, {status:204}), env);
     if (url.pathname === "/health") {
-      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.8.6"}), env);
+      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.8.8"}), env);
     }
     if (url.pathname === "/api/debug-competition-calendar") {
       try{
@@ -167,7 +167,7 @@ function cors(resp,env){
 }
 async function getText(url){
   const r=await fetch(url,{headers:{
-    "User-Agent":"SnowTech/0.8.6 (+public SAJ data lookup)",
+    "User-Agent":"SnowTech/0.8.8 (+public SAJ data lookup)",
     "Accept":"text/html,application/xhtml+xml"
   }});
   if(!r.ok) throw new Error(`SAJ HTTP ${r.status}: ${url}`);
@@ -487,7 +487,7 @@ function parseDelimitedPointFile(text,saj,source){
 
 async function getRawText(url){
   const r=await fetch(url,{headers:{
-    "User-Agent":"SnowTech/0.8.6 (+public SAJ data lookup)",
+    "User-Agent":"SnowTech/0.8.8 (+public SAJ data lookup)",
     "Accept":"text/csv,text/plain,text/html,application/octet-stream,*/*"
   }});
   if(!r.ok) throw new Error(`SAJ HTTP ${r.status}: ${url}`);
@@ -1043,7 +1043,7 @@ async function fetchFollowingSajSession(url, init, maxRedirects=5){
       // Browser semantics: 301/302/303 after a form request become GET.
       if([301,302,303].includes(r.status)){
         currentInit={method:"GET",headers:{
-          "User-Agent":"SnowTech/0.8.6 (+public SAJ competition calendar lookup)",
+          "User-Agent":"SnowTech/0.8.8 (+public SAJ competition calendar lookup)",
           "Accept":"text/html,application/xhtml+xml"
         }};
       }
@@ -1066,7 +1066,7 @@ async function fetchFollowingSajSession(url, init, maxRedirects=5){
 async function submitCalendarForm(formInfo){
   const target=new URL(formInfo.action,SAJ_ORIGIN);
   const headers={
-    "User-Agent":"SnowTech/0.8.6 (+public SAJ competition calendar lookup)",
+    "User-Agent":"SnowTech/0.8.8 (+public SAJ competition calendar lookup)",
     "Accept":"text/html,application/xhtml+xml"
   };
 
@@ -1414,7 +1414,7 @@ async function lookupCompetitionsApi(season,month=0){
   const r=await fetch(target.toString(),{
     method:"GET",
     headers:{
-      "User-Agent":"SnowTech/0.8.6 (+public SAJ competition calendar lookup)",
+      "User-Agent":"SnowTech/0.8.8 (+public SAJ competition calendar lookup)",
       "Accept":"application/json,text/javascript,*/*;q=0.8",
       "Referer":`${SAJ_ORIGIN}/alpine/competition/calendar`
     }
@@ -1459,7 +1459,7 @@ async function debugCompetitionApi(season=2026,month=2){
   const r=await fetch(target.toString(),{
     method:"GET",
     headers:{
-      "User-Agent":"SnowTech/0.8.6 (+public SAJ competition calendar lookup)",
+      "User-Agent":"SnowTech/0.8.8 (+public SAJ competition calendar lookup)",
       "Accept":"application/json,text/javascript,*/*;q=0.8",
       "Referer":`${SAJ_ORIGIN}/alpine/competition/calendar`
     }

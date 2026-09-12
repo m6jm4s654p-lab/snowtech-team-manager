@@ -274,7 +274,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
       <small id="teamHeader">TEAM未設定</small>
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.8.6</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.8.8</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
   </div>
@@ -456,6 +456,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
               <button class="btn" type="button" onclick="toggleAllSajList(true)">すべて選択</button>
               <button class="btn" type="button" onclick="toggleAllSajList(false)">選択解除</button>
               <button id="sajListRegisterBtn" class="btn ok" type="button" onclick="registerSelectedSajAthletes()">選択した選手を登録</button>
+              <button id="sajListClearBtn" class="btn" type="button" onclick="clearSajAthleteList()">リストをクリア</button>
             </div>
             <div class="athlete-table-wrap">
               <table class="saj-list-table">
@@ -1296,6 +1297,11 @@ function importSelectedSajCompetitions(){
     ? `年間予定に反映いたしました（${added}大会）`
     : '選択した大会はすでに登録済みです';
   if(added>0) alert('年間予定に反映いたしました');
+  // 反映完了後は取得した大会一覧を閉じる
+  const sajResults=document.getElementById('sajCompetitionResults') ||
+                   document.getElementById('sajCandidatesWrap') ||
+                   document.getElementById('sajResults');
+  sajResults?.classList.add('hidden');
 }
 
 function openAthleteForm(){athleteForm.classList.remove('hidden')}
@@ -1608,7 +1614,7 @@ function printSection(id){
 
 
 
-// ===== v0.8.6 SAJ list athlete registration =====
+// ===== v0.8.8 SAJ list athlete registration =====
 let sajAthleteListCache=[];
 
 function setAthleteRegisterMode(mode){
@@ -1692,6 +1698,14 @@ function toggleAllSajList(on){
   document.querySelectorAll('.saj-list-check:not(:disabled)').forEach(c=>c.checked=!!on);
 }
 
+function clearSajAthleteList(){
+  sajAthleteListCache=[];
+  const tbody=document.getElementById('sajListRows');
+  if(tbody) tbody.innerHTML='';
+  document.getElementById('sajListResultsWrap')?.classList.add('hidden');
+  setSajListStatus('リストをクリアしました。性別と加盟団体を選択して、一覧を再取得できます。');
+}
+
 async function registerSelectedSajAthletes(){
   const checks=[...document.querySelectorAll('.saj-list-check:checked:not(:disabled)')];
   if(!checks.length){
@@ -1740,6 +1754,14 @@ async function registerSelectedSajAthletes(){
   let msg=`一括登録完了：成功 ${ok}名`;
   if(skip) msg+=` / 登録済み ${skip}名`;
   if(ng) msg+=` / 失敗 ${ng}名`;
+
+  if(ok>0){
+    sajAthleteListCache=[];
+    const tbody=document.getElementById('sajListRows');
+    if(tbody) tbody.innerHTML='';
+    document.getElementById('sajListResultsWrap')?.classList.add('hidden');
+  }
+
   setSajListStatus(msg,ng?'status-warn':'muted');
   alert(msg+(errors.length?`\n\n${errors.slice(0,5).join('\n')}`:''));
 }
