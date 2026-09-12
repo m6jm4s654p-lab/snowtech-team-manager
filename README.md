@@ -628,3 +628,12 @@ SnowTech → 管理 → `SAJ連携API URL` にWorker URLを入力 → 保存。
 - Service Worker登録バージョンをv0.9.4へ更新し、旧PWAキャッシュ残留を抑制
 - 天気予報の風速単位を km/h から m/s へ変更
 - Open-Meteo取得時点から wind_speed_unit=ms を指定
+
+## v0.9.5
+- 年間予定PDFのみ生成処理を再設計
+- 年間予定PDFのCanvasサイズを軽量化し、メモリ使用量を削減
+- 1ページ生成ごとにCanvasメモリを解放
+- canvas.toBlob失敗時はページ単位でdataURL方式へ自動フォールバック
+- 通常モードで年間予定PDF生成に失敗した場合、さらに低解像度の軽量モードで自動再試行
+- 大会スケジュールPDFはv0.9.4の正常動作方式を維持
+- Service Workerをv0.9.5へ更新

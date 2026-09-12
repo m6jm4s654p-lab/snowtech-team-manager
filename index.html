@@ -259,7 +259,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 }
 
 
-/* v0.9.4 branding */
+/* v0.9.5 branding */
 .tool-portal-logo img{width:min(100%,1100px);height:auto;object-fit:contain;display:block;margin:0 auto}
 
 </style>
@@ -292,7 +292,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
       <small id="teamHeader">TEAM未設定</small>
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.9.4</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.9.5</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
   </div>
@@ -1138,7 +1138,7 @@ function openTab(tabId){
 document.querySelectorAll('nav button[data-tab]').forEach(b=>b.onclick=()=>openTab(b.dataset.tab));
 
 
-// ===== v0.9.4 Weather / Team Board =====
+// ===== v0.9.5 Weather / Team Board =====
 const PREF_REGION={
   '北海道':'北海道',
   '青森':'東北','岩手':'東北','宮城':'東北','秋田':'東北','山形':'東北','福島':'東北',
@@ -1956,12 +1956,28 @@ function buildJpegPdf(images){
   objects.sort((a,b)=>a.n-b.n);const parts=[asciiBytes('%PDF-1.4\n%PDF\n')],offsets=[0];let len=parts[0].length;for(const o of objects){offsets[o.n]=len;const pre=asciiBytes(`${o.n} 0 obj\n`),post=asciiBytes('\nendobj\n');parts.push(pre,o.bytes,post);len+=pre.length+o.bytes.length+post.length;}const xo=len,max=objects[objects.length-1].n;let x=`xref\n0 ${max+1}\n0000000000 65535 f \n`;for(let i=1;i<=max;i++)x+=`${String(offsets[i]||0).padStart(10,'0')} 00000 n \n`;x+=`trailer\n<< /Size ${max+1} /Root 1 0 R >>\nstartxref\n${xo}\n%%EOF`;parts.push(asciiBytes(x));return new Blob([joinBytes(parts)],{type:'application/pdf'});
 }
 const PDF_FONT='"Noto Sans JP","Yu Gothic",Meiryo,sans-serif';
-async function canvasToPdfImage(canvas){
-  const blob=await new Promise((resolve,reject)=>{
-    try{
-      canvas.toBlob(b=>b?resolve(b):reject(new Error('画像データの作成に失敗しました')),'image/jpeg',0.92);
-    }catch(e){reject(e);}
-  });
+async function canvasToPdfImage(canvas,quality=0.86){
+  let blob=null;
+  try{
+    blob=await new Promise(resolve=>{
+      try{canvas.toBlob(b=>resolve(b),'image/jpeg',quality);}
+      catch(e){resolve(null);}
+    });
+  }catch(e){blob=null;}
+
+  // Some PWA/browser combinations can return null from canvas.toBlob().
+  // Fall back to dataURL only for that page.
+  if(!blob){
+    let data='';
+    try{data=canvas.toDataURL('image/jpeg',quality);}
+    catch(e){throw new Error('PDFページ画像の作成に失敗しました');}
+    const b64=(data.split(',')[1]||'');
+    if(!b64)throw new Error('PDFページ画像の作成に失敗しました');
+    const bytes=bytesFromBase64(b64);
+    if(bytes.length<4)throw new Error('PDFページ画像が空です');
+    return{width:canvas.width,height:canvas.height,bytes};
+  }
+
   const bytes=new Uint8Array(await blob.arrayBuffer());
   if(bytes.length<4)throw new Error('PDFページ画像が空です');
   return{width:canvas.width,height:canvas.height,bytes};
@@ -1978,12 +1994,110 @@ function schedulePdfSpec(){
 function schedulePdfMap(startYear){
   const map=new Map();buildSeasonBoardItems().forEach(item=>item.dates.forEach(d=>{if(!d)return;const yr=Number(d.slice(0,4));if(yr<startYear||yr>startYear+1)return;if(!map.has(d))map.set(d,[]);map.get(d).push({label:seasonBoardLabel(item),coach:item.coach||''});}));return map;
 }
-async function makeSchedulePdfImages(){
-  const {startYear,pages}=schedulePdfSpec(),map=schedulePdfMap(startYear),images=[];const W=1240,H=1754,M=45,top=118,headH=42,rowH=(H-top-M-headH)/31,colW=(W-M*2)/3;
-  for(const months of pages){const c=document.createElement('canvas');c.width=W;c.height=H;const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);ctx.fillStyle='#111';ctx.font=`bold 24px ${PDF_FONT}`;ctx.fillText(`${db.team.name||'Alpine Team Manager'} 年間予定表`,M,42);ctx.font=`16px ${PDF_FONT}`;const last=months[2];ctx.fillText(`${startYear}/${startYear+1}シーズン　${months[0].y}年${months[0].m}月〜${last.y===months[0].y?'':last.y+'年'}${last.m}月`,M,72);
-    ctx.lineWidth=1;ctx.strokeStyle='#999';ctx.textBaseline='top';months.forEach((mo,ci)=>{const x=M+ci*colW;ctx.fillStyle='#f1f3f5';ctx.fillRect(x,top,colW,headH);ctx.strokeRect(x,top,colW,headH);ctx.fillStyle='#111';ctx.font=`bold 18px ${PDF_FONT}`;ctx.textAlign='center';ctx.fillText(mo.label,x+colW/2,top+10);ctx.textAlign='left';});
-    for(let day=1;day<=31;day++){const y=top+headH+(day-1)*rowH;months.forEach((mo,ci)=>{const x=M+ci*colW;ctx.fillStyle='#fff';ctx.fillRect(x,y,colW,rowH);ctx.strokeStyle='#aaa';ctx.strokeRect(x,y,colW,rowH);if(!validDateParts(mo.y,mo.m,day))return;const ds=ymd(mo.y,mo.m,day),dow=new Date(mo.y,mo.m-1,day).getDay(),holiday=HOLIDAYS.has(ds);ctx.fillStyle=holiday||dow===0?'#c40000':dow===6?'#005dcc':'#222';ctx.font=`bold 13px ${PDF_FONT}`;ctx.fillText(`${day}日(${JP_WD[dow]})`,x+5,y+4);const items=map.get(ds)||[];let yy=y+21;ctx.fillStyle='#111';for(const it of items.slice(0,2)){drawFitText(ctx,`・${it.label}`,x+5,yy,colW-10,11,1,13);yy+=13;if(it.coach&&yy<y+rowH-9){ctx.font=`9px ${PDF_FONT}`;ctx.fillText(`引率：${it.coach}`,x+10,yy);yy+=10;}}if(items.length>2){ctx.font=`9px ${PDF_FONT}`;ctx.fillText(`ほか${items.length-2}件`,x+8,Math.min(yy,y+rowH-10));}});}
-    images.push(await canvasToPdfImage(c));}return images;
+async function makeSchedulePdfImages(compact=false){
+  const {startYear,pages}=schedulePdfSpec();
+  const map=schedulePdfMap(startYear);
+  const images=[];
+
+  // Annual schedule has many cells/text elements. Use a smaller canvas than
+  // the event PDF to reduce PWA/mobile browser memory usage.
+  const W=compact?720:900;
+  const H=compact?1018:1273;
+  const M=compact?24:30;
+  const top=compact?70:86;
+  const headH=compact?26:32;
+  const rowH=(H-top-M-headH)/31;
+  const colW=(W-M*2)/3;
+  const scale=W/900;
+
+  for(let pageIndex=0;pageIndex<pages.length;pageIndex++){
+    const months=pages[pageIndex];
+    const c=document.createElement('canvas');
+    c.width=W;c.height=H;
+    const ctx=c.getContext('2d',{alpha:false});
+    if(!ctx)throw new Error(`年間予定PDF ${pageIndex+1}ページ目の描画領域を作成できません`);
+
+    ctx.fillStyle='#fff';
+    ctx.fillRect(0,0,W,H);
+    ctx.textBaseline='top';
+    ctx.textAlign='left';
+
+    ctx.fillStyle='#111';
+    ctx.font=`bold ${Math.max(15,Math.round(18*scale))}px ${PDF_FONT}`;
+    ctx.fillText(`${db.team.name||'Alpine Team Manager'} 年間予定表`,M,Math.round(24*scale));
+
+    ctx.font=`${Math.max(10,Math.round(12*scale))}px ${PDF_FONT}`;
+    const last=months[months.length-1];
+    const sub=`${startYear}/${startYear+1}シーズン　${months[0].y}年${months[0].m}月〜${last.y===months[0].y?'':last.y+'年'}${last.m}月`;
+    ctx.fillText(sub,M,Math.round(48*scale));
+
+    ctx.lineWidth=1;
+    ctx.strokeStyle='#9a9a9a';
+
+    months.forEach((mo,ci)=>{
+      const x=M+ci*colW;
+      ctx.fillStyle='#f1f3f5';
+      ctx.fillRect(x,top,colW,headH);
+      ctx.strokeRect(x,top,colW,headH);
+      ctx.fillStyle='#111';
+      ctx.font=`bold ${Math.max(11,Math.round(13*scale))}px ${PDF_FONT}`;
+      ctx.textAlign='center';
+      ctx.fillText(mo.label,x+colW/2,top+Math.round(7*scale));
+      ctx.textAlign='left';
+    });
+
+    for(let day=1;day<=31;day++){
+      const y=top+headH+(day-1)*rowH;
+      for(let ci=0;ci<months.length;ci++){
+        const mo=months[ci],x=M+ci*colW;
+
+        ctx.fillStyle='#fff';
+        ctx.fillRect(x,y,colW,rowH);
+        ctx.strokeStyle='#aaa';
+        ctx.strokeRect(x,y,colW,rowH);
+
+        if(!validDateParts(mo.y,mo.m,day))continue;
+
+        const ds=ymd(mo.y,mo.m,day);
+        const dow=new Date(mo.y,mo.m-1,day).getDay();
+        const holiday=HOLIDAYS.has(ds);
+
+        ctx.fillStyle=holiday||dow===0?'#c40000':dow===6?'#005dcc':'#222';
+        ctx.font=`bold ${Math.max(8,Math.round(9.5*scale))}px ${PDF_FONT}`;
+        ctx.fillText(`${day}日(${JP_WD[dow]})`,x+4,y+3);
+
+        const items=map.get(ds)||[];
+        let yy=y+Math.max(14,Math.round(16*scale));
+        ctx.fillStyle='#111';
+
+        for(const it of items.slice(0,2)){
+          const fs=Math.max(7,Math.round(8*scale));
+          drawFitText(ctx,`・${it.label}`,x+4,yy,colW-8,fs,1,Math.max(9,Math.round(10*scale)));
+          yy+=Math.max(9,Math.round(10*scale));
+
+          if(it.coach && yy<y+rowH-7){
+            ctx.font=`${Math.max(6,Math.round(7*scale))}px ${PDF_FONT}`;
+            drawFitText(ctx,`引率：${it.coach}`,x+7,yy,colW-11,Math.max(6,Math.round(7*scale)),1,Math.max(8,Math.round(9*scale)));
+            yy+=Math.max(8,Math.round(9*scale));
+          }
+        }
+
+        if(items.length>2){
+          ctx.font=`${Math.max(6,Math.round(7*scale))}px ${PDF_FONT}`;
+          ctx.fillText(`ほか${items.length-2}件`,x+6,Math.min(yy,y+rowH-8));
+        }
+      }
+    }
+
+    const img=await canvasToPdfImage(c,compact?0.76:0.82);
+    images.push(img);
+
+    // Release canvas backing memory before making the next page.
+    c.width=1;c.height=1;
+    await new Promise(resolve=>requestAnimationFrame(()=>resolve()));
+  }
+
+  return images;
 }
 async function makeEventPdfImages(){
   const events=[...db.events].sort((a,b)=>(a.start||'').localeCompare(b.start||'')),pages=[];for(let i=0;i<events.length;i+=6)pages.push(events.slice(i,i+6));if(!pages.length)pages.push([]);const images=[];for(let pi=0;pi<pages.length;pi++){const chunk=pages[pi],W=1240,H=1754,M=60,c=document.createElement('canvas');c.width=W;c.height=H;const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);ctx.fillStyle='#111';ctx.textBaseline='top';ctx.font=`bold 26px ${PDF_FONT}`;ctx.fillText(`${db.team.name||'Alpine Team Manager'} 大会スケジュール`,M,45);ctx.font=`14px ${PDF_FONT}`;ctx.fillText(`${pi+1} / ${pages.length}ページ`,M,82);let y=120;if(!chunk.length){ctx.font=`18px ${PDF_FONT}`;ctx.fillText('大会なし',M,y);}chunk.forEach(e=>{const h=230;ctx.strokeStyle='#aaa';ctx.strokeRect(M,y,W-M*2,h);ctx.font=`bold 20px ${PDF_FONT}`;ctx.fillStyle='#111';drawFitText(ctx,e.title||'大会',M+16,y+14,W-M*2-32,20,2,24);ctx.font=`15px ${PDF_FONT}`;ctx.fillText(`${fmt(e.start)}${e.end&&e.end!==e.start?'〜'+fmt(e.end):''}`,M+16,y+70);drawFitText(ctx,`会場：${e.place||'-'}　種目：${e.disc||'-'}`,M+16,y+98,W-M*2-32,14,2,19);const names=(e.athleteIds||[]).map(id=>db.athletes.find(a=>a.id===id)?.name).filter(Boolean);const coaches=(e.coachIds||[]).map(id=>db.coaches.find(c=>c.id===id)?.name).filter(Boolean);ctx.font=`13px ${PDF_FONT}`;drawFitText(ctx,`締切：${fmt(e.deadline)}　出場：${names.join('・')||'未設定'}`,M+16,y+142,W-M*2-32,13,2,18);drawFitText(ctx,`引率：${coaches.join('・')||'未設定'}${e.note?'　備考：'+e.note:''}`,M+16,y+180,W-M*2-32,13,2,18);y+=250;});images.push(await canvasToPdfImage(c));}return images;
@@ -2033,12 +2147,19 @@ async function directPdfDownload(id){
     if(document.fonts?.ready)await document.fonts.ready;
 
     stage='PDFページ作成';
-    const images=id==='schedule'
-      ? await makeSchedulePdfImages()
-      : id==='events'
-        ? await makeEventPdfImages()
-        : [];
-    if(!images.length)throw new Error('PDFに出力する内容がありません');
+    let images=[];
+    if(id==='schedule'){
+      try{
+        images=await makeSchedulePdfImages(false);
+      }catch(firstErr){
+        console.warn('Annual schedule PDF normal render failed. Retrying compact mode.',firstErr);
+        stage='年間予定PDFを軽量モードで再作成';
+        images=await makeSchedulePdfImages(true);
+      }
+    }else if(id==='events'){
+      images=await makeEventPdfImages();
+    }
+    if(!images.length)throw new Error(id==='schedule'?'年間予定PDFのページを作成できませんでした':'PDFに出力する内容がありません');
 
     stage='PDF変換';
     const pdf=buildJpegPdf(images);
@@ -2057,7 +2178,7 @@ async function directPdfDownload(id){
 }
 function printSection(id){return directPdfDownload(id);}
 
-// ===== v0.9.4 SAJ list athlete registration =====
+// ===== v0.9.5 SAJ list athlete registration =====
 let sajAthleteListCache=[];
 
 function setAthleteRegisterMode(mode){
@@ -2514,7 +2635,7 @@ async function refreshAppCacheOnLaunch(){
   }
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=094',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=095',{updateViaCache:'none'});
     try{ await reg.update(); }catch{}
 
     if(reg.waiting){
