@@ -847,3 +847,11 @@ SnowTech → 管理 → `SAJ連携API URL` にWorker URLを入力 → 保存。
   のように年だけ表示
 - 「シーズン」「昨シーズン／今シーズン／来シーズン」の付加表示を選択肢から削除
 - Service Workerをv0.12.1へ更新
+
+## v0.12.2
+- ALGE Timingの起動方式を変更
+- JavaScriptのwindow.open()を廃止
+- 通常のHTTP直接リンク（a href）で開く方式へ変更
+- Chrome/SafariでURLを直接開く場合に近い挙動へ変更
+- SEIKO SPORTSLINKは従来方式を維持
+- Service Workerをv0.12.2へ更新
