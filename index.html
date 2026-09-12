@@ -261,11 +261,11 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 }
 
 
-/* v0.13.1 branding */
+/* v0.13.3 branding */
 .tool-portal-logo img{width:min(100%,1100px);height:auto;object-fit:contain;display:block;margin:0 auto}
 
 
-/* v0.13.1 top navigation: HOME + 操作ナビ / team name below */
+/* v0.13.3 top navigation: HOME + 操作ナビ / team name below */
 .top-nav-block{
   width:min(560px,100%);
   margin:0 auto 16px;
@@ -313,7 +313,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 }
 
 
-/* v0.13.1: team name is shown below HOME / 操作ナビ */
+/* v0.13.3: team name is shown below HOME / 操作ナビ */
 header .team-name,
 header .team-title,
 header #teamName,
@@ -820,7 +820,7 @@ header [data-team-name],header #teamHeader{display:none!important}
 }
 
 
-/* v0.13.1: smartphone / PWA status-bar safe area */
+/* v0.13.3: smartphone / PWA status-bar safe area */
 header{
   padding-top:calc(10px + env(safe-area-inset-top, 0px));
 }
@@ -1043,73 +1043,109 @@ header{
 }
 
 
-/* v0.13.1 compact competition rows */
+/* v0.13.3 horizontally scrollable competition rows */
 .event-simple-list{
   width:100%;
-  overflow:hidden;
+  overflow-x:auto;
+  overflow-y:hidden;
+  -webkit-overflow-scrolling:touch;
+  padding-bottom:4px;
 }
-.event-simple-row.event-compact-row{
+.event-simple-list::after{
+  content:'← 横にスクロール →';
+  display:block;
+  min-width:620px;
+  margin-top:4px;
+  padding-right:4px;
+  text-align:right;
+  font-size:10px;
+  color:#718693;
+}
+.event-simple-row.event-scroll-row{
   display:grid !important;
-  grid-template-columns:44px 78px minmax(0,1fr) 52px 44px !important;
+  grid-template-columns:42px 42px 82px minmax(360px,1fr) 42px !important;
   align-items:center;
   gap:6px;
-  width:100%;
-  padding:8px 0;
+  min-width:620px;
+  width:max-content;
+  padding:8px 2px;
 }
-.event-compact-detail,
-.event-compact-athletes,
-.event-compact-delete{
+.event-scroll-detail,
+.event-scroll-athletes,
+.event-scroll-delete{
   display:flex;
   align-items:center;
   justify-content:center;
 }
-.event-compact-btn{
+.event-scroll-btn{
   min-width:0 !important;
   width:100%;
-  padding:7px 4px !important;
-  font-size:12px !important;
+  padding:7px 3px !important;
+  font-size:11px !important;
   line-height:1.05 !important;
   white-space:normal !important;
   text-align:center;
 }
-.event-compact-date{
+.event-scroll-btn .stack{display:block}
+.event-scroll-date{
+  font-size:12px;
+  line-height:1.25;
+  white-space:nowrap;
+}
+.event-scroll-title{
+  min-width:0;
   font-size:13px;
   line-height:1.25;
-  white-space:nowrap;
 }
-.event-compact-title{
-  min-width:0;
-  overflow:hidden;
+.event-scroll-title-name{
   font-weight:800;
-  font-size:14px;
-  line-height:1.25;
-}
-.event-compact-title-name{
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
 }
-.event-compact-title .event-athlete-summary{
+.event-scroll-count{
   margin-top:3px;
   font-size:11px;
+  color:#9eb2bf;
   white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
 }
-.event-compact-btn .stack{
-  display:block;
-}
+.event-scroll-count b{color:#8ddce8}
 @media(max-width:520px){
-  .event-simple-row.event-compact-row{
-    grid-template-columns:40px 70px minmax(0,1fr) 48px 40px !important;
-    gap:4px;
+  .event-simple-row.event-scroll-row{
+    grid-template-columns:38px 38px 78px minmax(320px,1fr) 38px !important;
+    min-width:560px;
   }
-  .event-compact-btn{
-    padding:7px 2px !important;
-    font-size:11px !important;
-  }
-  .event-compact-date{font-size:12px}
-  .event-compact-title{font-size:13px}
+  .event-simple-list::after{min-width:560px}
+}
+
+
+/* v0.13.3 settings alignment */
+#coachList .list-item{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:10px 0;
+}
+#coachList .coach-main{
+  min-width:0;
+  flex:1 1 auto;
+}
+#coachList .coach-name{
+  display:block;
+  font-weight:800;
+  line-height:1.25;
+}
+#coachList .coach-role{
+  display:block;
+  margin-top:2px;
+  color:#93a7b4;
+  font-size:12px;
+}
+#coachList .coach-delete{
+  flex:0 0 auto;
+  float:none !important;
+  margin:0 !important;
 }
 
 </style>
@@ -1138,7 +1174,7 @@ header{
 <header>
   <div class="header-inner">
     <div class="header-meta-row">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.13.1</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.13.3</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
     <div class="header-title-row">
@@ -1509,8 +1545,7 @@ header{
   <div class="grid g2">
     <div class="card">
       <h2>チーム設定</h2>
-      <label>チーム名</label><input id="teamName">
-      <div class="toolbar"><button class="btn primary" onclick="saveTeam()">保存</button></div>
+      <label>チーム名</label><input id="teamName" oninput="autoSaveTeamName()" onchange="autoSaveTeamName(true)">
     </div>
     <div class="card">
       <h2>所属コーチ</h2>
@@ -2321,7 +2356,7 @@ function openTab(tabId){
 document.querySelectorAll('nav button[data-tab]').forEach(b=>b.onclick=()=>openTab(b.dataset.tab));
 
 
-// ===== v0.13.1 Weather / Team Board =====
+// ===== v0.13.3 Weather / Team Board =====
 const PREF_REGION={
   '北海道':'北海道',
   '青森':'東北','岩手':'東北','宮城':'東北','秋田':'東北','山形':'東北','福島':'東北',
@@ -3215,6 +3250,31 @@ function renderCoaches(){
 }
 function addCoach(){if(!coachName.value)return;db.coaches.push({id:uid(),name:coachName.value,role:coachRole.value});coachName.value='';coachRole.value='';save()}
 function saveTeam(){db.team.name=teamName.value;save();alert('設定を保存しました')}
+
+let teamNameSaveTimer=null;
+function autoSaveTeamName(immediate=false){
+  if(teamNameSaveTimer){
+    clearTimeout(teamNameSaveTimer);
+    teamNameSaveTimer=null;
+  }
+  const run=()=>{
+    const input=document.getElementById('teamName');
+    if(!input)return;
+    const value=String(input.value||'').trim();
+    if((db.team?.name||'')===value)return;
+    db.team.name=value;
+    persistDb({silent:true});
+    renderTopTeamName();
+    renderHome();
+    renderScheduleBoard();
+  };
+  if(immediate){
+    run();
+  }else{
+    teamNameSaveTimer=setTimeout(run,350);
+  }
+}
+
 function refreshSelects(){
   sCoach.innerHTML='<option value="">未設定</option>'+db.coaches.map(c=>`<option>${esc(c.name||'')}</option>`).join('');
 }
@@ -3510,37 +3570,47 @@ renderEvents = function(){
       ? `${md(e.start)}～<br>${md(e.end)}`
       : `${md(e.start)}`;
 
-    const athleteNames=(e.athleteIds||[])
-      .map(id=>db.athletes.find(a=>a.id===id)?.name)
+    const selectedAthletes=(e.athleteIds||[])
+      .map(id=>db.athletes.find(a=>a.id===id))
       .filter(Boolean);
 
-    const id=encodeURIComponent(String(e.id||''));
-    const athleteSummary=athleteNames.length
-      ? `<div class="event-athlete-summary"><b>出場 ${athleteNames.length}名</b> ${esc(athleteNames.join('・'))}</div>`
-      : `<div class="event-athlete-summary muted">出場選手：未設定</div>`;
+    const maleCount=selectedAthletes.filter(a=>a.sex==='男').length;
+    const femaleCount=selectedAthletes.filter(a=>a.sex==='女').length;
+    const otherCount=selectedAthletes.length-maleCount-femaleCount;
 
-    return `<div class="event-simple-row event-compact-row">
-      <div class="event-compact-detail">${
+    const parts=[];
+    if(maleCount)parts.push(`男${maleCount}名`);
+    if(femaleCount)parts.push(`女${femaleCount}名`);
+    if(otherCount)parts.push(`他${otherCount}名`);
+
+    const countText=parts.length
+      ? `<div class="event-scroll-count"><b>出場</b>　${parts.join('　')}</div>`
+      : `<div class="event-scroll-count muted">出場　未設定</div>`;
+
+    const id=encodeURIComponent(String(e.id||''));
+
+    return `<div class="event-simple-row event-scroll-row">
+      <div class="event-scroll-detail">${
         safeSajUrl(e.sajUrl)
-          ? `<button class="btn primary event-compact-btn no-print" onclick="openCompetitionDetail(decodeURIComponent('${encodeURIComponent(safeSajUrl(e.sajUrl))}'))"><span class="stack">詳</span><span class="stack">細</span></button>`
+          ? `<button class="btn primary event-scroll-btn no-print" onclick="openCompetitionDetail(decodeURIComponent('${encodeURIComponent(safeSajUrl(e.sajUrl))}'))"><span class="stack">詳</span><span class="stack">細</span></button>`
           : `<span class="muted">—</span>`
       }</div>
 
-      <div class="event-compact-date">${period}</div>
-
-      <div class="event-compact-title">
-        <div class="event-compact-title-name" title="${esc(e.title||'大会')}">${esc(e.title||'大会')}</div>
-        ${athleteSummary}
-      </div>
-
-      <div class="event-compact-athletes no-print">
-        <button class="btn primary event-compact-btn" onclick="openEventAthleteModal(decodeURIComponent('${id}'))">
-          <span class="stack">出場</span><span class="stack">選手</span>
+      <div class="event-scroll-athletes no-print">
+        <button class="btn primary event-scroll-btn" onclick="openEventAthleteModal(decodeURIComponent('${id}'))">
+          <span class="stack">選</span><span class="stack">手</span>
         </button>
       </div>
 
-      <div class="event-compact-delete no-print">
-        <button class="btn danger event-compact-btn" onclick="deleteEvent(decodeURIComponent('${id}'))">
+      <div class="event-scroll-date">${period}</div>
+
+      <div class="event-scroll-title">
+        <div class="event-scroll-title-name" title="${esc(e.title||'大会')}">${esc(e.title||'大会')}</div>
+        ${countText}
+      </div>
+
+      <div class="event-scroll-delete no-print">
+        <button class="btn danger event-scroll-btn" onclick="deleteEvent(decodeURIComponent('${id}'))">
           <span class="stack">削</span><span class="stack">除</span>
         </button>
       </div>
@@ -3633,8 +3703,13 @@ function deleteCoach(id){
 renderCoaches = function(){
   coachList.innerHTML=db.coaches.map(c=>{
     const id=encodeURIComponent(String(c.id||''));
-    return `<div class="list-item"><b>${esc(c.name||'—')}</b><br><span class="muted">${esc(c.role||'')}</span>
-    <button class="btn danger no-print" style="float:right" onclick="deleteCoach(decodeURIComponent('${id}'))">削除</button></div>`;
+    return `<div class="list-item">
+      <div class="coach-main">
+        <span class="coach-name">${esc(c.name||'—')}</span>
+        <span class="coach-role">${esc(c.role||'')}</span>
+      </div>
+      <button class="btn danger no-print coach-delete" onclick="deleteCoach(decodeURIComponent('${id}'))">削除</button>
+    </div>`;
   }).join('')||'<span class="muted">未登録</span>';
 };
 
@@ -3920,7 +3995,7 @@ async function directPdfDownload(id){
 }
 function printSection(id){return directPdfDownload(id);}
 
-// ===== v0.13.1 SAJ list athlete registration =====
+// ===== v0.13.3 SAJ list athlete registration =====
 let sajAthleteListCache=[];
 
 function setAthleteRegisterMode(mode){
@@ -4728,7 +4803,7 @@ async function refreshAppCacheOnLaunch(){
   if(!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=0131',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=0133',{updateViaCache:'none'});
     try{ await reg.update(); }catch{}
 
     if(reg.waiting){
