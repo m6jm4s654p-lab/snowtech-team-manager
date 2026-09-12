@@ -855,3 +855,54 @@ SnowTech → 管理 → `SAJ連携API URL` にWorker URLを入力 → 保存。
 - Chrome/SafariでURLを直接開く場合に近い挙動へ変更
 - SEIKO SPORTSLINKは従来方式を維持
 - Service Workerをv0.12.2へ更新
+
+## v0.12.3
+- アプリ再起動後にチームランキングが消える問題を修正
+- 起動時SAJ自動更新で、取得レスポンスにポイント値が欠けている場合は既存のSL/GS/SGポイントを保持
+- 空データ・一時的な取得不足で保存済みポイントをnull/undefinedへ上書きしない
+- 成績履歴も取得結果が空の場合は既存データを保持
+- 成功した選手更新は即時LocalStorageへ保存
+- ランキングは数値文字列も正しく扱うよう強化
+- Service Workerをv0.12.3へ更新
+
+## v0.12.4 Security / reliability audit
+- Stored-XSS対策：選手・コーチ・大会・SAJ取得データの動的HTML出力をエスケープ
+- SAJ大会詳細URLは `https://sajdb.shikuminet.jp` のみ許可
+- バックアップJSON読込を5MB上限・危険なprototypeキー除外・基本構造検証へ変更
+- CSP（Content-Security-Policy）と `Referrer-Policy: no-referrer` を追加
+- Service Workerは同一オリジンの静的リソースだけをキャッシュ
+- 外部APIレスポンスや選手情報をCache Storageへ保存しない
+- Service Workerのキャッシュ削除を `snowtech-alpine-*` のみに限定
+  （同一GitHub Pagesオリジンの他アプリのキャッシュを削除しない）
+- Cloudflare WorkerはGET/OPTIONS以外を405で拒否
+- Workerのdebug APIはENABLE_DEBUG=1の場合のみ有効
+- Worker CORSをGitHub Pages公開元 `https://m6jm4s654p-lab.github.io` に制限
+- Workerへ nosniff / no-referrer / DENY / Permissions-Policy を追加
+- エラー応答は `Cache-Control: no-store`
+- バックエンド変更を含むため `npx wrangler deploy` が必要
+
+## v0.12.5 Local-only representative-coach review
+運用前提：
+- 1チームにつき代表コーチ1名が1端末で管理
+- チーム間共有・クラウドDB・ログイン機能は使用しない
+- SAJ公開データ取得のみCloudflare Workerを利用
+
+追加確認・修正：
+- 起動時にPWAキャッシュを全削除する処理を廃止
+  - オフライン時にアプリ本体キャッシュが失われるリスクを解消
+  - 古いキャッシュ削除はService Workerのバージョン更新時だけ実施
+- LocalStorage保存失敗を検知し、保存エラーを表示
+- バックアップ実施日時を端末内に記録
+- 30日以上バックアップしていない場合に警告表示
+- バックアップファイル名を日付付きへ変更
+- バックアップJSONに選手情報が含まれる注意書きを追加
+- 「全データ削除」を2段階確認へ変更
+- 全削除時は本アプリ専用のLocalStorage / sessionStorage / Cacheだけを削除
+- SAJ選手情報API（/api/saj-athlete, /api/saj-athletes）は `Cache-Control: no-store`
+  - Cloudflare/ブラウザ側に選手取得レスポンスをキャッシュしない
+- 大会など個人情報を含まない公開情報は5分キャッシュを維持
+
+結論：
+- 代表コーチ1名・端末内管理という前提では、クラウドDB/Auth/RLSは不要
+- 最大の運用リスクは端末故障・ブラウザデータ消去なので、定期バックアップを重視
+- WorkerはSAJ公開情報の中継のみで、チームDBは保持しない

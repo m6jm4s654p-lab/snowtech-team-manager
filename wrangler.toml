@@ -5,4 +5,5 @@ compatibility_date = "2026-09-11"
 [vars]
 # 公開先GitHub Pagesだけに制限する場合:
 # ALLOWED_ORIGIN = "https://YOURNAME.github.io"
-ALLOWED_ORIGIN = "*"
+ALLOWED_ORIGIN = "https://m6jm4s654p-lab.github.io"
+ENABLE_DEBUG = "0"

@@ -14,36 +14,42 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    if (request.method === "OPTIONS") return cors(new Response(null, {status:204}), env);
+    if (request.method === "OPTIONS") return cors(new Response(null, {status:204}), env, request);
+    if (request.method !== "GET") {
+      return cors(json({ok:false,error:"Method not allowed"},405), env, request);
+    }
     if (url.pathname === "/health") {
-      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.12.2"}), env);
+      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.12.5"}), env, request);
     }
     if (url.pathname === "/api/debug-competition-calendar") {
+      if(env?.ENABLE_DEBUG!=="1") return cors(json({ok:false,error:"Not found"},404),env,request);
       try{
         const debug=await debugCompetitionCalendar();
-        return cors(json({ok:true,debug}),env);
+        return cors(json({ok:true,debug}),env,request);
       }catch(e){
-        return cors(json({ok:false,error:String(e?.message||e)},502),env);
+        return cors(json({ok:false,error:String(e?.message||e)},502),env,request);
       }
     }
 
     if (url.pathname === "/api/debug-competition-js") {
+      if(env?.ENABLE_DEBUG!=="1") return cors(json({ok:false,error:"Not found"},404),env,request);
       try{
         const debug=await debugCompetitionJavascript();
-        return cors(json({ok:true,debug}),env);
+        return cors(json({ok:true,debug}),env,request);
       }catch(e){
-        return cors(json({ok:false,error:String(e?.message||e)},502),env);
+        return cors(json({ok:false,error:String(e?.message||e)},502),env,request);
       }
     }
 
     if (url.pathname === "/api/debug-competition-api") {
+      if(env?.ENABLE_DEBUG!=="1") return cors(json({ok:false,error:"Not found"},404),env,request);
       try{
         const season=Number((url.searchParams.get("season")||"2026").replace(/\D/g,""))||2026;
         const month=Number((url.searchParams.get("month")||"2").replace(/\D/g,""))||2;
         const debug=await debugCompetitionApi(season,month);
-        return cors(json({ok:true,debug}),env);
+        return cors(json({ok:true,debug}),env,request);
       }catch(e){
-        return cors(json({ok:false,error:String(e?.message||e)},502),env);
+        return cors(json({ok:false,error:String(e?.message||e)},502),env,request);
       }
     }
 
@@ -51,11 +57,14 @@ export default {
       try{
         const seasonRaw=(url.searchParams.get("season")||"").replace(/\D/g,"");
         const season=Number(seasonRaw)||getTargetSeasons()[0];
+        if(season<2020 || season>2040){
+          return cors(json({ok:false,error:"シーズン指定が不正です"},400),env,request);
+        }
         const monthRaw=(url.searchParams.get("month")||"").replace(/\D/g,"");
         const month=Number(monthRaw)||0;
 
         if(month && (month<1 || month>12)){
-          return cors(json({ok:false,error:"月指定が不正です"},400),env);
+          return cors(json({ok:false,error:"月指定が不正です"},400),env,request);
         }
 
         const competitions=await lookupCompetitionsApi(season,month);
@@ -66,9 +75,9 @@ export default {
           seasonLabel:`${season-1}/${season}`,
           month:month||null,
           competitions
-        }),env);
+        }),env,request);
       }catch(e){
-        return cors(json({ok:false,error:String(e?.message||e)},502),env);
+        return cors(json({ok:false,error:String(e?.message||e)},502),env,request);
       }
     }
 
@@ -78,49 +87,50 @@ export default {
       const sex=(url.searchParams.get("sex")||"").trim();
       const organization=(url.searchParams.get("organization")||"").trim();
       if(!["男","女"].includes(sex)){
-        return cors(json({ok:false,error:"性別は男または女を指定してください"},400),env);
+        return cors(json({ok:false,error:"性別は男または女を指定してください"},400),env,request);
       }
-      if(!organization){
-        return cors(json({ok:false,error:"加盟団体を指定してください"},400),env);
+      if(!organization || organization.length>32){
+        return cors(json({ok:false,error:"加盟団体を確認してください"},400),env,request);
       }
       try{
         const result=await lookupAthleteListBySexOrganization(sex,organization);
-        return cors(json({ok:true,...result}),env);
+        return cors(json({ok:true,...result}),env,request);
       }catch(e){
         return cors(json({
           ok:false,
           error:"SAJポイントリストの選手一覧取得に失敗しました",
           detail:String(e?.message||e)
-        },502),env);
+        },502),env,request);
       }
     }
 
     if (url.pathname === "/api/debug-points") {
+      if(env?.ENABLE_DEBUG!=="1") return cors(json({ok:false,error:"Not found"},404),env,request);
       const saj=(url.searchParams.get("saj")||"").replace(/\D/g,"");
       if(!/^\d{8}$/.test(saj)){
-        return cors(json({ok:false,error:"SAJ競技者番号を8桁で入力してください"},400),env);
+        return cors(json({ok:false,error:"SAJ競技者番号を8桁で入力してください"},400),env,request);
       }
       try{
         const debug=await debugPoints(saj);
-        return cors(json({ok:true,debug}),env);
+        return cors(json({ok:true,debug}),env,request);
       }catch(e){
-        return cors(json({ok:false,error:String(e?.message||e)},502),env);
+        return cors(json({ok:false,error:String(e?.message||e)},502),env,request);
       }
     }
 
     if (url.pathname !== "/api/saj-athlete") {
-      return cors(json({ok:false,error:"Not found"},404), env);
+      return cors(json({ok:false,error:"Not found"},404), env, request);
     }
 
     const saj=(url.searchParams.get("saj")||"").replace(/\D/g,"");
     if(!/^\d{8}$/.test(saj)){
-      return cors(json({ok:false,error:"SAJ競技者番号を8桁で入力してください"},400),env);
+      return cors(json({ok:false,error:"SAJ競技者番号を8桁で入力してください"},400),env,request);
     }
 
     try{
       const biography = await lookupBiography(saj);
       if(!biography){
-        return cors(json({ok:false,error:"SAJバイオグラフィーに該当選手が見つかりません"},404),env);
+        return cors(json({ok:false,error:"SAJバイオグラフィーに該当選手が見つかりません"},404),env,request);
       }
 
       // Official point list values are optional enrichment.
@@ -140,13 +150,13 @@ export default {
         source: biography.source
       };
 
-      return cors(json({ok:true,athlete}),env);
+      return cors(json({ok:true,athlete}),env,request);
     }catch(e){
       return cors(json({
         ok:false,
         error:"SAJデータ取得に失敗しました",
         detail:String(e?.message||e)
-      },502),env);
+      },502),env,request);
     }
   }
 };
@@ -157,17 +167,36 @@ function json(obj,status=200){
     headers:{"content-type":"application/json; charset=utf-8"}
   });
 }
-function cors(resp,env){
+function cors(resp,env,request){
   const h=new Headers(resp.headers);
-  h.set("Access-Control-Allow-Origin",env?.ALLOWED_ORIGIN||"*");
+  const configured=String(env?.ALLOWED_ORIGIN||"https://m6jm4s654p-lab.github.io").trim();
+  const origin=request?.headers?.get("Origin")||"";
+  if(configured==="*" || !origin || origin===configured){
+    h.set("Access-Control-Allow-Origin",configured==="*"?"*":configured);
+  }
   h.set("Access-Control-Allow-Methods","GET,OPTIONS");
   h.set("Access-Control-Allow-Headers","Content-Type,Accept");
-  h.set("Cache-Control","public, max-age=300");
+  h.set("Vary","Origin");
+  h.set("X-Content-Type-Options","nosniff");
+  h.set("Referrer-Policy","no-referrer");
+  h.set("X-Frame-Options","DENY");
+  h.set("Permissions-Policy","geolocation=(), microphone=(), camera=()");
+  let sensitivePath=false;
+  try{
+    const path=new URL(request?.url||"https://invalid/").pathname;
+    sensitivePath=(path==="/api/saj-athlete" || path==="/api/saj-athletes");
+  }catch{}
+  h.set(
+    "Cache-Control",
+    sensitivePath || !(resp.status>=200 && resp.status<300)
+      ? "no-store"
+      : "public, max-age=300"
+  );
   return new Response(resp.body,{status:resp.status,headers:h});
 }
 async function getText(url){
   const r=await fetch(url,{headers:{
-    "User-Agent":"SnowTech/0.12.2 (+public SAJ data lookup)",
+    "User-Agent":"AlpineTeamManager/0.12.5 (+public SAJ data lookup)",
     "Accept":"text/html,application/xhtml+xml"
   }});
   if(!r.ok) throw new Error(`SAJ HTTP ${r.status}: ${url}`);
@@ -487,7 +516,7 @@ function parseDelimitedPointFile(text,saj,source){
 
 async function getRawText(url){
   const r=await fetch(url,{headers:{
-    "User-Agent":"SnowTech/0.12.2 (+public SAJ data lookup)",
+    "User-Agent":"AlpineTeamManager/0.12.5 (+public SAJ data lookup)",
     "Accept":"text/csv,text/plain,text/html,application/octet-stream,*/*"
   }});
   if(!r.ok) throw new Error(`SAJ HTTP ${r.status}: ${url}`);
@@ -1043,7 +1072,7 @@ async function fetchFollowingSajSession(url, init, maxRedirects=5){
       // Browser semantics: 301/302/303 after a form request become GET.
       if([301,302,303].includes(r.status)){
         currentInit={method:"GET",headers:{
-          "User-Agent":"SnowTech/0.12.2 (+public SAJ competition calendar lookup)",
+          "User-Agent":"AlpineTeamManager/0.12.5 (+public SAJ competition calendar lookup)",
           "Accept":"text/html,application/xhtml+xml"
         }};
       }
@@ -1066,7 +1095,7 @@ async function fetchFollowingSajSession(url, init, maxRedirects=5){
 async function submitCalendarForm(formInfo){
   const target=new URL(formInfo.action,SAJ_ORIGIN);
   const headers={
-    "User-Agent":"SnowTech/0.12.2 (+public SAJ competition calendar lookup)",
+    "User-Agent":"AlpineTeamManager/0.12.5 (+public SAJ competition calendar lookup)",
     "Accept":"text/html,application/xhtml+xml"
   };
 
@@ -1414,7 +1443,7 @@ async function lookupCompetitionsApi(season,month=0){
   const r=await fetch(target.toString(),{
     method:"GET",
     headers:{
-      "User-Agent":"SnowTech/0.12.2 (+public SAJ competition calendar lookup)",
+      "User-Agent":"AlpineTeamManager/0.12.5 (+public SAJ competition calendar lookup)",
       "Accept":"application/json,text/javascript,*/*;q=0.8",
       "Referer":`${SAJ_ORIGIN}/alpine/competition/calendar`
     }
@@ -1459,7 +1488,7 @@ async function debugCompetitionApi(season=2026,month=2){
   const r=await fetch(target.toString(),{
     method:"GET",
     headers:{
-      "User-Agent":"SnowTech/0.12.2 (+public SAJ competition calendar lookup)",
+      "User-Agent":"AlpineTeamManager/0.12.5 (+public SAJ competition calendar lookup)",
       "Accept":"application/json,text/javascript,*/*;q=0.8",
       "Referer":`${SAJ_ORIGIN}/alpine/competition/calendar`
     }

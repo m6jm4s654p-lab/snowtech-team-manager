@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <title>Alpine Team Manager by TechBit</title>
 <meta name="theme-color" content="#0b1220">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://snowtech-saj-api.take6583.workers.dev https://nominatim.openstreetmap.org https://geocoding-api.open-meteo.com https://api.open-meteo.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'; media-src 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="snowtech-icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -259,11 +261,11 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 }
 
 
-/* v0.12.2 branding */
+/* v0.12.5 branding */
 .tool-portal-logo img{width:min(100%,1100px);height:auto;object-fit:contain;display:block;margin:0 auto}
 
 
-/* v0.12.2 top navigation: HOME + 操作ナビ / team name below */
+/* v0.12.5 top navigation: HOME + 操作ナビ / team name below */
 .top-nav-block{
   width:min(560px,100%);
   margin:0 auto 16px;
@@ -311,7 +313,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 }
 
 
-/* v0.12.2: team name is shown below HOME / 操作ナビ */
+/* v0.12.5: team name is shown below HOME / 操作ナビ */
 header .team-name,
 header .team-title,
 header #teamName,
@@ -818,7 +820,7 @@ header [data-team-name],header #teamHeader{display:none!important}
 }
 
 
-/* v0.12.2: smartphone / PWA status-bar safe area */
+/* v0.12.5: smartphone / PWA status-bar safe area */
 header{
   padding-top:calc(10px + env(safe-area-inset-top, 0px));
 }
@@ -925,6 +927,28 @@ header{
   text-decoration:none;
 }
 
+
+.backup-status{
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:10px;
+  padding:10px 12px;
+  margin:8px 0 12px;
+  font-size:12px;
+  line-height:1.5;
+}
+.backup-status.ok{
+  border-color:rgba(65,180,120,.38);
+  background:rgba(35,120,78,.10);
+}
+.backup-status.warn{
+  border-color:rgba(220,150,55,.50);
+  background:rgba(150,95,25,.12);
+}
+.backup-status.danger{
+  border-color:rgba(220,75,75,.50);
+  background:rgba(145,35,35,.12);
+}
+
 </style>
 </head>
 <body>
@@ -951,7 +975,7 @@ header{
 <header>
   <div class="header-inner">
     <div class="header-meta-row">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.12.2</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.12.5</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
     <div class="header-title-row">
@@ -1335,12 +1359,13 @@ header{
   </div>
   <div class="card" style="margin-top:14px">
     <h2>データ</h2>
+    <div id="backupStatus" class="backup-status"></div>
     <div class="toolbar">
       <button class="btn" onclick="exportJson()">バックアップ書き出し</button>
       <label class="btn" style="display:inline-block">バックアップ読込<input class="hidden" type="file" accept=".json" onchange="importJson(event)"></label>
       <button class="btn danger" onclick="resetAll()">全データ削除</button>
     </div>
-    <p class="muted">データは端末内へ保存します。PWAとして設置した場合は、インターネットがなくても読み込み済みデータの閲覧・編集・印刷が可能です。通信復帰後のクラウド同期は次段階で接続できます。</p>
+    <p class="muted">データはこの端末内だけに保存します。クラウド共有は行いません。端末故障・機種変更・ブラウザデータ消去に備えて定期的にバックアップを書き出してください。バックアップJSONには選手情報が含まれるため、安全な場所で保管してください。</p>
   </div>
 </section>
 
@@ -1604,8 +1629,8 @@ function renderVenues(){
   list.innerHTML=regionOrder.filter(r=>grouped.has(r)).map(region=>{
     const cards=grouped.get(region).map(v=>{
       const titles=[...new Set(v.events.map(e=>e.title).filter(Boolean))];
-      const official=v.reg?.url
-        ? `<button class="btn primary venue-official" onclick="window.open('${v.reg.url}','_blank','noopener,noreferrer')">公式</button>`
+      const official=safeExternalUrl(v.reg?.url)
+        ? `<button class="btn primary venue-official" onclick="window.open(decodeURIComponent('${encodeURIComponent(safeExternalUrl(v.reg.url))}'),'_blank','noopener,noreferrer')">公式</button>`
         : `<span class="muted" style="font-size:10px">公式リンク未登録</span>`;
       return `<div class="venue-item">
         <div class="venue-item-name">${esc(v.display)}
@@ -1627,6 +1652,7 @@ let db=JSON.parse(localStorage.getItem(KEY)||'null')||{
     scheduleSeasonLocked:false,
     scheduleSeasonYear:null,
     globalSeasonYear:null,
+    lastBackupAt:'',
     scheduleOffSeason:false,
     sajAutoRefreshDate:''
   },
@@ -1636,11 +1662,41 @@ let db=JSON.parse(localStorage.getItem(KEY)||'null')||{
   events:[]
 };
 function uid(){return Math.random().toString(36).slice(2,10)}
-function save(){localStorage.setItem(KEY,JSON.stringify(db));document.getElementById('syncState').textContent='● ローカル保存済み';renderAll()}
+function persistDb({silent=false}={}){
+  try{
+    localStorage.setItem(KEY,JSON.stringify(db));
+    const sync=document.getElementById('syncState');
+    if(sync)sync.textContent='● ローカル保存済み';
+    return true;
+  }catch(e){
+    const sync=document.getElementById('syncState');
+    if(sync)sync.textContent='● 保存エラー';
+    if(!silent){
+      alert('端末への保存に失敗しました。空き容量やブラウザの保存設定を確認し、必要に応じてバックアップを書き出してください。');
+    }
+    return false;
+  }
+}
+function save(){
+  if(persistDb())renderAll();
+}
 function fmt(d){if(!d)return'-';return d.replaceAll('-','/')}
 function selectedValues(sel){return [...sel.selectedOptions].map(o=>o.value)}
 function textOrDash(v){return v===undefined||v===null||v===''?'-':v}
 function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function safeSajUrl(v){
+  try{
+    const u=new URL(String(v||''));
+    return u.protocol==='https:' && u.hostname==='sajdb.shikuminet.jp' ? u.toString() : '';
+  }catch{return ''}
+}
+function safeExternalUrl(v){
+  try{
+    const u=new URL(String(v||''));
+    return (u.protocol==='https:' || u.protocol==='http:') ? u.toString() : '';
+  }catch{return ''}
+}
+
 function pad2(n){return String(n).padStart(2,'0')}
 const JP_WD=['日','月','火','水','木','金','土'];
 const JP_HOLIDAYS=new Set([
@@ -1759,7 +1815,7 @@ function applyGlobalSeason(year,{saveValue=true}={}){
 
   syncSeasonSelectors();
 
-  if(saveValue)localStorage.setItem(KEY,JSON.stringify(db));
+  if(saveValue)persistDb({silent:true});
 
   renderScheduleBoard();
   renderVenues();
@@ -1793,14 +1849,14 @@ function toggleScheduleSeasonLock(){
   // Kept only for backward compatibility with older saved data.
   db.team=db.team||{};
   db.team.scheduleSeasonLocked=false;
-  localStorage.setItem(KEY,JSON.stringify(db));
+  persistDb({silent:true});
 }
 function toggleScheduleOffSeason(){
   const off=document.getElementById('scheduleOffSeason');
   if(!off)return;
   db.team=db.team||{};
   db.team.scheduleOffSeason=!!off.checked;
-  localStorage.setItem(KEY,JSON.stringify(db));
+  persistDb({silent:true});
   renderScheduleBoard();
 }
 
@@ -1999,7 +2055,7 @@ function openTab(tabId){
 document.querySelectorAll('nav button[data-tab]').forEach(b=>b.onclick=()=>openTab(b.dataset.tab));
 
 
-// ===== v0.12.2 Weather / Team Board =====
+// ===== v0.12.5 Weather / Team Board =====
 const PREF_REGION={
   '北海道':'北海道',
   '青森':'東北','岩手':'東北','宮城':'東北','秋田':'東北','山形':'東北','福島':'東北',
@@ -2457,7 +2513,7 @@ function confirmGuideSeason(){
 function renderAll(){
   
   document.getElementById('teamName').value=db.team.name||'';
-  initGlobalSeason();renderCoaches();renderAthletes();renderSchedule();renderEvents();renderRanking();refreshSelects();initSajCompetitionSeason();initScheduleSeason();renderSajRegionFilters();renderVenues();renderWeatherVenues();renderHome();
+  initGlobalSeason();renderCoaches();renderAthletes();renderSchedule();renderEvents();renderRanking();refreshSelects();initSajCompetitionSeason();initScheduleSeason();renderSajRegionFilters();renderVenues();renderWeatherVenues();renderHome();renderBackupStatus();
 }
 
 function openScheduleForm(){scheduleForm.classList.remove('hidden')} function closeScheduleForm(){scheduleForm.classList.add('hidden')}
@@ -2477,8 +2533,8 @@ function renderEvents(){
   eventList.innerHTML=db.events.sort((a,b)=>a.start.localeCompare(b.start)).map(e=>{
     const names=e.athleteIds.map(id=>db.athletes.find(a=>a.id===id)?.name).filter(Boolean);
     const coaches=e.coachIds.map(id=>db.coaches.find(c=>c.id===id)?.name).filter(Boolean);
-    return `<div class="card" style="margin:10px 0"><h3>${e.title}</h3>
-      <div>${fmt(e.start)}${e.end&&e.end!==e.start?'〜'+fmt(e.end):''} / ${e.place||'-'} / ${e.disc||'-'}</div>
+    return `<div class="card" style="margin:10px 0"><h3>${esc(e.title||'大会')}</h3>
+      <div>${fmt(e.start)}${e.end&&e.end!==e.start?'〜'+fmt(e.end):''} / ${esc(e.place||'-')} / ${esc(e.disc||'-')}</div>
       <div class="muted">締切: ${fmt(e.deadline)} / 出場: ${names.join('・')||'未設定'} / 引率: ${coaches.join('・')||'未設定'}</div>
       ${e.sajKey?'<div class="muted">SAJ公認大会カレンダー取得</div>':''}
       <div style="margin-top:8px">${checks}</div></div>`;
@@ -2693,18 +2749,19 @@ function renderSajCompetitionCandidates(){
       const exists=db.events.some(e=>e.sajKey && e.sajKey===c.key);
       return `<tr>
         <td><input class="saj-comp-check" type="checkbox" value="${i}" ${exists?'disabled':''}></td>
-        <td>${c.url?`<button class="btn primary btn-compact" type="button" onclick="openCompetitionDetail('${c.url}')">詳細</button>`:'-'}</td>
+        <td>${safeSajUrl(c.url)?`<button class="btn primary btn-compact" type="button" onclick="openCompetitionDetail(decodeURIComponent('${encodeURIComponent(safeSajUrl(c.url))}'))">詳細</button>`:'-'}</td>
         <td>${c.end&&c.end!==c.start?`<div>${fmt(c.start)}～</div><div>${fmt(c.end)}</div>`:`<div>${fmt(c.start)}</div>`}</td>
-        <td><b>${c.title||'-'}</b>${exists?'<br><span class="status-ok">登録済み</span>':''}</td>
-        <td>${c.prefecture||String(c.place||'-').slice(0,3)}</td>
-        <td>${c.disc||'-'}</td>
+        <td><b>${esc(c.title||'-')}</b>${exists?'<br><span class="status-ok">登録済み</span>':''}</td>
+        <td>${esc(c.prefecture||String(c.place||'-').slice(0,3))}</td>
+        <td>${esc(c.disc||'-')}</td>
       </tr>`;
     }).join('')}</tbody>
   </table></div>`;
 }
 function openCompetitionDetail(url){
-  if(!url)return;
-  window.open(url,'_blank','noopener,noreferrer');
+  const safe=safeSajUrl(url);
+  if(!safe){alert('安全性を確認できないURLのため開けません。');return;}
+  window.open(safe,'_blank','noopener,noreferrer');
 }
 
 function importSelectedSajCompetitions(){
@@ -2867,7 +2924,9 @@ function renderRanking(){
   const renderGroup=(sex,prefix)=>{
     ['SL','GS','SG'].forEach(d=>{
       const key=d.toLowerCase();
-      const arr=db.athletes.filter(a=>a.sex===sex && a[key]!=null).sort((a,b)=>a[key]-b[key]);
+      const arr=db.athletes
+        .filter(a=>a.sex===sex && a[key]!==null && a[key]!==undefined && a[key]!=='' && Number.isFinite(Number(a[key])))
+        .sort((a,b)=>Number(a[key])-Number(b[key]));
       const el=document.getElementById(prefix+d);
       if(!el)return;
       el.innerHTML=arr.map((a,i)=>`<div class="list-item"><b>${i+1}. <button class="ranking-athlete-link" type="button" onclick='showAthlete(${JSON.stringify(a.id)},"ranking")'>${esc(a.name)}</button></b><span class="muted" style="margin-left:8px">${a.birth?fmt(a.birth):'—'}</span><span style="float:right;font-weight:800">${a[key]}</span><br><span class="muted">SAJ No. ${esc(a.saj||'—')} / ${esc(a.school||'')} ${esc(a.grade||'')}</span></div>`).join('')||'<span class="muted">データなし</span>';
@@ -2878,21 +2937,115 @@ function renderRanking(){
 }
 
 function renderCoaches(){
-  coachList.innerHTML=db.coaches.map(c=>`<div class="list-item"><b>${c.name}</b><br><span class="muted">${c.role||''}</span></div>`).join('')||'<span class="muted">未登録</span>';
+  coachList.innerHTML=db.coaches.map(c=>`<div class="list-item"><b>${esc(c.name||'—')}</b><br><span class="muted">${esc(c.role||'')}</span></div>`).join('')||'<span class="muted">未登録</span>';
 }
 function addCoach(){if(!coachName.value)return;db.coaches.push({id:uid(),name:coachName.value,role:coachRole.value});coachName.value='';coachRole.value='';save()}
 function saveTeam(){db.team.name=teamName.value;save();alert('設定を保存しました')}
 function refreshSelects(){
-  sCoach.innerHTML='<option value="">未設定</option>'+db.coaches.map(c=>`<option>${c.name}</option>`).join('');
+  sCoach.innerHTML='<option value="">未設定</option>'+db.coaches.map(c=>`<option>${esc(c.name||'')}</option>`).join('');
 }
 function exportJson(){
+  db.team=db.team||{};
+  db.team.lastBackupAt=new Date().toISOString();
+  persistDb({silent:true});
+
+  const stamp=new Date().toISOString().slice(0,10).replaceAll('-','');
   const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='snowtech-backup.json';a.click();URL.revokeObjectURL(a.href);
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`alpine-team-manager-backup-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  renderBackupStatus();
+}
+function sanitizeImportedValue(v,depth=0){
+  if(depth>12)return null;
+  if(v===null || typeof v==='boolean')return v;
+  if(typeof v==='number')return Number.isFinite(v)?v:null;
+  if(typeof v==='string')return v.slice(0,5000).replace(/\u0000/g,'');
+  if(Array.isArray(v))return v.slice(0,5000).map(x=>sanitizeImportedValue(x,depth+1));
+  if(typeof v==='object'){
+    const out={};
+    for(const [k,val] of Object.entries(v)){
+      if(k==='__proto__' || k==='prototype' || k==='constructor')continue;
+      out[String(k).slice(0,100)]=sanitizeImportedValue(val,depth+1);
+    }
+    return out;
+  }
+  return null;
 }
 function importJson(ev){
-  const f=ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{db=JSON.parse(r.result);save();alert('読込完了')}catch{alert('JSONを読めませんでした')}};r.readAsText(f)
+  const f=ev.target.files[0];if(!f)return;
+  if(f.size>5*1024*1024){alert('バックアップファイルが大きすぎます（上限5MB）。');ev.target.value='';return;}
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const parsed=JSON.parse(r.result);
+      if(!parsed || typeof parsed!=='object' || Array.isArray(parsed))throw new Error('形式不正');
+      const clean=sanitizeImportedValue(parsed);
+      clean.team=(clean.team && typeof clean.team==='object' && !Array.isArray(clean.team))?clean.team:{};
+      clean.coaches=Array.isArray(clean.coaches)?clean.coaches:[];
+      clean.athletes=Array.isArray(clean.athletes)?clean.athletes:[];
+      clean.schedules=Array.isArray(clean.schedules)?clean.schedules:[];
+      clean.events=Array.isArray(clean.events)?clean.events:[];
+      db=clean;
+      save();
+      alert('読込完了');
+    }catch{
+      alert('バックアップJSONの形式を確認してください');
+    }finally{
+      ev.target.value='';
+    }
+  };
+  r.readAsText(f);
 }
-function resetAll(){if(confirm('保存データをすべて削除しますか？')){localStorage.removeItem(KEY);location.reload()}}
+
+function renderBackupStatus(){
+  const el=document.getElementById('backupStatus');
+  if(!el)return;
+  const raw=db.team?.lastBackupAt||'';
+  if(!raw){
+    el.className='backup-status danger';
+    el.innerHTML='<b>バックアップ：未実施</b><br>端末内のみで管理するため、初回設定後のバックアップを推奨します。';
+    return;
+  }
+  const t=new Date(raw);
+  if(Number.isNaN(t.getTime())){
+    el.className='backup-status warn';
+    el.textContent='バックアップ日時を確認できません。再度バックアップを書き出してください。';
+    return;
+  }
+  const days=Math.floor((Date.now()-t.getTime())/86400000);
+  const date=t.toLocaleDateString('ja-JP');
+  if(days>=30){
+    el.className='backup-status warn';
+    el.innerHTML=`<b>最終バックアップ：${esc(date)}（${days}日前）</b><br>30日以上経過しています。バックアップを推奨します。`;
+  }else{
+    el.className='backup-status ok';
+    el.innerHTML=`<b>最終バックアップ：${esc(date)}</b>`;
+  }
+}
+
+async function resetAll(){
+  if(!confirm('選手・予定・大会・チーム設定をこの端末から削除しますか？'))return;
+  if(!confirm('この操作は取り消せません。バックアップ済みであることを確認してから「OK」を押してください。'))return;
+
+  localStorage.removeItem(KEY);
+  localStorage.removeItem(WEATHER_GEO_CACHE_KEY);
+  localStorage.removeItem(SAJ_REGION_STORAGE);
+  sessionStorage.removeItem('snowtech_selected_tool');
+
+  if('caches' in window){
+    try{
+      const keys=await caches.keys();
+      await Promise.all(keys.filter(k=>k.startsWith('snowtech-alpine-')).map(k=>caches.delete(k)));
+    }catch{}
+  }
+  location.reload();
+}
 
 // ===== v0.2 enhancements =====
 let editingScheduleId=null, editingEventId=null, editingAthleteId=null;
@@ -2981,7 +3134,7 @@ saveEvent = function(){
 function deleteEvent(id){
   if(!confirm('この大会を削除しますか？'))return;
   db.events=db.events.filter(x=>x.id!==id);
-  localStorage.setItem(KEY,JSON.stringify(db));
+  persistDb({silent:true});
   renderAll();
   renderScheduleBoard();
 }
@@ -2992,10 +3145,10 @@ renderEvents = function(){
       ? `<div>${fmt(e.start)}～</div><div>${fmt(e.end)}</div>`
       : `<div>${fmt(e.start)}</div>`;
     return `<div class="event-simple-row" style="grid-template-columns:auto 135px minmax(200px,1fr) auto">
-      <div>${e.sajUrl?`<button class="btn primary btn-compact no-print" onclick="openCompetitionDetail('${e.sajUrl}')">詳細</button>`:''}</div>
+      <div>${safeSajUrl(e.sajUrl)?`<button class="btn primary btn-compact no-print" onclick="openCompetitionDetail(decodeURIComponent('${encodeURIComponent(safeSajUrl(e.sajUrl))}'))">詳細</button>`:''}</div>
       <div>${period}</div>
       <div class="event-simple-title">${esc(e.title||'大会')}</div>
-      <div><button class="btn danger no-print" onclick="deleteEvent('${e.id}')">削除</button></div>
+      <div><button class="btn danger no-print" onclick="deleteEvent(decodeURIComponent('${encodeURIComponent(String(e.id||''))}'))">削除</button></div>
     </div>`;
   }).join('')||'<div class="muted">大会なし</div>';
 
@@ -3046,17 +3199,20 @@ function deleteAthlete(id){
   save();
 }
 renderAthletes = function(){
-  const rowHtml = a => `<tr>
-    <td><span class="click" onclick="showAthlete('${a.id}')">${a.name}</span></td>
-    <td>${a.sex||'—'}</td>
+  const rowHtml = a => {
+    const id=encodeURIComponent(String(a.id||''));
+    return `<tr>
+    <td><span class="click" onclick="showAthlete(decodeURIComponent('${id}'))">${esc(a.name||'—')}</span></td>
+    <td>${esc(a.sex||'—')}</td>
     <td>${a.birth?fmt(a.birth):'—'}</td>
-    <td>${a.school||'—'} ${a.grade||''}</td>
-    <td>${a.saj}</td>
+    <td>${esc(a.school||'—')} ${esc(a.grade||'')}</td>
+    <td>${esc(a.saj||'—')}</td>
     <td>${textOrDash(a.sl)}</td><td>${textOrDash(a.gs)}</td><td>${textOrDash(a.sg)}</td>
     <td>${a.updated?fmt(a.updated):'—'}</td>
-    <td>${a.pointListNumber!=null?`No.${a.pointListNumber}`:'—'}${a.pointSeasonLabel?`<br><span class="muted">${a.pointSeasonLabel}</span>`:''}</td>
-    <td><div class="no-print"><button class="btn" onclick="editAthlete('${a.id}')">編集</button> <button class="btn danger" onclick="deleteAthlete('${a.id}')">削除</button></div></td>
+    <td>${a.pointListNumber!=null?`No.${esc(a.pointListNumber)}`:'—'}${a.pointSeasonLabel?`<br><span class="muted">${esc(a.pointSeasonLabel)}</span>`:''}</td>
+    <td><div class="no-print"><button class="btn" onclick="editAthlete(decodeURIComponent('${id}'))">編集</button> <button class="btn danger" onclick="deleteAthlete(decodeURIComponent('${id}'))">削除</button></div></td>
   </tr>`;
+  };
   const arr=[...db.athletes].sort((a,b)=>{
     const sexOrder=s=>s==='男'?0:s==='女'?1:2;
     const sexDiff=sexOrder(a.sex)-sexOrder(b.sex);
@@ -3080,8 +3236,11 @@ function deleteCoach(id){
   save();
 }
 renderCoaches = function(){
-  coachList.innerHTML=db.coaches.map(c=>`<div class="list-item"><b>${c.name}</b><br><span class="muted">${c.role||''}</span>
-    <button class="btn danger no-print" style="float:right" onclick="deleteCoach('${c.id}')">削除</button></div>`).join('')||'<span class="muted">未登録</span>';
+  coachList.innerHTML=db.coaches.map(c=>{
+    const id=encodeURIComponent(String(c.id||''));
+    return `<div class="list-item"><b>${esc(c.name||'—')}</b><br><span class="muted">${esc(c.role||'')}</span>
+    <button class="btn danger no-print" style="float:right" onclick="deleteCoach(decodeURIComponent('${id}'))">削除</button></div>`;
+  }).join('')||'<span class="muted">未登録</span>';
 };
 
 let alpinePdfBusy=false;
@@ -3322,7 +3481,7 @@ async function directPdfDownload(id){
 }
 function printSection(id){return directPdfDownload(id);}
 
-// ===== v0.12.2 SAJ list athlete registration =====
+// ===== v0.12.5 SAJ list athlete registration =====
 let sajAthleteListCache=[];
 
 function setAthleteRegisterMode(mode){
@@ -3551,16 +3710,47 @@ async function refreshAthleteFromSaj(id,quiet=false){
   const old=db.athletes.find(x=>x.id===id);if(!old)return false;
   try{
     const a=await fetchSajAthlete(normalizedSaj(old.saj));
+
+    const keepPoint=(fresh,current)=>{
+      if(fresh===undefined || fresh===null || fresh==='') return current??null;
+      const n=Number(fresh);
+      return Number.isFinite(n)?n:(current??null);
+    };
+
+    const incomingResults=Array.isArray(a.results)?a.results:[];
+    const nextResults=incomingResults.length
+      ? incomingResults.map(r=>r.race
+          ? {date:r.date,race:r.race,disc:r.disc,rank:r.rank,time:r.time||'',point:r.point??'-',season:r.season,category:r.category}
+          : r)
+      : (old.results||[]);
+
     Object.assign(old,{
-      name:a.name||old.name,school:a.team||a.organization||old.school,
-      organization:a.organization||old.organization||'',birth:a.birth||old.birth||'',sex:a.sex||old.sex||'',
-      dh:a.dh,sc:a.sc,sg:a.sg,gs:a.gs,sl:a.sl,
+      name:a.name||old.name,
+      school:a.team||a.organization||old.school,
+      organization:a.organization||old.organization||'',
+      birth:a.birth||old.birth||'',
+      sex:a.sex||old.sex||'',
+
+      // SAJ response can temporarily omit point values.
+      // Never erase locally saved points, because ranking depends on these fields.
+      dh:keepPoint(a.dh,old.dh),
+      sc:keepPoint(a.sc,old.sc),
+      sg:keepPoint(a.sg,old.sg),
+      gs:keepPoint(a.gs,old.gs),
+      sl:keepPoint(a.sl,old.sl),
+
       updated:new Date().toISOString().slice(0,10),
       pointListNumber:a.pointListNumber??old.pointListNumber??null,
       pointSeasonLabel:a.pointSeasonLabel||old.pointSeasonLabel||'',
-      sajSource:a.source||old.sajSource||'',results:(a.results||old.results||[]).map(r=>r.race?{date:r.date,race:r.race,disc:r.disc,rank:r.rank,time:r.time||'',point:r.point??'-',season:r.season,category:r.category}:r)
+      sajSource:a.source||old.sajSource||'',
+      results:nextResults
     });
-    if(!quiet) save();
+
+    // Persist each successful refresh immediately so an app close during launch refresh
+    // cannot lose the latest valid ranking data.
+    persistDb({silent:true});
+
+    if(!quiet) renderAll();
     return true;
   }catch(e){
     if(!quiet) alert(`${old.name}: ${e.message}`);
@@ -3866,7 +4056,7 @@ function saveCalendarEdit(){
     });
   }
 
-  localStorage.setItem(KEY,JSON.stringify(db));
+  persistDb({silent:true});
   closeCalendarEdit();
   renderScheduleBoard();
   renderHome();
@@ -4010,7 +4200,7 @@ async function autoRefreshSajOnLaunch(){
   }
 
   if(changed){
-    localStorage.setItem(KEY,JSON.stringify(db));
+    // refreshAthleteFromSaj already persists every valid update.
     renderAll();
   }
   if(sync)sync.textContent='● ローカル保存済み';
@@ -4019,16 +4209,8 @@ async function autoRefreshSajOnLaunch(){
 async function refreshAppCacheOnLaunch(){
   if(!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
 
-  // Clear only app delivery caches. LocalStorage/athlete/team data are preserved.
-  if('caches' in window){
-    try{
-      const keys=await caches.keys();
-      await Promise.all(keys.filter(k=>k.startsWith('snowtech-alpine-')).map(k=>caches.delete(k)));
-    }catch{}
-  }
-
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=0122',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=0125',{updateViaCache:'none'});
     try{ await reg.update(); }catch{}
 
     if(reg.waiting){
