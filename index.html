@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>SnowTech Alpine Team Manager</title>
+<title>Alpine Team Manager by TechBit</title>
 <meta name="theme-color" content="#0b1220">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="snowtech-icon-192.png" type="image/png">
@@ -244,13 +244,31 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 .saj-list-table input[type=checkbox]{width:20px;height:20px;cursor:pointer}
 .saj-list-registered{opacity:.52}
 
+
+.home-menu-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.home-menu-btn{min-height:90px;border:1px solid var(--line);border-radius:12px;background:linear-gradient(180deg,#0e2740,#091827);color:#fff;padding:12px;text-align:left;cursor:pointer}
+.home-menu-btn strong{display:block;font-size:16px;margin-bottom:5px}
+.home-menu-btn span{display:block;font-size:12px;opacity:.8;line-height:1.4}
+.home-week-row{display:grid;grid-template-columns:100px 1fr;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.home-week-date{font-weight:700}
+.home-week-empty{color:var(--muted)}
+@media(max-width:760px){
+  .home-menu-grid{grid-template-columns:repeat(2,1fr)}
+  .home-menu-btn{min-height:82px}
+  .home-week-row{grid-template-columns:86px 1fr}
+}
+
+
+/* v0.9.1 branding */
+.tool-portal-logo img{width:min(100%,1100px);height:auto;object-fit:contain;display:block;margin:0 auto}
+
 </style>
 </head>
 <body>
 
 <div id="toolPortal" class="tool-portal no-print">
   <div class="tool-portal-card">
-    <div class="tool-portal-logo"><img src="snowtech-logo.png" alt="SNOWTECH SHIZUKUISHI IWATE @snowtech"></div>
+    <div class="tool-portal-logo"><img src="alpine-team-manager-logo.png" alt="Alpine Team Manager by TechBit"></div>
     <div class="tool-portal-sub">ALPINE SKI TOOL SELECT</div>
 
     <div class="tool-choice-grid">
@@ -261,7 +279,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 
       <button class="tool-choice manager" type="button" onclick="enterManagerTool()">
         <div class="tool-choice-title">マネージメントツール</div>
-        <div class="tool-choice-desc">年間予定・大会管理・大会会場・天気・積雪・選手管理・ランキング・チームボード・チーム設定</div>
+        <div class="tool-choice-desc">ホーム・年間予定・大会管理・大会会場・天気・積雪・選手管理・ランキング・チーム設定</div>
       </button>
     </div>
   </div>
@@ -270,11 +288,11 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 <header>
   <div class="brand">
     <div>
-      <h1>SnowTech Alpine Team Manager</h1>
+      <h1>Alpine Team Manager by TechBit</h1>
       <small id="teamHeader">TEAM未設定</small>
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.8.9</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.9.1</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
   </div>
@@ -282,13 +300,13 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 
 <main>
 <nav class="no-print">
-  <button data-tab="schedule" class="active">年間予定</button>
+  <button data-tab="home" class="active">ホーム</button>
+  <button data-tab="schedule">年間予定</button>
   <button data-tab="events">大会管理</button>
   <button data-tab="venues">大会会場</button>
   <button data-tab="weather">天気・積雪</button>
   <button data-tab="athletes">選手管理</button>
   <button data-tab="ranking">ランキング</button>
-  <button data-tab="dashboard">チームボード</button>
   <button data-tab="settings">チーム設定</button>
 </nav>
 <div class="tool-select-bar no-print">
@@ -296,7 +314,29 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 </div>
 
 
-<section id="schedule" class="active">
+
+<section id="home" class="active">
+  <div class="card">
+    <h2>ホーム</h2>
+    <div class="home-menu-grid no-print">
+      <button class="home-menu-btn" onclick="openTab('schedule')"><strong>年間予定</strong><span>予定表を確認・編集</span></button>
+      <button class="home-menu-btn" onclick="openTab('events')"><strong>大会管理</strong><span>公認大会取得・大会登録</span></button>
+      <button class="home-menu-btn" onclick="openTab('venues')"><strong>大会会場</strong><span>登録大会の会場情報</span></button>
+      <button class="home-menu-btn" onclick="openTab('weather')"><strong>天気・積雪</strong><span>大会会場の予報</span></button>
+      <button class="home-menu-btn" onclick="openTab('athletes')"><strong>選手管理</strong><span>選手登録・ポイント更新</span></button>
+      <button class="home-menu-btn" onclick="openTab('ranking')"><strong>ランキング</strong><span>チーム内ランキング</span></button>
+      <button class="home-menu-btn" onclick="openTab('settings')"><strong>チーム設定</strong><span>チーム・コーチ・バックアップ</span></button>
+      <button class="home-menu-btn" onclick="showToolPortal()"><strong>ツール切替</strong><span>セッター／マネージメント</span></button>
+    </div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <h2>直近1週間の予定</h2>
+    <div id="homeWeekRange" class="muted" style="margin-bottom:8px"></div>
+    <div id="homeWeekSchedule"></div>
+  </div>
+</section>
+
+<section id="schedule">
   <div class="card">
     <h2>年間活動スケジュール</h2>
     <div class="toolbar no-print">
@@ -358,6 +398,10 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
           <div class="muted" style="margin-top:6px">大会出場するエリアにチェックを入れてください。設定はこの端末に保存されます。</div>
         </div>
         <div id="sajCompetitionStatus" class="muted" style="margin:8px 0">SAJ競技データバンクから大会情報を取得します。</div>
+        <div class="toolbar" id="sajCompetitionActionsTop" style="display:none;margin-bottom:10px">
+          <button class="btn ok" onclick="importSelectedSajCompetitions()">チェックした大会を年間予定へ反映</button>
+          <button class="btn" onclick="toggleSajCompetitions()">閉じる</button>
+        </div>
         <div id="sajCompetitionList"></div>
         <div class="toolbar" id="sajCompetitionActions" style="display:none">
           <button class="btn ok" onclick="importSelectedSajCompetitions()">チェックした大会を年間予定へ反映</button>
@@ -409,16 +453,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
   </div>
 </section>
 
-<section id="dashboard">
-  <div class="card">
-    <h2>チームボード</h2>
-    <div id="teamBoardSummary" class="grid g3"></div>
-  </div>
-  <div class="grid g2" style="margin-top:14px">
-    <div class="card"><h3>次の予定</h3><div id="teamBoardNextSchedules"></div></div>
-    <div class="card"><h3>次の大会</h3><div id="teamBoardNextEvents"></div></div>
-  </div>
-</section>
+
 
 <section id="athletes">
   <div class="card">
@@ -607,7 +642,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
   <input id="sTitle"><input id="sPlace"><input id="sTarget"><select id="sCoach"></select><textarea id="sNote"></textarea>
 </div>
 
-<footer>SnowTech Alpine Team Manager Prototype</footer>
+<footer>Alpine Team Manager by TechBit Prototype</footer>
 </main>
 
 <script>
@@ -620,7 +655,7 @@ function enterManagerTool(){
   const p=document.getElementById('toolPortal');
   if(p)p.classList.add('hidden');
   sessionStorage.setItem('snowtech_selected_tool','manager');
-  window.scrollTo(0,0);
+  openTab('home');
 }
 function showToolPortal(){
   const p=document.getElementById('toolPortal');
@@ -812,10 +847,10 @@ function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&l
 function pad2(n){return String(n).padStart(2,'0')}
 const JP_WD=['日','月','火','水','木','金','土'];
 const JP_HOLIDAYS=new Set([
-  // 2026 official holidays relevant to SnowTech season display
+  // 2026 official holidays relevant to Alpine Team Manager season display
   '2026-01-01','2026-01-12','2026-02-11','2026-02-23','2026-03-20','2026-04-29',
   '2026-11-03','2026-11-23',
-  // 2027 official holidays relevant to SnowTech season display
+  // 2027 official holidays relevant to Alpine Team Manager season display
   '2027-01-01','2027-01-11','2027-02-11','2027-02-23','2027-03-21','2027-03-22','2027-04-29',
   '2027-11-03','2027-11-23'
 ]);
@@ -1009,7 +1044,7 @@ function renderScheduleBoard(){
   }
 
   const screen=tableHtml(allMonths,'screen-season-board');
-  const teamTitle=esc(db.team.name||'SnowTech');
+  const teamTitle=esc(db.team.name||'Alpine Team Manager');
   const print=`<div class="print-season-pages">
     <div class="season-page">
       <div class="season-page-head">
@@ -1029,14 +1064,22 @@ function renderScheduleBoard(){
   box.innerHTML=screen+print;
 }
 
-document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
-  document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));
+function openTab(tabId){
+  document.querySelectorAll('nav button[data-tab]').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('section').forEach(x=>x.classList.remove('active'));
-  b.classList.add('active');document.getElementById(b.dataset.tab).classList.add('active');
-});
+  const btn=document.querySelector(`nav button[data-tab="${tabId}"]`);
+  const sec=document.getElementById(tabId);
+  if(btn)btn.classList.add('active');
+  if(sec)sec.classList.add('active');
+  if(tabId==='home')renderHome();
+  if(tabId==='venues')renderVenues();
+  if(tabId==='weather')renderWeatherVenues();
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('nav button[data-tab]').forEach(b=>b.onclick=()=>openTab(b.dataset.tab));
 
 
-// ===== v0.8.9 Weather / Team Board =====
+// ===== v0.9.1 Weather / Team Board =====
 function uniqueRegisteredVenues(){
   const start=Number(db.team?.scheduleSeasonYear)||currentSeasonStartYear();
   const seen=new Set(), out=[];
@@ -1089,28 +1132,70 @@ async function loadVenueWeather(){
     </div>`).join('');
   }catch(e){status.textContent=e.message||'天気情報の取得に失敗しました。';}
 }
-function renderTeamBoard(){
-  const sum=document.getElementById('teamBoardSummary'); if(!sum)return;
-  const today=new Date().toISOString().slice(0,10);
-  const futureSchedules=(db.schedules||[]).filter(x=>(x.date||'')>=today).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
-  const futureEvents=(db.events||[]).filter(x=>(x.end||x.start||'')>=today).sort((a,b)=>(a.start||'').localeCompare(b.start||''));
-  const nextE=futureEvents[0];
-  const days=nextE?.start?Math.ceil((new Date(nextE.start+'T00:00:00')-new Date(today+'T00:00:00'))/86400000):null;
-  sum.innerHTML=[
-    ['所属選手',(db.athletes||[]).length+'名'],
-    ['登録大会',futureEvents.length+'大会'],
-    ['次の大会',nextE?(days<=0?'本日':`あと${days}日`):'予定なし']
-  ].map(x=>`<div class="card" style="margin:0"><div class="muted">${x[0]}</div><div style="font-size:24px;font-weight:800;margin-top:5px">${esc(x[1])}</div></div>`).join('');
-  const sl=document.getElementById('teamBoardNextSchedules');
-  sl.innerHTML=futureSchedules.slice(0,5).map(x=>`<div style="padding:8px 0;border-bottom:1px solid var(--line)"><strong>${esc(x.date||'')}</strong>　${esc(x.title||x.type||'予定')}</div>`).join('')||'<span class="muted">今後の予定はありません</span>';
-  const el=document.getElementById('teamBoardNextEvents');
-  el.innerHTML=futureEvents.slice(0,5).map(x=>`<div style="padding:8px 0;border-bottom:1px solid var(--line)"><strong>${esc(x.start||'')}</strong>　${esc(x.title||'大会')}<div class="muted">${esc(x.place||'')}</div></div>`).join('')||'<span class="muted">今後の大会はありません</span>';
+
+function homeYmd(d){
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function homeDateLabel(ds){
+  const d=new Date(ds+'T00:00:00');
+  if(Number.isNaN(d.getTime()))return ds;
+  const w=['日','月','火','水','木','金','土'][d.getDay()];
+  return `${d.getMonth()+1}/${d.getDate()}（${w}）`;
+}
+function renderHome(){
+  const wrap=document.getElementById('homeWeekSchedule');
+  if(!wrap)return;
+  const today=new Date();
+  today.setHours(0,0,0,0);
+  const end=new Date(today);
+  end.setDate(end.getDate()+6);
+  const from=homeYmd(today), to=homeYmd(end);
+  const range=document.getElementById('homeWeekRange');
+  if(range)range.textContent=`${homeDateLabel(from)} ～ ${homeDateLabel(to)}`;
+
+  const map=new Map();
+  const add=(date,title,sub='')=>{
+    if(!date || date<from || date>to)return;
+    if(!map.has(date))map.set(date,[]);
+    map.get(date).push({title,sub});
+  };
+
+  (db.schedules||[]).forEach(x=>{
+    add(x.date,x.title||x.type||'予定',[x.place,x.coach?`コーチ：${x.coach}`:''].filter(Boolean).join(' / '));
+  });
+
+  (db.events||[]).forEach(x=>{
+    const s=x.start||'', e=x.end||s;
+    if(!s)return;
+    let d=new Date(s+'T00:00:00');
+    const last=new Date((e||s)+'T00:00:00');
+    if(Number.isNaN(d.getTime())||Number.isNaN(last.getTime()))return;
+    while(d<=last){
+      add(homeYmd(d),x.title||'大会',x.place||'');
+      d.setDate(d.getDate()+1);
+    }
+  });
+
+  const rows=[];
+  for(let i=0;i<7;i++){
+    const d=new Date(today); d.setDate(d.getDate()+i);
+    const ds=homeYmd(d);
+    const items=map.get(ds)||[];
+    rows.push(`<div class="home-week-row">
+      <div class="home-week-date">${homeDateLabel(ds)}</div>
+      <div>${items.length
+        ? items.map(x=>`<div style="margin-bottom:5px"><strong>${esc(x.title)}</strong>${x.sub?`<div class="muted">${esc(x.sub)}</div>`:''}</div>`).join('')
+        : '<span class="home-week-empty">予定なし</span>'}
+      </div>
+    </div>`);
+  }
+  wrap.innerHTML=rows.join('');
 }
 
 function renderAll(){
   document.getElementById('teamHeader').textContent=db.team.name||'TEAM未設定';
   document.getElementById('teamName').value=db.team.name||'';
-  renderCoaches();renderAthletes();renderSchedule();renderEvents();renderRanking();refreshSelects();initSajCompetitionSeason();initScheduleSeason();renderSajRegionFilters();renderVenues();renderWeatherVenues();renderTeamBoard();
+  renderCoaches();renderAthletes();renderSchedule();renderEvents();renderRanking();refreshSelects();initSajCompetitionSeason();initScheduleSeason();renderSajRegionFilters();renderVenues();renderWeatherVenues();renderHome();
 }
 
 function openScheduleForm(){scheduleForm.classList.remove('hidden')} function closeScheduleForm(){scheduleForm.classList.add('hidden')}
@@ -1282,6 +1367,8 @@ async function loadSajCompetitions(){
   sajCompetitionStatus.textContent='SAJ公認アルペン大会を全国から取得中... 0/12月';
   sajCompetitionList.innerHTML='';
   sajCompetitionActions.style.display='none';
+  const sajCompetitionActionsTop=document.getElementById('sajCompetitionActionsTop');
+  if(sajCompetitionActionsTop)sajCompetitionActionsTop.style.display='none';
 
   const merged=new Map();
   const failed=[];
@@ -1323,6 +1410,7 @@ async function loadSajCompetitions(){
     sajCompetitionStatus.textContent=
       `${Number(season)-1}/${season}：全国 ${sajCompetitionCache.length}大会を取得${suffix}`;
     sajCompetitionActions.style.display=sajCompetitionCache.length?'flex':'none';
+    if(sajCompetitionActionsTop)sajCompetitionActionsTop.style.display=sajCompetitionCache.length?'flex':'none';
   }catch(e){
     sajCompetitionStatus.textContent=`取得失敗：${e.message}`;
   }
@@ -1396,12 +1484,14 @@ function importSelectedSajCompetitions(){
   sajCompetitionStatus.textContent=added>0
     ? `年間予定に反映いたしました（${added}大会）`
     : '選択した大会はすでに登録済みです';
-  if(added>0) alert('年間予定に反映いたしました');
-  // 反映完了後は取得した大会一覧を閉じる
-  const sajResults=document.getElementById('sajCompetitionResults') ||
-                   document.getElementById('sajCandidatesWrap') ||
-                   document.getElementById('sajResults');
-  sajResults?.classList.add('hidden');
+  if(added>0){
+    alert('年間予定に反映いたしました');
+    sajCompetitionList.innerHTML='';
+    sajCompetitionActions.style.display='none';
+    const top=document.getElementById('sajCompetitionActionsTop');
+    if(top)top.style.display='none';
+    setEventMode(null);
+  }
 }
 
 function openAthleteForm(){athleteForm.classList.remove('hidden')}
@@ -1695,7 +1785,7 @@ function printSection(id){
   target.classList.add('print-target');
 
   const oldTitle=document.title;
-  document.title=(db.team.name||'SnowTech')+'_'+(id==='schedule'?'年間予定表':'大会スケジュール');
+  document.title=(db.team.name||'Alpine Team Manager')+'_'+(id==='schedule'?'年間予定表':'大会スケジュール');
 
   const finishPrint=()=>{
     document.title=oldTitle;
@@ -1708,13 +1798,13 @@ function printSection(id){
     window.print();
   }catch(err){
     finishPrint();
-    console.error('SnowTech print error',err);
+    console.error('Alpine Team Manager print error',err);
   }
 }
 
 
 
-// ===== v0.8.9 SAJ list athlete registration =====
+// ===== v0.9.1 SAJ list athlete registration =====
 let sajAthleteListCache=[];
 
 function setAthleteRegisterMode(mode){

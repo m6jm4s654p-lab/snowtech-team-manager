@@ -1,6 +1,6 @@
 {
-  "name": "SNOWTECH",
-  "short_name": "SNOWTECH",
+  "name": "Alpine Team Manager by TechBit",
+  "short_name": "Alpine Team Manager",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#ffffff",
