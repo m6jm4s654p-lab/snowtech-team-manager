@@ -259,11 +259,11 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 }
 
 
-/* v0.10.3 branding */
+/* v0.10.4 branding */
 .tool-portal-logo img{width:min(100%,1100px);height:auto;object-fit:contain;display:block;margin:0 auto}
 
 
-/* v0.10.3 persistent navigation: HOME + Tool switch */
+/* v0.10.4 persistent navigation: HOME + Tool switch */
 .top-action-row{
   display:grid;
   grid-template-columns:repeat(2,minmax(0,1fr));
@@ -308,12 +308,12 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 }
 
 
-/* v0.10.3: team name is shown beside HOME only */
+/* v0.10.4: team name is shown beside HOME only */
 header .team-name,
 header .team-title,
 header #teamName,
 header #teamTitle,
-header [data-team-name]{display:none!important}
+header [data-team-name],header #teamHeader{display:none!important}
 
 </style>
 </head>
@@ -342,10 +342,9 @@ header [data-team-name]{display:none!important}
   <div class="brand">
     <div>
       <h1>Alpine Team Manager by TechBit</h1>
-      <small id="teamHeader">TEAM未設定</small>
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.10.3</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.10.4</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
   </div>
@@ -374,7 +373,6 @@ header [data-team-name]{display:none!important}
   </div>
   <div class="card" style="margin-top:14px">
     <h2>直近1週間の予定</h2>
-    <div id="homeWeekRange" class="muted" style="margin-bottom:8px"></div>
     <div id="homeWeekSchedule"></div>
   </div>
 </section>
@@ -1181,7 +1179,7 @@ function openTab(tabId){
 document.querySelectorAll('nav button[data-tab]').forEach(b=>b.onclick=()=>openTab(b.dataset.tab));
 
 
-// ===== v0.10.3 Weather / Team Board =====
+// ===== v0.10.4 Weather / Team Board =====
 const PREF_REGION={
   '北海道':'北海道',
   '青森':'東北','岩手':'東北','宮城':'東北','秋田':'東北','山形':'東北','福島':'東北',
@@ -1503,8 +1501,6 @@ function renderHome(){
   const end=new Date(today);
   end.setDate(end.getDate()+6);
   const from=homeYmd(today), to=homeYmd(end);
-  const range=document.getElementById('homeWeekRange');
-  if(range)range.textContent=`${homeDateLabel(from)} ～ ${homeDateLabel(to)}`;
 
   const map=new Map();
   const add=(date,title,sub='')=>{
@@ -1546,7 +1542,7 @@ function renderHome(){
 }
 
 function renderAll(){
-  document.getElementById('teamHeader').textContent=db.team.name||'TEAM未設定';
+  
   document.getElementById('teamName').value=db.team.name||'';
   renderCoaches();renderAthletes();renderSchedule();renderEvents();renderRanking();refreshSelects();initSajCompetitionSeason();initScheduleSeason();renderSajRegionFilters();renderVenues();renderWeatherVenues();renderHome();
 }
@@ -2362,7 +2358,7 @@ async function directPdfDownload(id){
 }
 function printSection(id){return directPdfDownload(id);}
 
-// ===== v0.10.3 SAJ list athlete registration =====
+// ===== v0.10.4 SAJ list athlete registration =====
 let sajAthleteListCache=[];
 
 function setAthleteRegisterMode(mode){
@@ -2819,7 +2815,7 @@ async function refreshAppCacheOnLaunch(){
   }
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=0103',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=0104',{updateViaCache:'none'});
     try{ await reg.update(); }catch{}
 
     if(reg.waiting){
