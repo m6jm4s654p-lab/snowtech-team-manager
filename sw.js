@@ -1,4 +1,4 @@
-const CACHE='snowtech-alpine-v0105';
+const CACHE='snowtech-alpine-v0107';
 const ASSETS=['./','./index.html','./manifest.webmanifest','./snowtech-logo.png',
   './alpine-team-manager-logo.png','./snowtech-icon-192.png','./snowtech-icon-512.png','./apple-touch-icon.png'];
 self.addEventListener('install',e=>e.waitUntil((async()=>{await caches.open(CACHE).then(c=>c.addAll(ASSETS));await self.skipWaiting();})()));

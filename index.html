@@ -259,11 +259,11 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 }
 
 
-/* v0.10.5 branding */
+/* v0.10.7 branding */
 .tool-portal-logo img{width:min(100%,1100px);height:auto;object-fit:contain;display:block;margin:0 auto}
 
 
-/* v0.10.5 persistent navigation: HOME + Tool switch */
+/* v0.10.7 persistent navigation: HOME + Tool switch */
 .top-action-row{
   display:grid;
   grid-template-columns:repeat(2,minmax(0,1fr));
@@ -308,7 +308,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 }
 
 
-/* v0.10.5: team name is shown beside HOME only */
+/* v0.10.7: team name is shown beside HOME only */
 header .team-name,
 header .team-title,
 header #teamName,
@@ -352,6 +352,117 @@ header [data-team-name],header #teamHeader{display:none!important}
   font-weight:800;
 }
 
+
+.athlete-team-choice-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+  margin-top:12px;
+}
+.athlete-team-choice-btn{
+  min-height:112px;
+  border:1px solid #2f4858;
+  border-radius:14px;
+  background:linear-gradient(180deg,#143245,#0b2230);
+  color:#f8fafc;
+  padding:18px 16px;
+  text-align:left;
+  cursor:pointer;
+  box-shadow:0 8px 20px rgba(0,0,0,.18);
+}
+.athlete-team-choice-btn strong{
+  display:block;
+  font-size:21px;
+  line-height:1.2;
+  margin-bottom:8px;
+}
+.athlete-team-choice-btn span{
+  display:block;
+  font-size:13px;
+  line-height:1.45;
+  color:#c8d6df;
+}
+.race-live-btn strong::after{
+  content:" ↗";
+  font-size:.75em;
+  opacity:.8;
+}
+@media(max-width:600px){
+  .athlete-team-choice-grid{grid-template-columns:1fr}
+  .athlete-team-choice-btn{min-height:96px}
+}
+
+
+.home-category-block{
+  position:relative;
+  overflow:hidden;
+  border:1px solid #273946;
+  border-radius:16px;
+  padding:16px;
+  margin-bottom:14px;
+  box-shadow:0 10px 24px rgba(0,0,0,.14);
+}
+.home-category-block::before{
+  content:"";
+  position:absolute;
+  inset:0 auto 0 0;
+  width:4px;
+  border-radius:16px 0 0 16px;
+}
+.home-category-manage{
+  background:linear-gradient(180deg,rgba(20,50,69,.95),rgba(9,28,40,.96));
+}
+.home-category-manage::before{background:#42c7d9}
+.home-category-info{
+  background:linear-gradient(180deg,rgba(27,52,42,.95),rgba(12,31,25,.96));
+}
+.home-category-info::before{background:#67d391}
+.home-category-head{
+  display:flex;
+  align-items:center;
+  gap:11px;
+  margin-bottom:13px;
+}
+.home-category-icon{
+  width:34px;
+  height:34px;
+  border-radius:10px;
+  display:grid;
+  place-items:center;
+  flex:0 0 34px;
+  font-weight:900;
+  font-size:17px;
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.12);
+}
+.home-category-manage .home-category-icon{color:#7fe6f2}
+.home-category-info .home-category-icon{color:#8ce8ad}
+.home-category-title{
+  font-size:19px;
+  line-height:1.1;
+  font-weight:900;
+  letter-spacing:.03em;
+}
+.home-category-sub{
+  margin-top:3px;
+  color:#9fb2bf;
+  font-size:12px;
+  line-height:1.3;
+}
+.home-category-grid{
+  margin:0;
+}
+.home-category-grid .home-menu-btn{
+  min-height:92px;
+}
+@media(max-width:640px){
+  .home-category-block{padding:13px}
+  .home-category-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .home-category-grid .home-menu-btn{min-height:88px}
+  .home-category-title{font-size:18px}
+  .home-category-sub{font-size:11px}
+}
+
 </style>
 </head>
 <body>
@@ -369,7 +480,7 @@ header [data-team-name],header #teamHeader{display:none!important}
 
       <button class="tool-choice manager" type="button" onclick="enterManagerTool()">
         <div class="tool-choice-title">マネージメントツール</div>
-        <div class="tool-choice-desc">ホーム・年間予定・大会管理・大会会場・天気・積雪・選手管理・ランキング・チーム設定</div>
+        <div class="tool-choice-desc">ホーム・年間予定・大会管理・会場情報・天気・積雪・レース速報・ランキング・選手・チーム設定</div>
       </button>
     </div>
   </div>
@@ -378,7 +489,7 @@ header [data-team-name],header #teamHeader{display:none!important}
 <header>
   <div class="header-inner">
     <div class="header-meta-row">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.10.5</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.10.7</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
     <div class="header-title-row">
@@ -396,21 +507,57 @@ header [data-team-name],header #teamHeader{display:none!important}
 
 
 <section id="home" class="active">
-  <div class="card">
-    <div class="home-menu-grid no-print">
+  <div class="home-category-block home-category-manage no-print">
+    <div class="home-category-head">
+      <div class="home-category-icon">M</div>
+      <div>
+        <div class="home-category-title">管理</div>
+        <div class="home-category-sub">スケジュール・大会・選手・チーム</div>
+      </div>
+    </div>
+    <div class="home-menu-grid home-category-grid">
       <button class="home-menu-btn" onclick="openTab('schedule')"><strong>年間予定</strong><span>予定表を確認・編集</span></button>
       <button class="home-menu-btn" onclick="openTab('events')"><strong>大会管理</strong><span>公認大会取得・大会登録</span></button>
-      <button class="home-menu-btn" onclick="openTab('venues')"><strong>大会会場</strong><span>登録大会の会場情報</span></button>
-      <button class="home-menu-btn" onclick="openTab('weather')"><strong>天気・積雪</strong><span>大会会場の予報</span></button>
-      <button class="home-menu-btn" onclick="openTab('athletes')"><strong>選手管理</strong><span>選手登録・ポイント更新</span></button>
-      <button class="home-menu-btn" onclick="openTab('ranking')"><strong>ランキング</strong><span>チーム内ランキング</span></button>
-      <button class="home-menu-btn" onclick="openTab('settings')"><strong>チーム設定</strong><span>チーム・コーチ・バックアップ</span></button>
-      <button class="home-menu-btn" onclick="showToolPortal()"><strong>ツール切替</strong><span>セッター／マネージメント</span></button>
+      <button class="home-menu-btn" onclick="openTab('ranking')"><strong>チームランキング</strong><span>チーム内ランキング</span></button>
+      <button class="home-menu-btn" onclick="openTab('athleteTeamSettings')"><strong>選手・チーム設定</strong><span>選手管理／チーム設定</span></button>
     </div>
   </div>
+
+  <div class="home-category-block home-category-info no-print">
+    <div class="home-category-head">
+      <div class="home-category-icon">i</div>
+      <div>
+        <div class="home-category-title">情報</div>
+        <div class="home-category-sub">会場・天候・速報・外部ツール</div>
+      </div>
+    </div>
+    <div class="home-menu-grid home-category-grid">
+      <button class="home-menu-btn" onclick="openTab('venues')"><strong>会場情報</strong><span>登録大会の会場情報</span></button>
+      <button class="home-menu-btn" onclick="openTab('weather')"><strong>天気・積雪</strong><span>大会会場の予報</span></button>
+      <button class="home-menu-btn race-live-btn" onclick="openRaceLive()"><strong>レース速報</strong><span>SEIKO SPORTSLINK</span></button>
+      <button class="home-menu-btn" onclick="showToolPortal()"><strong>ツール切り替え</strong><span>セッター／マネージメント</span></button>
+    </div>
+  </div>
+
   <div class="card" style="margin-top:14px">
     <h2>直近1週間の予定</h2>
     <div id="homeWeekSchedule"></div>
+  </div>
+</section>
+
+<section id="athleteTeamSettings">
+  <div class="card">
+    <h2>選手・チーム設定</h2>
+    <div class="athlete-team-choice-grid no-print">
+      <button class="athlete-team-choice-btn" type="button" onclick="openTab('athletes')">
+        <strong>選手管理</strong>
+        <span>選手登録・SAJポイント・成績を管理</span>
+      </button>
+      <button class="athlete-team-choice-btn" type="button" onclick="openTab('settings')">
+        <strong>チーム設定</strong>
+        <span>チーム名・コーチ・バックアップを管理</span>
+      </button>
+    </div>
   </div>
 </section>
 
@@ -1199,6 +1346,14 @@ function renderScheduleBoard(){
 
   box.innerHTML=screen+print;
 }
+function openRaceLive(){
+  window.open(
+    'https://seikosportslink.com/seiko/ssl/sportslink?a=portal&s=as',
+    '_blank',
+    'noopener,noreferrer'
+  );
+}
+
 function openTab(tabId){
   document.querySelectorAll('nav button[data-tab]').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('section').forEach(x=>x.classList.remove('active'));
@@ -1214,7 +1369,7 @@ function openTab(tabId){
 document.querySelectorAll('nav button[data-tab]').forEach(b=>b.onclick=()=>openTab(b.dataset.tab));
 
 
-// ===== v0.10.5 Weather / Team Board =====
+// ===== v0.10.7 Weather / Team Board =====
 const PREF_REGION={
   '北海道':'北海道',
   '青森':'東北','岩手':'東北','宮城':'東北','秋田':'東北','山形':'東北','福島':'東北',
@@ -2393,7 +2548,7 @@ async function directPdfDownload(id){
 }
 function printSection(id){return directPdfDownload(id);}
 
-// ===== v0.10.5 SAJ list athlete registration =====
+// ===== v0.10.7 SAJ list athlete registration =====
 let sajAthleteListCache=[];
 
 function setAthleteRegisterMode(mode){
@@ -2844,7 +2999,7 @@ async function refreshAppCacheOnLaunch(){
   }
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=0105',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=0107',{updateViaCache:'none'});
     try{ await reg.update(); }catch{}
 
     if(reg.waiting){
