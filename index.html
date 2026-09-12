@@ -261,11 +261,11 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 }
 
 
-/* v0.12.8 branding */
+/* v0.12.9 branding */
 .tool-portal-logo img{width:min(100%,1100px);height:auto;object-fit:contain;display:block;margin:0 auto}
 
 
-/* v0.12.8 top navigation: HOME + 操作ナビ / team name below */
+/* v0.12.9 top navigation: HOME + 操作ナビ / team name below */
 .top-nav-block{
   width:min(560px,100%);
   margin:0 auto 16px;
@@ -313,7 +313,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 }
 
 
-/* v0.12.8: team name is shown below HOME / 操作ナビ */
+/* v0.12.9: team name is shown below HOME / 操作ナビ */
 header .team-name,
 header .team-title,
 header #teamName,
@@ -820,7 +820,7 @@ header [data-team-name],header #teamHeader{display:none!important}
 }
 
 
-/* v0.12.8: smartphone / PWA status-bar safe area */
+/* v0.12.9: smartphone / PWA status-bar safe area */
 header{
   padding-top:calc(10px + env(safe-area-inset-top, 0px));
 }
@@ -949,6 +949,14 @@ header{
   background:rgba(145,35,35,.12);
 }
 
+
+.ranking-basis-note{
+  margin-top:-2px;
+  margin-bottom:12px;
+  font-size:12px;
+  font-weight:800;
+}
+
 </style>
 </head>
 <body>
@@ -975,7 +983,7 @@ header{
 <header>
   <div class="header-inner">
     <div class="header-meta-row">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.12.8</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.12.9</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
     <div class="header-title-row">
@@ -1145,6 +1153,7 @@ header{
       </div>
                         <div class="toolbar"><button class="btn ok" onclick="saveEvent()">保存</button></div>
     </div>
+    <div id="eventSeasonInfo" class="muted" style="margin:12px 0 8px"></div>
     <div id="eventList" class="event-simple-list"></div>
     <div id="eventPrintList" class="print-only"></div>
   </div>
@@ -1313,6 +1322,7 @@ header{
 <section id="ranking">
   <div class="card">
     <h2>チームランキング</h2>
+    <div class="muted ranking-basis-note">最新ポイント基準（選択中のシーズンには影響されません）</div>
 
     <h3 style="margin-top:16px">男子</h3>
     <div class="grid g3">
@@ -1883,7 +1893,22 @@ function scheduleSortPriority(type){
 }
 function buildSeasonBoardItems(){
   const rows=[];
-  db.schedules.forEach(s=>{
+  const schedules=db.schedules||[];
+
+  const overrideKeys=new Set(
+    schedules
+      .filter(x=>x.quick && x.overrideOfRangeId && x.date && x.overrideSlot)
+      .map(x=>`${x.date}|${x.overrideOfRangeId}|${Number(x.overrideSlot)}`)
+  );
+
+  schedules.forEach(s=>{
+    if(s.quick && s.overrideDelete)return;
+
+    if(s.quick && s.rangeId && s.date){
+      const slot=Number(s.slot)||1;
+      if(overrideKeys.has(`${s.date}|${s.rangeId}|${slot}`))return;
+    }
+
     rows.push({
       source:'schedule',
       dates:[s.date],
@@ -1892,9 +1917,11 @@ function buildSeasonBoardItems(){
       place:s.place||'',
       note:s.note||'',
       coach:s.coach||'',
-      quick:!!s.quick
+      quick:!!s.quick,
+      slot:Number(s.slot||s.overrideSlot)||0
     });
   });
+
   db.events.forEach(e=>{
     const coachNames=(e.coachIds||[])
       .map(id=>db.coaches.find(c=>c.id===id)?.name)
@@ -2114,7 +2141,7 @@ function openTab(tabId){
 document.querySelectorAll('nav button[data-tab]').forEach(b=>b.onclick=()=>openTab(b.dataset.tab));
 
 
-// ===== v0.12.8 Weather / Team Board =====
+// ===== v0.12.9 Weather / Team Board =====
 const PREF_REGION={
   '北海道':'北海道',
   '青森':'東北','岩手':'東北','宮城':'東北','秋田':'東北','山形':'東北','福島':'東北',
@@ -2744,26 +2771,40 @@ async function loadSajCompetitions(){
 
   const merged=new Map();
   const failed=[];
+  let completed=0;
 
   try{
-    for(let month=1;month<=12;month++){
-      sajCompetitionStatus.textContent=
-        `SAJ公認アルペン大会を全国から取得中... ${month-1}/12月`;
+    const months=Array.from({length:12},(_,i)=>i+1);
+    const concurrency=4;
 
-      const r=await fetch(
-        `${base}/api/saj-competitions?season=${encodeURIComponent(season)}&month=${month}`
-      );
-      const j=await r.json();
+    for(let i=0;i<months.length;i+=concurrency){
+      const batch=months.slice(i,i+concurrency);
+      const results=await Promise.all(batch.map(async month=>{
+        try{
+          const r=await fetch(
+            `${base}/api/saj-competitions?season=${encodeURIComponent(season)}&month=${month}`
+          );
+          const j=await r.json();
+          return {month,ok:r.ok&&j.ok,data:j};
+        }catch(error){
+          return {month,ok:false,error};
+        }finally{
+          completed++;
+          sajCompetitionStatus.textContent=
+            `SAJ公認アルペン大会を全国から取得中... ${completed}/12月`;
+        }
+      }));
 
-      if(!r.ok || !j.ok){
-        failed.push(`${month}月`);
-        continue;
-      }
-
-      for(const c of (j.competitions||[])){
-        const key=c.key||c.url||`${c.title}|${c.start}|${c.place}`;
-        if(!merged.has(key)) merged.set(key,c);
-      }
+      results.forEach(({month,ok,data})=>{
+        if(!ok){
+          failed.push(`${month}月`);
+          return;
+        }
+        for(const c of (data.competitions||[])){
+          const key=c.key||c.url||`${c.title}|${c.start}|${c.place}`;
+          if(!merged.has(key))merged.set(key,c);
+        }
+      });
 
       sajCompetitionCache=[...merged.values()].sort((a,b)=>
         (a.start||'9999').localeCompare(b.start||'9999') ||
@@ -2771,12 +2812,6 @@ async function loadSajCompetitions(){
       );
       renderSajCompetitionCandidates();
     }
-
-    sajCompetitionCache=[...merged.values()].sort((a,b)=>
-      (a.start||'9999').localeCompare(b.start||'9999') ||
-      String(a.title||'').localeCompare(String(b.title||''),'ja')
-    );
-    renderSajCompetitionCandidates();
 
     const suffix=failed.length?` / 取得失敗: ${failed.join('・')}`:'';
     sajCompetitionStatus.textContent=
@@ -3068,23 +3103,23 @@ function renderBackupStatus(){
   const raw=db.team?.lastBackupAt||'';
   if(!raw){
     el.className='backup-status danger';
-    el.innerHTML='<b>バックアップ：未実施</b><br>端末内のみで管理するため、初回設定後のバックアップを推奨します。';
+    el.innerHTML='<b>バックアップ書き出し操作：未実施</b><br>端末内のみで管理するため、初回設定後のバックアップを推奨します。';
     return;
   }
   const t=new Date(raw);
   if(Number.isNaN(t.getTime())){
     el.className='backup-status warn';
-    el.textContent='バックアップ日時を確認できません。再度バックアップを書き出してください。';
+    el.textContent='バックアップ書き出し操作の日時を確認できません。再度バックアップを書き出してください。';
     return;
   }
   const days=Math.floor((Date.now()-t.getTime())/86400000);
   const date=t.toLocaleDateString('ja-JP');
   if(days>=30){
     el.className='backup-status warn';
-    el.innerHTML=`<b>最終バックアップ：${esc(date)}（${days}日前）</b><br>30日以上経過しています。バックアップを推奨します。`;
+    el.innerHTML=`<b>最終バックアップ書き出し操作：${esc(date)}（${days}日前）</b><br>30日以上経過しています。バックアップを推奨します。`;
   }else{
     el.className='backup-status ok';
-    el.innerHTML=`<b>最終バックアップ：${esc(date)}</b>`;
+    el.innerHTML=`<b>最終バックアップ書き出し操作：${esc(date)}</b>`;
   }
 }
 
@@ -3198,7 +3233,13 @@ function deleteEvent(id){
   renderScheduleBoard();
 }
 renderEvents = function(){
-  const events=[...db.events].sort((a,b)=>(a.start||'').localeCompare(b.start||''));
+  const season=selectedGlobalSeasonYear();
+  const all=[...db.events].sort((a,b)=>(a.start||'').localeCompare(b.start||''));
+  const events=all.filter(e=>eventSeasonStartYear(e)===season);
+
+  const info=document.getElementById('eventSeasonInfo');
+  if(info)info.textContent=`表示対象：${season}/${season+1}シーズン　${events.length}大会`;
+
   eventList.innerHTML=events.map(e=>{
     const period=e.end&&e.end!==e.start
       ? `<div>${fmt(e.start)}～</div><div>${fmt(e.end)}</div>`
@@ -3209,7 +3250,7 @@ renderEvents = function(){
       <div class="event-simple-title">${esc(e.title||'大会')}</div>
       <div><button class="btn danger no-print" onclick="deleteEvent(decodeURIComponent('${encodeURIComponent(String(e.id||''))}'))">削除</button></div>
     </div>`;
-  }).join('')||'<div class="muted">大会なし</div>';
+  }).join('')||`<div class="muted">${season}/${season+1}シーズンの大会はありません</div>`;
 
   if(eventPrintList){
     eventPrintList.innerHTML=events.map(e=>{
@@ -3221,7 +3262,7 @@ renderEvents = function(){
         <div class="muted">締切: ${fmt(e.deadline)} / 出場: ${esc(names.join('・')||'未設定')} / 引率: ${esc(coaches.join('・')||'未設定')}</div>
         ${e.note?`<div class="muted" style="margin-top:4px">備考: ${esc(e.note)}</div>`:''}
       </div>`;
-    }).join('')||'<div class="muted">大会なし</div>';
+    }).join('')||`<div class="muted">${season}/${season+1}シーズンの大会はありません</div>`;
   }
 };
 
@@ -3462,7 +3503,51 @@ async function makeSchedulePdfImages(compact=false){
   return images;
 }
 async function makeEventPdfImages(){
-  const events=[...db.events].sort((a,b)=>(a.start||'').localeCompare(b.start||'')),pages=[];for(let i=0;i<events.length;i+=6)pages.push(events.slice(i,i+6));if(!pages.length)pages.push([]);const images=[];for(let pi=0;pi<pages.length;pi++){const chunk=pages[pi],W=1240,H=1754,M=60,c=document.createElement('canvas');c.width=W;c.height=H;const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);ctx.fillStyle='#111';ctx.textBaseline='top';ctx.font=`bold 26px ${PDF_FONT}`;ctx.fillText(`${db.team.name||'Alpine Team Manager'} 大会スケジュール`,M,45);ctx.font=`14px ${PDF_FONT}`;ctx.fillText(`${pi+1} / ${pages.length}ページ`,M,82);let y=120;if(!chunk.length){ctx.font=`18px ${PDF_FONT}`;ctx.fillText('大会なし',M,y);}chunk.forEach(e=>{const h=230;ctx.strokeStyle='#aaa';ctx.strokeRect(M,y,W-M*2,h);ctx.font=`bold 20px ${PDF_FONT}`;ctx.fillStyle='#111';drawFitText(ctx,e.title||'大会',M+16,y+14,W-M*2-32,20,2,24);ctx.font=`15px ${PDF_FONT}`;ctx.fillText(`${fmt(e.start)}${e.end&&e.end!==e.start?'〜'+fmt(e.end):''}`,M+16,y+70);drawFitText(ctx,`会場：${e.place||'-'}　種目：${e.disc||'-'}`,M+16,y+98,W-M*2-32,14,2,19);const names=(e.athleteIds||[]).map(id=>db.athletes.find(a=>a.id===id)?.name).filter(Boolean);const coaches=(e.coachIds||[]).map(id=>db.coaches.find(c=>c.id===id)?.name).filter(Boolean);ctx.font=`13px ${PDF_FONT}`;drawFitText(ctx,`締切：${fmt(e.deadline)}　出場：${names.join('・')||'未設定'}`,M+16,y+142,W-M*2-32,13,2,18);drawFitText(ctx,`引率：${coaches.join('・')||'未設定'}${e.note?'　備考：'+e.note:''}`,M+16,y+180,W-M*2-32,13,2,18);y+=250;});images.push(await canvasToPdfImage(c));}return images;
+  const season=selectedGlobalSeasonYear();
+  const events=[...db.events]
+    .filter(e=>eventSeasonStartYear(e)===season)
+    .sort((a,b)=>(a.start||'').localeCompare(b.start||''));
+
+  const pages=[];
+  for(let i=0;i<events.length;i+=6)pages.push(events.slice(i,i+6));
+  if(!pages.length)pages.push([]);
+
+  const images=[];
+  for(let pi=0;pi<pages.length;pi++){
+    const chunk=pages[pi],W=1240,H=1754,M=60,c=document.createElement('canvas');
+    c.width=W;c.height=H;
+    const ctx=c.getContext('2d');
+    ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#111';ctx.textBaseline='top';
+    ctx.font=`bold 26px ${PDF_FONT}`;
+    ctx.fillText(`${db.team.name||'Alpine Team Manager'} 大会スケジュール`,M,45);
+    ctx.font=`14px ${PDF_FONT}`;
+    ctx.fillText(`${season}/${season+1}シーズン　${pi+1} / ${pages.length}ページ`,M,82);
+    let y=120;
+
+    if(!chunk.length){
+      ctx.font=`18px ${PDF_FONT}`;
+      ctx.fillText(`${season}/${season+1}シーズンの大会なし`,M,y);
+    }
+
+    chunk.forEach(e=>{
+      const h=230;
+      ctx.strokeStyle='#aaa';ctx.strokeRect(M,y,W-M*2,h);
+      ctx.font=`bold 20px ${PDF_FONT}`;ctx.fillStyle='#111';
+      drawFitText(ctx,e.title||'大会',M+16,y+14,W-M*2-32,20,2,24);
+      ctx.font=`15px ${PDF_FONT}`;
+      ctx.fillText(`${fmt(e.start)}${e.end&&e.end!==e.start?'〜'+fmt(e.end):''}`,M+16,y+70);
+      drawFitText(ctx,`会場：${e.place||'-'}　種目：${e.disc||'-'}`,M+16,y+98,W-M*2-32,14,2,19);
+      const names=(e.athleteIds||[]).map(id=>db.athletes.find(a=>a.id===id)?.name).filter(Boolean);
+      const coaches=(e.coachIds||[]).map(id=>db.coaches.find(c=>c.id===id)?.name).filter(Boolean);
+      ctx.font=`13px ${PDF_FONT}`;
+      drawFitText(ctx,`締切：${fmt(e.deadline)}　出場：${names.join('・')||'未設定'}`,M+16,y+142,W-M*2-32,13,2,18);
+      drawFitText(ctx,`引率：${coaches.join('・')||'未設定'}${e.note?'　備考：'+e.note:''}`,M+16,y+180,W-M*2-32,13,2,18);
+      y+=250;
+    });
+    images.push(await canvasToPdfImage(c));
+  }
+  return images;
 }
 async function validatePdfBlob(blob){
   if(!(blob instanceof Blob) || blob.size<1000)throw new Error('生成されたPDFデータが不完全です');
@@ -3540,7 +3625,7 @@ async function directPdfDownload(id){
 }
 function printSection(id){return directPdfDownload(id);}
 
-// ===== v0.12.8 SAJ list athlete registration =====
+// ===== v0.12.9 SAJ list athlete registration =====
 let sajAthleteListCache=[];
 
 function setAthleteRegisterMode(mode){
@@ -3931,32 +4016,62 @@ function setCalendarEditScope(scope){
   updateCalendarPeriodSummary();
   renderCalendarImportedEventsForRange();
 }
+function calendarRangeRowsForDate(rangeId,dateStr){
+  return (db.schedules||[])
+    .filter(x=>x.quick && x.rangeId===rangeId && x.date===dateStr)
+    .sort((a,b)=>(Number(a.slot)||1)-(Number(b.slot)||1));
+}
+function calendarRangeTemplateRows(rangeId){
+  return (db.schedules||[])
+    .filter(x=>x.quick && x.rangeId===rangeId)
+    .sort((a,b)=>{
+      const sd=String(a.date||'').localeCompare(String(b.date||''));
+      return sd || ((Number(a.slot)||1)-(Number(b.slot)||1));
+    });
+}
+function calendarDayOverrides(rangeId,dateStr){
+  return (db.schedules||[])
+    .filter(x=>x.quick && x.overrideOfRangeId===rangeId && x.date===dateStr)
+    .sort((a,b)=>(Number(a.overrideSlot)||1)-(Number(b.overrideSlot)||1));
+}
 function loadCalendarDayEntries(){
-  const sameDay=(db.schedules||[]).filter(x=>x.date===calendarEditDateValue && x.quick);
-  const localOnly=sameDay.filter(x=>!x.rangeId);
-  const ranged=sameDay.filter(x=>x.rangeId);
+  const rangeId=calendarEditRangeId;
+  if(!rangeId)return;
 
-  // Day edit shows the period item first, then a day-only entry if present.
-  const merged=[...ranged.slice(0,1),...localOnly].slice(0,2);
-  for(let i=0;i<2;i++){
-    const item=merged[i]||null;
-    const typeEl=document.getElementById(`calendarType${i+1}`);
-    const memoEl=document.getElementById(`calendarMemo${i+1}`);
+  const todayRange=calendarRangeRowsForDate(rangeId,calendarEditDateValue);
+  const template=calendarRangeTemplateRows(rangeId);
+  const baseBySlot=new Map();
+  [...template,...todayRange].forEach(x=>{
+    const slot=Number(x.slot)||1;
+    if(!baseBySlot.has(slot))baseBySlot.set(slot,x);
+  });
+
+  const overrides=calendarDayOverrides(rangeId,calendarEditDateValue);
+  const overrideBySlot=new Map(overrides.map(x=>[Number(x.overrideSlot)||1,x]));
+
+  for(let slot=1;slot<=2;slot++){
+    const override=overrideBySlot.get(slot);
+    const base=baseBySlot.get(slot);
+    const item=override ? (override.overrideDelete?null:override) : base;
+    const typeEl=document.getElementById(`calendarType${slot}`);
+    const memoEl=document.getElementById(`calendarMemo${slot}`);
     if(typeEl)typeEl.value=item?normalizedScheduleType(item.type):'';
     if(memoEl)memoEl.value=item?String(item.note||item.title||'').slice(0,20):'';
   }
 }
 function loadCalendarRangeEntries(){
-  let items=[];
-  if(calendarEditRangeId){
-    items=(db.schedules||[])
-      .filter(x=>x.quick && x.rangeId===calendarEditRangeId && x.date===calendarEditDateValue)
-      .slice(0,2);
-  }
-  for(let i=0;i<2;i++){
-    const item=items[i]||null;
-    const typeEl=document.getElementById(`calendarType${i+1}`);
-    const memoEl=document.getElementById(`calendarMemo${i+1}`);
+  const items=calendarEditRangeId
+    ? calendarRangeTemplateRows(calendarEditRangeId)
+    : [];
+  const bySlot=new Map();
+  items.forEach(x=>{
+    const slot=Number(x.slot)||1;
+    if(!bySlot.has(slot))bySlot.set(slot,x);
+  });
+  for(let slot=1;slot<=2;slot++){
+    const item=bySlot.get(slot)||null;
+    const typeEl=document.getElementById(`calendarType${slot}`);
+    const memoEl=document.getElementById(`calendarMemo${slot}`);
     if(typeEl)typeEl.value=item?normalizedScheduleType(item.type):'';
     if(memoEl)memoEl.value=item?String(item.note||item.title||'').slice(0,20):'';
   }
@@ -3975,7 +4090,18 @@ function editScheduleCell(dateStr){
   if(dateEl)dateEl.textContent=calendarDateDisplay(dateStr);
 
   const sameDayQuick=(db.schedules||[]).filter(x=>x.date===dateStr && x.quick);
-  const ranged=sameDayQuick.find(x=>x.rangeId && x.rangeStart && x.rangeEnd) || null;
+  let ranged=sameDayQuick.find(x=>x.rangeId && x.rangeStart && x.rangeEnd) || null;
+
+  // Backward compatibility: an older day override may have removed the range row for this date.
+  if(!ranged){
+    const oldOverride=sameDayQuick.find(x=>x.overrideOfRangeId);
+    if(oldOverride){
+      ranged=(db.schedules||[]).find(
+        x=>x.quick && x.rangeId===oldOverride.overrideOfRangeId && x.rangeStart && x.rangeEnd
+      )||null;
+    }
+  }
+
   calendarEditRangeId=ranged?.rangeId||'';
   calendarEditOriginalRange=ranged?{start:ranged.rangeStart,end:ranged.rangeEnd}:null;
 
@@ -3988,7 +4114,11 @@ function editScheduleCell(dateStr){
     calendarEditScope='range';
     if(startEl){startEl.disabled=false;startEl.value=dateStr;}
     if(endEl){endEl.disabled=false;endEl.value=dateStr;}
-    const direct=sameDayQuick.filter(x=>!x.rangeId).slice(0,2);
+
+    const direct=sameDayQuick
+      .filter(x=>!x.rangeId && !x.overrideOfRangeId && !x.overrideDelete)
+      .slice(0,2);
+
     for(let i=0;i<2;i++){
       const item=direct[i]||null;
       const typeEl=document.getElementById(`calendarType${i+1}`);
@@ -4025,58 +4155,75 @@ function saveCalendarEdit(){
     return;
   }
 
-  const entries=[];
-  for(let i=1;i<=2;i++){
-    const type=String(document.getElementById(`calendarType${i}`)?.value||'').trim();
-    const memo=String(document.getElementById(`calendarMemo${i}`)?.value||'').trim().slice(0,20);
-    if(!type)continue;
-    entries.push({type:normalizedScheduleType(type),memo});
+  const slotEntries=[];
+  for(let slot=1;slot<=2;slot++){
+    const type=String(document.getElementById(`calendarType${slot}`)?.value||'').trim();
+    const memo=String(document.getElementById(`calendarMemo${slot}`)?.value||'').trim().slice(0,20);
+    slotEntries.push(type?{slot,type:normalizedScheduleType(type),memo}:null);
   }
 
   if(calendarEditScope==='day' && calendarEditRangeId){
-    // Keep the period registration intact. Only replace day-only quick entries.
-    // The period item itself is slot 1; any additional entry becomes local to this date.
-    const rangedToday=(db.schedules||[]).filter(x=>x.quick && x.rangeId===calendarEditRangeId && x.date===calendarEditDateValue);
-    const rangedBase=rangedToday[0]||null;
+    const rangeId=calendarEditRangeId;
+    const template=calendarRangeTemplateRows(rangeId);
+    const baseBySlot=new Map();
+    template.forEach(x=>{
+      const slot=Number(x.slot)||1;
+      if(!baseBySlot.has(slot))baseBySlot.set(slot,x);
+    });
 
-    db.schedules=(db.schedules||[]).filter(x=>!(x.quick && x.date===calendarEditDateValue && !x.rangeId));
+    // Replace only this day's overrides. Baseline range rows stay intact.
+    db.schedules=(db.schedules||[]).filter(
+      x=>!(x.quick && x.date===calendarEditDateValue && x.overrideOfRangeId===rangeId)
+    );
 
-    // If user altered slot 1, create a day override rather than changing the full range.
-    // Remove the ranged copy only on this date, leaving all other dates untouched.
-    if(entries[0] && rangedBase){
-      const sameAsBase=
-        normalizedScheduleType(rangedBase.type)===entries[0].type &&
-        String(rangedBase.note||rangedBase.title||'').slice(0,20)===entries[0].memo;
-      if(!sameAsBase){
-        db.schedules=(db.schedules||[]).filter(x=>!(x.quick && x.date===calendarEditDateValue && x.rangeId===calendarEditRangeId));
+    // Remove legacy local-only quick entries on this ranged date, because slots 1/2 now fully represent the day.
+    db.schedules=(db.schedules||[]).filter(
+      x=>!(x.quick && x.date===calendarEditDateValue && !x.rangeId && !x.overrideOfRangeId)
+    );
+
+    for(let slot=1;slot<=2;slot++){
+      const entered=slotEntries[slot-1];
+      const base=baseBySlot.get(slot)||null;
+
+      const baseType=base?normalizedScheduleType(base.type):'';
+      const baseMemo=base?String(base.note||base.title||'').slice(0,20):'';
+      const enteredType=entered?.type||'';
+      const enteredMemo=entered?.memo||'';
+
+      const sameAsBase=!!base && enteredType===baseType && enteredMemo===baseMemo;
+      if(sameAsBase)continue;
+      if(!base && !entered)continue;
+
+      if(!entered && base){
         db.schedules.push({
           id:uid(),
           date:calendarEditDateValue,
-          type:entries[0].type,
-          title:entries[0].memo,
+          type:base.type||'練習',
+          title:'',
           place:'',
           target:'',
           coach:'',
-          note:entries[0].memo,
+          note:'',
           quick:true,
-          overrideOfRangeId:calendarEditRangeId
+          overrideOfRangeId:rangeId,
+          overrideSlot:slot,
+          overrideDelete:true
+        });
+      }else if(entered){
+        db.schedules.push({
+          id:uid(),
+          date:calendarEditDateValue,
+          type:entered.type,
+          title:entered.memo,
+          place:'',
+          target:'',
+          coach:'',
+          note:entered.memo,
+          quick:true,
+          overrideOfRangeId:rangeId,
+          overrideSlot:slot
         });
       }
-    }
-
-    // Slot 2 is an additional day-only entry.
-    if(entries[1]){
-      db.schedules.push({
-        id:uid(),
-        date:calendarEditDateValue,
-        type:entries[1].type,
-        title:entries[1].memo,
-        place:'',
-        target:'',
-        coach:'',
-        note:entries[1].memo,
-        quick:true
-      });
     }
   }else{
     const dates=calendarRangeDates(start,end);
@@ -4085,28 +4232,35 @@ function saveCalendarEdit(){
       return;
     }
 
-    const newRangeId=calendarEditRangeId || `range_${uid()}`;
+    const oldRangeId=calendarEditRangeId||'';
+    const newRangeId=oldRangeId || `range_${uid()}`;
 
-    if(calendarEditRangeId){
-      db.schedules=(db.schedules||[]).filter(x=>!(x.quick && x.rangeId===calendarEditRangeId));
+    if(oldRangeId){
+      // Full-range edit means all previous day-specific exceptions for that range are cleared.
+      db.schedules=(db.schedules||[]).filter(
+        x=>!(x.quick && (x.rangeId===oldRangeId || x.overrideOfRangeId===oldRangeId))
+      );
     }
 
+    // New range registration replaces direct non-range quick entries inside the target dates.
     const dateSet=new Set(dates);
-    db.schedules=(db.schedules||[]).filter(x=>!(x.quick && dateSet.has(x.date) && !x.overrideOfRangeId));
+    db.schedules=(db.schedules||[]).filter(
+      x=>!(x.quick && dateSet.has(x.date) && !x.rangeId && !x.overrideOfRangeId)
+    );
 
     dates.forEach(date=>{
-      entries.forEach(({type,memo},slotIndex)=>{
+      slotEntries.filter(Boolean).forEach(entry=>{
         db.schedules.push({
           id:uid(),
           date,
-          type,
-          title:memo,
+          type:entry.type,
+          title:entry.memo,
           place:'',
           target:'',
           coach:'',
-          note:memo,
+          note:entry.memo,
           quick:true,
-          slot:slotIndex+1,
+          slot:entry.slot,
           rangeId:newRangeId,
           rangeStart:start,
           rangeEnd:end
@@ -4250,16 +4404,26 @@ async function autoRefreshSajOnLaunch(){
   if(!db.athletes.length || !apiBase()) return;
 
   const sync=document.getElementById('syncState');
-  const oldSync=sync?.textContent||'● ローカル保存';
   if(sync)sync.textContent='● ポイント更新中';
 
   let changed=false;
-  for(const a of db.athletes){
-    if(await refreshAthleteFromSaj(a.id,true)) changed=true;
+  let cursor=0;
+  const total=db.athletes.length;
+  const concurrency=Math.min(3,total);
+
+  async function worker(){
+    while(true){
+      const idx=cursor++;
+      if(idx>=total)return;
+      const a=db.athletes[idx];
+      if(sync)sync.textContent=`● ポイント更新中 ${Math.min(idx+1,total)}/${total}`;
+      if(await refreshAthleteFromSaj(a.id,true))changed=true;
+    }
   }
 
+  await Promise.all(Array.from({length:concurrency},()=>worker()));
+
   if(changed){
-    // refreshAthleteFromSaj already persists every valid update.
     renderAll();
   }
   if(sync)sync.textContent='● ローカル保存済み';
@@ -4269,7 +4433,7 @@ async function refreshAppCacheOnLaunch(){
   if(!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=0128',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=0129',{updateViaCache:'none'});
     try{ await reg.update(); }catch{}
 
     if(reg.waiting){
