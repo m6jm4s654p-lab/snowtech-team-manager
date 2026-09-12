@@ -259,11 +259,11 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 }
 
 
-/* v0.10.7 branding */
+/* v0.10.8 branding */
 .tool-portal-logo img{width:min(100%,1100px);height:auto;object-fit:contain;display:block;margin:0 auto}
 
 
-/* v0.10.7 persistent navigation: HOME + Tool switch */
+/* v0.10.8 persistent navigation: HOME + Tool switch */
 .top-action-row{
   display:grid;
   grid-template-columns:repeat(2,minmax(0,1fr));
@@ -308,7 +308,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 }
 
 
-/* v0.10.7: team name is shown beside HOME only */
+/* v0.10.8: team name is shown beside HOME only */
 header .team-name,
 header .team-title,
 header #teamName,
@@ -463,6 +463,114 @@ header [data-team-name],header #teamHeader{display:none!important}
   .home-category-sub{font-size:11px}
 }
 
+
+:root{
+  --schedule-race:#d84a4a;
+  --schedule-training:#3d86d9;
+  --schedule-camp:#31a36f;
+  --schedule-travel:#dc8a2f;
+  --schedule-rest:#75808a;
+}
+.board-item{
+  display:block;
+  border-radius:5px;
+  padding:2px 4px;
+  margin-top:2px;
+  line-height:1.25;
+  overflow:hidden;
+}
+.board-item .board-type{
+  font-weight:900;
+  margin-right:3px;
+}
+.board-item.type-race{background:rgba(216,74,74,.16);border-left:3px solid var(--schedule-race)}
+.board-item.type-training{background:rgba(61,134,217,.16);border-left:3px solid var(--schedule-training)}
+.board-item.type-camp{background:rgba(49,163,111,.16);border-left:3px solid var(--schedule-camp)}
+.board-item.type-travel{background:rgba(220,138,47,.17);border-left:3px solid var(--schedule-travel)}
+.board-item.type-rest{background:rgba(117,128,138,.18);border-left:3px solid var(--schedule-rest)}
+.board-more{
+  display:block;
+  margin-top:2px;
+  padding-left:5px;
+  font-size:10px;
+  font-weight:800;
+  color:var(--muted);
+}
+.calendar-edit-modal{
+  position:fixed;
+  inset:0;
+  z-index:10050;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+  background:rgba(2,10,16,.76);
+  backdrop-filter:blur(5px);
+}
+.calendar-edit-modal.open{display:flex}
+.calendar-edit-card{
+  width:min(560px,100%);
+  border:1px solid #38505f;
+  border-radius:18px;
+  background:#0b1d28;
+  box-shadow:0 24px 70px rgba(0,0,0,.45);
+  padding:18px;
+}
+.calendar-edit-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:12px;
+}
+.calendar-edit-title{font-size:21px;font-weight:900}
+.calendar-edit-date{margin-top:4px;color:#9fb4c1;font-weight:700}
+.calendar-edit-close{
+  width:38px;height:38px;border-radius:10px;border:1px solid #415867;
+  background:#142b38;color:#fff;font-size:24px;line-height:1;cursor:pointer;
+}
+.calendar-imported-events{
+  margin-bottom:12px;
+}
+.calendar-imported-row{
+  border:1px solid rgba(216,74,74,.45);
+  background:rgba(216,74,74,.12);
+  border-radius:9px;
+  padding:8px 10px;
+  margin-top:6px;
+  font-size:12px;
+}
+.calendar-edit-slot{
+  border-top:1px solid rgba(255,255,255,.08);
+  padding-top:12px;
+  margin-top:12px;
+}
+.calendar-slot-label{
+  font-weight:900;
+  margin-bottom:7px;
+}
+.calendar-slot-grid{
+  display:grid;
+  grid-template-columns:145px minmax(0,1fr);
+  gap:9px;
+}
+.calendar-edit-note{
+  margin-top:13px;
+  color:#91a7b5;
+  font-size:11px;
+  line-height:1.45;
+}
+.calendar-edit-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+  margin-top:16px;
+}
+@media(max-width:560px){
+  .calendar-slot-grid{grid-template-columns:1fr}
+  .calendar-edit-card{padding:15px}
+}
+
 </style>
 </head>
 <body>
@@ -489,7 +597,7 @@ header [data-team-name],header #teamHeader{display:none!important}
 <header>
   <div class="header-inner">
     <div class="header-meta-row">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.10.7</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.10.8</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
     <div class="header-title-row">
@@ -572,7 +680,7 @@ header [data-team-name],header #teamHeader{display:none!important}
       <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap">
         <div>
           <h3 id="scheduleBoardHeading" style="margin:0">年間予定表（画面：横スクロール / PDF：A4縦2枚）</h3>
-          <div class="board-caption" id="scheduleBoardCaption"></div><div class="muted no-print" style="font-size:11px">セルをタップして予定を編集 / 全画面表示は上のボタンから</div>
+          <div class="board-caption" id="scheduleBoardCaption"></div><div class="muted no-print" style="font-size:11px">セルをタップして「予定種類＋メモ」を編集 / 1日最大2件表示</div>
         </div>
         <div class="no-print" style="min-width:220px">
           <label>表示シーズン</label>
@@ -865,8 +973,60 @@ header [data-team-name],header #teamHeader{display:none!important}
 </div>
 
 
+
+<div id="calendarEditModal" class="calendar-edit-modal no-print" aria-hidden="true">
+  <div class="calendar-edit-card">
+    <div class="calendar-edit-head">
+      <div>
+        <div class="calendar-edit-title">年間予定を編集</div>
+        <div id="calendarEditDate" class="calendar-edit-date"></div>
+      </div>
+      <button class="calendar-edit-close" type="button" onclick="closeCalendarEdit()">×</button>
+    </div>
+
+    <div id="calendarImportedEvents" class="calendar-imported-events"></div>
+
+    <div class="calendar-edit-slot">
+      <div class="calendar-slot-label">予定 1</div>
+      <div class="calendar-slot-grid">
+        <select id="calendarType1">
+          <option value="">予定なし</option>
+          <option value="大会">大会</option>
+          <option value="練習">練習</option>
+          <option value="合宿">合宿</option>
+          <option value="移動">移動</option>
+          <option value="休養">休養</option>
+        </select>
+        <input id="calendarMemo1" maxlength="20" placeholder="メモ（20文字まで）">
+      </div>
+    </div>
+
+    <div class="calendar-edit-slot">
+      <div class="calendar-slot-label">予定 2</div>
+      <div class="calendar-slot-grid">
+        <select id="calendarType2">
+          <option value="">予定なし</option>
+          <option value="大会">大会</option>
+          <option value="練習">練習</option>
+          <option value="合宿">合宿</option>
+          <option value="移動">移動</option>
+          <option value="休養">休養</option>
+        </select>
+        <input id="calendarMemo2" maxlength="20" placeholder="メモ（20文字まで）">
+      </div>
+    </div>
+
+    <div class="calendar-edit-note">カレンダーには1日最大2件まで表示します。大会管理から登録した大会は自動反映されます。</div>
+
+    <div class="calendar-edit-actions">
+      <button class="btn" type="button" onclick="closeCalendarEdit()">キャンセル</button>
+      <button class="btn primary" type="button" onclick="saveCalendarEdit()">保存</button>
+    </div>
+  </div>
+</div>
+
 <div id="scheduleForm" class="hidden no-print" style="display:none!important">
-  <input id="sDate" type="date"><select id="sType"><option>その他</option><option>大会</option><option>練習</option><option>合宿</option><option>遠征</option><option>ミーティング</option><option>休養</option></select>
+  <input id="sDate" type="date"><select id="sType"><option>大会</option><option>練習</option><option>合宿</option><option>移動</option><option>休養</option></select>
   <input id="sTitle"><input id="sPlace"><input id="sTarget"><select id="sCoach"></select><textarea id="sNote"></textarea>
 </div>
 
@@ -1198,13 +1358,34 @@ function toggleScheduleOffSeason(){
   renderScheduleBoard();
 }
 
+const SCHEDULE_TYPES=['大会','練習','合宿','移動','休養'];
+const SCHEDULE_TYPE_META={
+  '大会':{cls:'type-race',color:'#d84a4a'},
+  '練習':{cls:'type-training',color:'#3d86d9'},
+  '合宿':{cls:'type-camp',color:'#31a36f'},
+  '移動':{cls:'type-travel',color:'#dc8a2f'},
+  '休養':{cls:'type-rest',color:'#75808a'}
+};
+function normalizedScheduleType(type){
+  return SCHEDULE_TYPES.includes(type)?type:'練習';
+}
+function scheduleTypeClass(type){
+  return (SCHEDULE_TYPE_META[normalizedScheduleType(type)]||SCHEDULE_TYPE_META['練習']).cls;
+}
+function scheduleTypeColor(type){
+  return (SCHEDULE_TYPE_META[normalizedScheduleType(type)]||SCHEDULE_TYPE_META['練習']).color;
+}
+function scheduleSortPriority(type){
+  const i=SCHEDULE_TYPES.indexOf(normalizedScheduleType(type));
+  return i<0?99:i;
+}
 function buildSeasonBoardItems(){
   const rows=[];
   db.schedules.forEach(s=>{
     rows.push({
       source:'schedule',
       dates:[s.date],
-      type:s.type||'その他',
+      type:normalizedScheduleType(s.type),
       title:s.title||'',
       place:s.place||'',
       note:s.note||'',
@@ -1221,7 +1402,7 @@ function buildSeasonBoardItems(){
       source:'event',
       dates:enumerateDates(e.start,e.end||e.start),
       type:'大会',
-      title:e.title||'',
+      title:e.title||'大会',
       place:e.place||'',
       note:e.disc||'',
       coach:coachNames
@@ -1231,8 +1412,8 @@ function buildSeasonBoardItems(){
 }
 function seasonBoardLabel(item){
   if(item.source==='event') return item.note ? `${item.title} (${item.note})` : item.title;
-  if(item.quick) return item.title;
-  return item.type && item.type!=='大会' ? `${item.type}：${item.title}` : item.title;
+  const memo=String(item.note||item.title||'').trim();
+  return memo || item.type;
 }
 function renderScheduleBoard(){
   const box=document.getElementById('scheduleBoard');
@@ -1283,7 +1464,7 @@ function renderScheduleBoard(){
     item.dates.forEach(d=>{
       if(!d || d<startDate || d>endDate) return;
       if(!map.has(d)) map.set(d,[]);
-      map.get(d).push({label:seasonBoardLabel(item),coach:item.coach||''});
+      map.get(d).push({label:seasonBoardLabel(item),coach:item.coach||'',type:item.type||'練習',source:item.source||'schedule'});
     });
   });
 
@@ -1307,11 +1488,13 @@ function renderScheduleBoard(){
         const dateStr=ymd(meta.y,meta.m,day);
         const wd=JP_WD[new Date(meta.y,meta.m-1,day).getDay()];
         const cls=dayClass(dateStr,meta.y,meta.m,day);
-        const items=(map.get(dateStr)||[]).map(v=>{
+        const dayItems=[...(map.get(dateStr)||[])].sort((a,b)=>scheduleSortPriority(a.type)-scheduleSortPriority(b.type));
+        const visibleItems=dayItems.slice(0,2).map(v=>{
           const coach=v.coach ? `<span class="board-coach">引率：${esc(v.coach)}</span>` : '';
-          return `<span class="board-item">・${esc(v.label)}${coach}</span>`;
+          return `<span class="board-item ${scheduleTypeClass(v.type)}"><span class="board-type">${esc(v.type)}</span>${v.label&&v.label!==v.type?` ${esc(v.label)}`:''}${coach}</span>`;
         }).join('');
-        rows += `<td class="month-col" data-schedule-date="${dateStr}"><div class="board-day ${cls}">${day}日(${wd})</div>${items||''}</td>`;
+        const more=dayItems.length>2?`<span class="board-more">＋${dayItems.length-2}件</span>`:'';
+        rows += `<td class="month-col" data-schedule-date="${dateStr}"><div class="board-day ${cls}">${day}日(${wd})</div>${visibleItems}${more}</td>`;
       });
       rows += `</tr>`;
     }
@@ -1369,7 +1552,7 @@ function openTab(tabId){
 document.querySelectorAll('nav button[data-tab]').forEach(b=>b.onclick=()=>openTab(b.dataset.tab));
 
 
-// ===== v0.10.7 Weather / Team Board =====
+// ===== v0.10.8 Weather / Team Board =====
 const PREF_REGION={
   '北海道':'北海道',
   '青森':'東北','岩手':'東北','宮城':'東北','秋田':'東北','山形':'東北','福島':'東北',
@@ -2361,7 +2544,7 @@ function schedulePdfSpec(){
   return{startYear,pages:showOff?[off.slice(0,3),off.slice(3),winter.slice(0,3),winter.slice(3)]:[winter.slice(0,3),winter.slice(3)]};
 }
 function schedulePdfMap(startYear){
-  const map=new Map();buildSeasonBoardItems().forEach(item=>item.dates.forEach(d=>{if(!d)return;const yr=Number(d.slice(0,4));if(yr<startYear||yr>startYear+1)return;if(!map.has(d))map.set(d,[]);map.get(d).push({label:seasonBoardLabel(item),coach:item.coach||''});}));return map;
+  const map=new Map();buildSeasonBoardItems().forEach(item=>item.dates.forEach(d=>{if(!d)return;const yr=Number(d.slice(0,4));if(yr<startYear||yr>startYear+1)return;if(!map.has(d))map.set(d,[]);map.get(d).push({label:seasonBoardLabel(item),coach:item.coach||'',type:item.type||'練習'});}));return map;
 }
 async function makeSchedulePdfImages(compact=false){
   const {startYear,pages}=schedulePdfSpec();
@@ -2436,14 +2619,17 @@ async function makeSchedulePdfImages(compact=false){
         ctx.font=`bold ${Math.max(8,Math.round(9.5*scale))}px ${PDF_FONT}`;
         ctx.fillText(`${day}日(${JP_WD[dow]})`,x+4,y+3);
 
-        const items=map.get(ds)||[];
+        const items=[...(map.get(ds)||[])].sort((a,b)=>scheduleSortPriority(a.type)-scheduleSortPriority(b.type));
         let yy=y+Math.max(14,Math.round(16*scale));
         ctx.fillStyle='#111';
 
         for(const it of items.slice(0,2)){
           const fs=Math.max(7,Math.round(8*scale));
-          drawFitText(ctx,`・${it.label}`,x+4,yy,colW-8,fs,1,Math.max(9,Math.round(10*scale)));
+          ctx.fillStyle=scheduleTypeColor(it.type);
+          const pdfLabel=`${it.type}${it.label&&it.label!==it.type?' '+it.label:''}`;
+          drawFitText(ctx,pdfLabel,x+4,yy,colW-8,fs,1,Math.max(9,Math.round(10*scale)));
           yy+=Math.max(9,Math.round(10*scale));
+          ctx.fillStyle='#111';
 
           if(it.coach && yy<y+rowH-7){
             ctx.font=`${Math.max(6,Math.round(7*scale))}px ${PDF_FONT}`;
@@ -2548,7 +2734,7 @@ async function directPdfDownload(id){
 }
 function printSection(id){return directPdfDownload(id);}
 
-// ===== v0.10.7 SAJ list athlete registration =====
+// ===== v0.10.8 SAJ list athlete registration =====
 let sajAthleteListCache=[];
 
 function setAthleteRegisterMode(mode){
@@ -2805,43 +2991,88 @@ async function refreshAllSaj(){
 
 
 
+let calendarEditDateValue='';
+
+function calendarDateDisplay(dateStr){
+  const d=new Date(dateStr+'T00:00:00');
+  if(Number.isNaN(d.getTime()))return fmt(dateStr);
+  return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${JP_WD[d.getDay()]}）`;
+}
 function editScheduleCell(dateStr){
   if(!dateStr)return;
+  calendarEditDateValue=dateStr;
 
-  // SAJ大会などdb.eventsはここでは編集しない。
-  // 同日の通常予定があれば、簡易予定を優先して1件だけ編集する。
-  const sameDay=db.schedules.filter(s=>s.date===dateStr);
-  const target=sameDay.find(s=>s.quick) || sameDay[0] || null;
+  const modal=document.getElementById('calendarEditModal');
+  const dateEl=document.getElementById('calendarEditDate');
+  const imported=document.getElementById('calendarImportedEvents');
+  if(!modal)return;
 
-  if(target){
-    const label=prompt(`${fmt(dateStr)} の予定を編集してください`, target.title||'');
-    if(label===null)return;
-    const title=String(label).trim();
-    if(!title)return;
-    target.title=title;
-  }else{
-    const label=prompt(`${fmt(dateStr)} の予定を一言で入力してください`, '');
-    if(label===null)return;
-    const title=String(label).trim();
-    if(!title)return;
+  if(dateEl)dateEl.textContent=calendarDateDisplay(dateStr);
 
+  const eventItems=(db.events||[]).filter(e=>{
+    if(!e.start)return false;
+    const end=e.end||e.start;
+    return dateStr>=e.start && dateStr<=end;
+  });
+  if(imported){
+    imported.innerHTML=eventItems.length
+      ? `<div class="muted" style="font-size:11px;margin-bottom:4px">大会管理から自動反映</div>${eventItems.map(e=>`<div class="calendar-imported-row"><strong>大会</strong> ${esc(e.title||'大会')}</div>`).join('')}`
+      : '';
+  }
+
+  const direct=(db.schedules||[]).filter(x=>x.date===dateStr && x.quick).slice(0,2);
+  for(let i=0;i<2;i++){
+    const item=direct[i]||null;
+    const typeEl=document.getElementById(`calendarType${i+1}`);
+    const memoEl=document.getElementById(`calendarMemo${i+1}`);
+    if(typeEl)typeEl.value=item?normalizedScheduleType(item.type):'';
+    if(memoEl)memoEl.value=item?String(item.note||item.title||'').slice(0,20):'';
+  }
+
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden','false');
+}
+function closeCalendarEdit(){
+  const modal=document.getElementById('calendarEditModal');
+  if(!modal)return;
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden','true');
+  calendarEditDateValue='';
+}
+function saveCalendarEdit(){
+  const dateStr=calendarEditDateValue;
+  if(!dateStr)return;
+
+  const entries=[];
+  for(let i=1;i<=2;i++){
+    const type=String(document.getElementById(`calendarType${i}`)?.value||'').trim();
+    const memo=String(document.getElementById(`calendarMemo${i}`)?.value||'').trim().slice(0,20);
+    if(!type)continue;
+    entries.push({type:normalizedScheduleType(type),memo});
+  }
+
+  // Only calendar-direct (quick) entries are replaced.
+  // Other detailed schedule records remain intact.
+  db.schedules=(db.schedules||[]).filter(x=>!(x.date===dateStr && x.quick));
+  entries.forEach(({type,memo})=>{
     db.schedules.push({
       id:uid(),
       date:dateStr,
-      type:'その他',
-      title,
+      type,
+      title:memo,
       place:'',
       target:'',
       coach:'',
-      note:'',
+      note:memo,
       quick:true
     });
-  }
+  });
 
   localStorage.setItem(KEY,JSON.stringify(db));
+  closeCalendarEdit();
   renderScheduleBoard();
+  renderHome();
 
-  // 全画面表示中なら表示内容も更新。
   const overlay=document.getElementById('calendarFullscreen');
   if(overlay && overlay.classList.contains('open')){
     requestAnimationFrame(()=>{
@@ -2999,7 +3230,7 @@ async function refreshAppCacheOnLaunch(){
   }
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=0107',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=0108',{updateViaCache:'none'});
     try{ await reg.update(); }catch{}
 
     if(reg.waiting){
