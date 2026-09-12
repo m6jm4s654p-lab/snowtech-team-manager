@@ -19,7 +19,13 @@ export default {
       return cors(json({ok:false,error:"Method not allowed"},405), env, request);
     }
     if (url.pathname === "/health") {
-      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.12.6"}), env, request);
+      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.12.7"}), env, request);
+    }
+
+    // HTTPS reverse proxy for the legacy HTTP-only ALGE timing site.
+    // This is intentionally fixed to one upstream host to avoid SSRF/open-proxy behavior.
+    if (url.pathname === "/alge" || url.pathname.startsWith("/alge/") || url.pathname.startsWith("/alge-root/")) {
+      return proxyAlge(request, url);
     }
     if (url.pathname === "/api/debug-competition-calendar") {
       if(env?.ENABLE_DEBUG!=="1") return cors(json({ok:false,error:"Not found"},404),env,request);
@@ -161,6 +167,108 @@ export default {
   }
 };
 
+const ALGE_UPSTREAM = "http://116.58.169.162";
+
+async function proxyAlge(request, requestUrl){
+  let upstreamPath;
+  if(requestUrl.pathname.startsWith("/alge-root/")){
+    upstreamPath="/" + requestUrl.pathname.slice("/alge-root/".length);
+  }else if(requestUrl.pathname === "/alge"){
+    upstreamPath="/alge/";
+  }else{
+    upstreamPath=requestUrl.pathname;
+  }
+
+  const upstream=new URL(ALGE_UPSTREAM + upstreamPath);
+  upstream.search=requestUrl.search;
+
+  const headers=new Headers();
+  headers.set("Accept", request.headers.get("Accept") || "*/*");
+  headers.set("Accept-Language", request.headers.get("Accept-Language") || "ja,en;q=0.8");
+  headers.set("User-Agent","AlpineTeamManager-ALGE-Proxy/0.12.7");
+
+  let resp;
+  try{
+    resp=await fetch(upstream.toString(),{
+      method:"GET",
+      headers,
+      redirect:"manual",
+      cf:{cacheTtl:0,cacheEverything:false}
+    });
+  }catch(e){
+    return new Response(
+      `ALGE Timingへ接続できませんでした。\n${String(e?.message||e)}`,
+      {
+        status:502,
+        headers:{
+          "content-type":"text/plain; charset=utf-8",
+          "cache-control":"no-store",
+          "x-content-type-options":"nosniff"
+        }
+      }
+    );
+  }
+
+  // Keep navigation inside the HTTPS proxy when upstream redirects.
+  if(resp.status>=300 && resp.status<400){
+    const loc=resp.headers.get("Location");
+    if(loc){
+      try{
+        const target=new URL(loc,upstream);
+        let proxyPath;
+        if(target.hostname==="116.58.169.162"){
+          proxyPath=target.pathname.startsWith("/alge/")
+            ? target.pathname
+            : "/alge-root" + target.pathname;
+          const redirectUrl=new URL(requestUrl.origin + proxyPath);
+          redirectUrl.search=target.search;
+          return Response.redirect(redirectUrl.toString(), resp.status);
+        }
+      }catch{}
+    }
+  }
+
+  const outHeaders=new Headers(resp.headers);
+  outHeaders.delete("content-security-policy");
+  outHeaders.delete("content-security-policy-report-only");
+  outHeaders.delete("x-frame-options");
+  outHeaders.delete("content-length");
+  outHeaders.set("cache-control","no-store");
+  outHeaders.set("x-content-type-options","nosniff");
+  outHeaders.set("referrer-policy","no-referrer");
+
+  const type=(resp.headers.get("content-type")||"").toLowerCase();
+
+  if(type.includes("text/html")){
+    let text=await resp.text();
+    const proxyBase=requestUrl.origin;
+
+    // Rewrite absolute upstream URLs to this HTTPS proxy.
+    text=text
+      .replaceAll("http://116.58.169.162/alge/", `${proxyBase}/alge/`)
+      .replaceAll("http://116.58.169.162/", `${proxyBase}/alge-root/`)
+      .replaceAll("//116.58.169.162/alge/", `${proxyBase}/alge/`)
+      .replaceAll("//116.58.169.162/", `${proxyBase}/alge-root/`);
+
+    // Root-relative attributes that are not already /alge/... go through /alge-root/.
+    text=text.replace(
+      /\b(href|src|action)=([\"'])\/(?!alge(?:\/|[\"']))([^\"']*)\2/gi,
+      (_m,attr,q,path)=>`${attr}=${q}/alge-root/${path}${q}`
+    );
+
+    return new Response(text,{status:resp.status,headers:outHeaders});
+  }
+
+  if(type.includes("text/css")){
+    let text=await resp.text();
+    text=text.replace(/url\((['"]?)\/(?!alge\/)([^)'"]+)\1\)/gi,
+      (_m,q,path)=>`url(${q}/alge-root/${path}${q})`);
+    return new Response(text,{status:resp.status,headers:outHeaders});
+  }
+
+  return new Response(resp.body,{status:resp.status,headers:outHeaders});
+}
+
 function json(obj,status=200){
   return new Response(JSON.stringify(obj),{
     status,
@@ -196,7 +304,7 @@ function cors(resp,env,request){
 }
 async function getText(url){
   const r=await fetch(url,{headers:{
-    "User-Agent":"AlpineTeamManager/0.12.6 (+public SAJ data lookup)",
+    "User-Agent":"AlpineTeamManager/0.12.7 (+public SAJ data lookup)",
     "Accept":"text/html,application/xhtml+xml"
   }});
   if(!r.ok) throw new Error(`SAJ HTTP ${r.status}: ${url}`);
@@ -516,7 +624,7 @@ function parseDelimitedPointFile(text,saj,source){
 
 async function getRawText(url){
   const r=await fetch(url,{headers:{
-    "User-Agent":"AlpineTeamManager/0.12.6 (+public SAJ data lookup)",
+    "User-Agent":"AlpineTeamManager/0.12.7 (+public SAJ data lookup)",
     "Accept":"text/csv,text/plain,text/html,application/octet-stream,*/*"
   }});
   if(!r.ok) throw new Error(`SAJ HTTP ${r.status}: ${url}`);
@@ -1072,7 +1180,7 @@ async function fetchFollowingSajSession(url, init, maxRedirects=5){
       // Browser semantics: 301/302/303 after a form request become GET.
       if([301,302,303].includes(r.status)){
         currentInit={method:"GET",headers:{
-          "User-Agent":"AlpineTeamManager/0.12.6 (+public SAJ competition calendar lookup)",
+          "User-Agent":"AlpineTeamManager/0.12.7 (+public SAJ competition calendar lookup)",
           "Accept":"text/html,application/xhtml+xml"
         }};
       }
@@ -1095,7 +1203,7 @@ async function fetchFollowingSajSession(url, init, maxRedirects=5){
 async function submitCalendarForm(formInfo){
   const target=new URL(formInfo.action,SAJ_ORIGIN);
   const headers={
-    "User-Agent":"AlpineTeamManager/0.12.6 (+public SAJ competition calendar lookup)",
+    "User-Agent":"AlpineTeamManager/0.12.7 (+public SAJ competition calendar lookup)",
     "Accept":"text/html,application/xhtml+xml"
   };
 
@@ -1443,7 +1551,7 @@ async function lookupCompetitionsApi(season,month=0){
   const r=await fetch(target.toString(),{
     method:"GET",
     headers:{
-      "User-Agent":"AlpineTeamManager/0.12.6 (+public SAJ competition calendar lookup)",
+      "User-Agent":"AlpineTeamManager/0.12.7 (+public SAJ competition calendar lookup)",
       "Accept":"application/json,text/javascript,*/*;q=0.8",
       "Referer":`${SAJ_ORIGIN}/alpine/competition/calendar`
     }
@@ -1488,7 +1596,7 @@ async function debugCompetitionApi(season=2026,month=2){
   const r=await fetch(target.toString(),{
     method:"GET",
     headers:{
-      "User-Agent":"AlpineTeamManager/0.12.6 (+public SAJ competition calendar lookup)",
+      "User-Agent":"AlpineTeamManager/0.12.7 (+public SAJ competition calendar lookup)",
       "Accept":"application/json,text/javascript,*/*;q=0.8",
       "Referer":`${SAJ_ORIGIN}/alpine/competition/calendar`
     }

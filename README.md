@@ -915,3 +915,15 @@ SnowTech → 管理 → `SAJ連携API URL` にWorker URLを入力 → 保存。
 - SEIKO SPORTSLINKは従来どおり別画面で開く
 - ALGEを開いた後はブラウザ/端末の戻る操作でアプリへ戻る
 - Service Workerをv0.12.6へ更新
+
+## v0.12.7 ALGE iPhone PWA fix
+- iPhoneのホーム画面PWAからHTTPサイトへ直接遷移できない問題への対策
+- ALGE TimingをCloudflare Worker経由のHTTPSリバースプロキシで表示
+- アプリ側リンク:
+  https://snowtech-saj-api.take6583.workers.dev/alge/
+- Worker側の接続先は固定:
+  http://116.58.169.162/alge/
+- 任意URLを指定できない固定プロキシとして実装し、open proxy / SSRF化を防止
+- HTML内のALGE絶対URL・一部root-relative URLもHTTPSプロキシへ書き換え
+- ALGEレスポンスはキャッシュしない
+- この変更はworker.jsを含むためCloudflare Workerの再デプロイが必要
