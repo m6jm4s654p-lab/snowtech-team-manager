@@ -83,7 +83,7 @@ section{display:none} section.active{display:block}
 .season-board th,.season-board td{border:1px solid var(--line);padding:4px 5px;vertical-align:top}
 .season-board th{background:#0a1724;text-align:center}
 .screen-season-board{min-width:1180px}
-.screen-season-board .month-col{width:calc(100%/6)}
+.screen-season-board .month-col{width:calc(100%/var(--month-count,6))}
 .print-season-pages{display:none}
 .season-page{margin-bottom:18px}
 .season-page-head{height:46px;display:flex;flex-direction:column;justify-content:flex-start;margin:0 0 6px}.season-page-title{font-size:13px;font-weight:700;margin:0}.season-page-subtitle{font-size:11px;color:var(--muted);margin-top:2px}
@@ -259,7 +259,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 }
 
 
-/* v0.9.1 branding */
+/* v0.9.3 branding */
 .tool-portal-logo img{width:min(100%,1100px);height:auto;object-fit:contain;display:block;margin:0 auto}
 
 </style>
@@ -292,7 +292,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
       <small id="teamHeader">TEAM未設定</small>
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.9.1</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.9.3</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
   </div>
@@ -346,7 +346,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
     <div class="card" id="scheduleBoardCard" style="margin-top:14px">
       <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap">
         <div>
-          <h3 style="margin:0">年間予定表（画面：横スクロール / PDF：A4縦2枚）</h3>
+          <h3 id="scheduleBoardHeading" style="margin:0">年間予定表（画面：横スクロール / PDF：A4縦2枚）</h3>
           <div class="board-caption" id="scheduleBoardCaption"></div><div class="muted no-print" style="font-size:11px">セルをタップして予定を編集 / 全画面表示は上のボタンから</div>
         </div>
         <div class="no-print" style="min-width:220px">
@@ -355,6 +355,10 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
           <label style="display:flex;align-items:center;gap:7px;margin-top:8px;color:var(--text);font-size:12px;cursor:pointer">
             <input id="scheduleSeasonLock" type="checkbox" onchange="toggleScheduleSeasonLock()" style="width:auto">
             表示シーズンをロック
+          </label>
+          <label style="display:flex;align-items:center;gap:7px;margin-top:8px;color:var(--text);font-size:12px;cursor:pointer">
+            <input id="scheduleOffSeason" type="checkbox" onchange="toggleScheduleOffSeason()" style="width:auto">
+            オフシーズン（5〜10月）も表示・印刷
           </label>
         </div>
       </div>
@@ -444,11 +448,12 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
     <h2>天気・積雪</h2>
     <p class="muted">登録済み大会の会場を選択して、最新の予報を確認します。天気情報の取得にはインターネット接続が必要です。</p>
     <div class="grid g3 no-print">
-      <div><label>大会会場</label><select id="weatherVenue"></select></div>
-      <div><label>検索地名（必要時に修正）</label><input id="weatherQuery" placeholder="例：雫石スキー場 岩手県"></div>
+      <div><label>登録大会の会場</label><select id="weatherVenue"></select></div>
+      <div><label>スキー場候補</label><select id="weatherSkiArea"><option value="">大会会場を先に選択</option></select></div>
       <div style="display:flex;align-items:end"><button class="btn primary" style="width:100%" onclick="loadVenueWeather()">天気を取得</button></div>
     </div>
-    <div id="weatherStatus" class="muted" style="margin-top:10px">大会会場を選択してください。</div>
+    <div id="weatherFilterInfo" class="muted" style="margin-top:8px"></div>
+    <div id="weatherStatus" class="muted" style="margin-top:10px">登録大会の会場を選択してください。</div>
     <div id="weatherCards" class="grid g3" style="margin-top:14px"></div>
   </div>
 </section>
@@ -831,6 +836,7 @@ let db=JSON.parse(localStorage.getItem(KEY)||'null')||{
     sajApiUrl:'',
     scheduleSeasonLocked:false,
     scheduleSeasonYear:null,
+    scheduleOffSeason:false,
     sajAutoRefreshDate:''
   },
   coaches:[],
@@ -849,10 +855,16 @@ const JP_WD=['日','月','火','水','木','金','土'];
 const JP_HOLIDAYS=new Set([
   // 2026 official holidays relevant to Alpine Team Manager season display
   '2026-01-01','2026-01-12','2026-02-11','2026-02-23','2026-03-20','2026-04-29',
-  '2026-11-03','2026-11-23',
+  '2026-05-03','2026-05-04','2026-05-05','2026-05-06','2026-07-20','2026-08-11',
+  '2026-09-21','2026-09-22','2026-09-23','2026-10-12','2026-11-03','2026-11-23',
   // 2027 official holidays relevant to Alpine Team Manager season display
   '2027-01-01','2027-01-11','2027-02-11','2027-02-23','2027-03-21','2027-03-22','2027-04-29',
-  '2027-11-03','2027-11-23'
+  '2027-05-03','2027-05-04','2027-05-05','2027-07-19','2027-08-11','2027-09-20','2027-09-23',
+  '2027-10-11','2027-11-03','2027-11-23',
+  // 2028 holidays used when future seasons are displayed
+  '2028-01-01','2028-01-10','2028-02-11','2028-02-23','2028-03-20','2028-04-29',
+  '2028-05-03','2028-05-04','2028-05-05','2028-07-17','2028-08-11','2028-09-18','2028-09-22',
+  '2028-10-09','2028-11-03','2028-11-23'
 ]);
 function dayClass(dateStr,y,m,d){
   const dow=new Date(y,m-1,d).getDay();
@@ -903,6 +915,7 @@ function collectScheduleSeasonYears(){
 function initScheduleSeason(){
   const sel=document.getElementById('scheduleSeason');
   const lock=document.getElementById('scheduleSeasonLock');
+  const off=document.getElementById('scheduleOffSeason');
   if(!sel) return;
 
   db.team=db.team||{};
@@ -929,6 +942,7 @@ function initScheduleSeason(){
   const isLocked=!!db.team.scheduleSeasonLocked;
   sel.disabled=isLocked;
   if(lock) lock.checked=isLocked;
+  if(off) off.checked=!!db.team.scheduleOffSeason;
 
   renderScheduleBoard();
   renderVenues();
@@ -952,6 +966,15 @@ function toggleScheduleSeasonLock(){
   sel.disabled=!!lock.checked;
   localStorage.setItem(KEY,JSON.stringify(db));
 }
+function toggleScheduleOffSeason(){
+  const off=document.getElementById('scheduleOffSeason');
+  if(!off)return;
+  db.team=db.team||{};
+  db.team.scheduleOffSeason=!!off.checked;
+  localStorage.setItem(KEY,JSON.stringify(db));
+  renderScheduleBoard();
+}
+
 function buildSeasonBoardItems(){
   const rows=[];
   db.schedules.forEach(s=>{
@@ -991,10 +1014,22 @@ function seasonBoardLabel(item){
 function renderScheduleBoard(){
   const box=document.getElementById('scheduleBoard');
   const cap=document.getElementById('scheduleBoardCaption');
+  const heading=document.getElementById('scheduleBoardHeading');
   const sel=document.getElementById('scheduleSeason');
   if(!box || !cap || !sel) return;
+
   const startYear=Number(sel.value)||currentSeasonStartYear();
-  const allMonths=[
+  const showOff=!!document.getElementById('scheduleOffSeason')?.checked;
+
+  const offMonths=[
+    {y:startYear,m:5,label:'5月'},
+    {y:startYear,m:6,label:'6月'},
+    {y:startYear,m:7,label:'7月'},
+    {y:startYear,m:8,label:'8月'},
+    {y:startYear,m:9,label:'9月'},
+    {y:startYear,m:10,label:'10月'}
+  ];
+  const winterMonths=[
     {y:startYear,m:11,label:'11月'},
     {y:startYear,m:12,label:'12月'},
     {y:startYear+1,m:1,label:'1月'},
@@ -1002,8 +1037,22 @@ function renderScheduleBoard(){
     {y:startYear+1,m:3,label:'3月'},
     {y:startYear+1,m:4,label:'4月'}
   ];
-  const printPages=[allMonths.slice(0,3),allMonths.slice(3,6)];
-  const startDate=ymd(startYear,11,1);
+  // With off-season enabled the annual activity year is May -> April.
+  const allMonths=showOff ? [...offMonths,...winterMonths] : winterMonths;
+
+  const printPages=showOff
+    ? [
+        offMonths.slice(0,3),       // 5-7
+        offMonths.slice(3,6),       // 8-10
+        winterMonths.slice(0,3),    // 11-1
+        winterMonths.slice(3,6)     // 2-4
+      ]
+    : [
+        winterMonths.slice(0,3),
+        winterMonths.slice(3,6)
+      ];
+
+  const startDate=showOff ? ymd(startYear,5,1) : ymd(startYear,11,1);
   const endDate=ymd(startYear+1,4,30);
   const map=new Map();
 
@@ -1015,9 +1064,15 @@ function renderScheduleBoard(){
     });
   });
 
-  cap.textContent=`${startYear}/${startYear+1}シーズン　画面：11月〜4月を横スクロール / PDF：A4縦2枚`;
+  if(showOff){
+    cap.textContent=`${startYear}/${startYear+1}シーズン　画面：5月〜翌4月を横スクロール / PDF：A4縦4枚`;
+    if(heading)heading.textContent='年間予定表（オフシーズン含む / PDF：A4縦4枚）';
+  }else{
+    cap.textContent=`${startYear}/${startYear+1}シーズン　画面：11月〜4月を横スクロール / PDF：A4縦2枚`;
+    if(heading)heading.textContent='年間予定表（画面：横スクロール / PDF：A4縦2枚）';
+  }
 
-  function tableHtml(months,klass=''){
+  function tableHtml(months,klass='',monthCount=3){
     let rows='';
     for(let day=1;day<=31;day++){
       rows += `<tr>`;
@@ -1037,33 +1092,37 @@ function renderScheduleBoard(){
       });
       rows += `</tr>`;
     }
-    return `<table class="season-board ${klass}">
+    const screenStyle=klass.includes('screen-season-board')
+      ? ` style="--month-count:${monthCount};min-width:${Math.max(1180,Math.round(monthCount*196.7))}px"`
+      : '';
+    return `<table class="season-board ${klass}"${screenStyle}>
       <thead><tr>${months.map(x=>`<th class="month-col">${x.label}</th>`).join('')}</tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
   }
 
-  const screen=tableHtml(allMonths,'screen-season-board');
+  const screen=tableHtml(allMonths,'screen-season-board',allMonths.length);
   const teamTitle=esc(db.team.name||'Alpine Team Manager');
+
+  const pageSubtitle=(months)=>{
+    const first=months[0],last=months[months.length-1];
+    const firstText=`${first.y}年${first.m}月`;
+    const lastText=(last.y===first.y)?`${last.m}月`:`${last.y}年${last.m}月`;
+    return `${startYear}/${startYear+1}シーズン　${firstText}〜${lastText}`;
+  };
+
   const print=`<div class="print-season-pages">
-    <div class="season-page">
+    ${printPages.map((months,i)=>`<div class="season-page">
       <div class="season-page-head">
         <div class="season-page-title">${teamTitle} 年間予定表</div>
-        <div class="season-page-subtitle">${startYear}/${startYear+1}シーズン　11月〜1月</div>
+        <div class="season-page-subtitle">${pageSubtitle(months)}</div>
       </div>
-      ${tableHtml(printPages[0])}
-    </div>
-    <div class="season-page">
-      <div class="season-page-head">
-        <div class="season-page-title">${teamTitle} 年間予定表</div>
-        <div class="season-page-subtitle">${startYear}/${startYear+1}シーズン　2月〜4月</div>
-      </div>
-      ${tableHtml(printPages[1])}
-    </div>
+      ${tableHtml(months)}
+    </div>`).join('')}
   </div>`;
+
   box.innerHTML=screen+print;
 }
-
 function openTab(tabId){
   document.querySelectorAll('nav button[data-tab]').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('section').forEach(x=>x.classList.remove('active'));
@@ -1079,7 +1138,39 @@ function openTab(tabId){
 document.querySelectorAll('nav button[data-tab]').forEach(b=>b.onclick=()=>openTab(b.dataset.tab));
 
 
-// ===== v0.9.1 Weather / Team Board =====
+// ===== v0.9.3 Weather / Team Board =====
+const PREF_REGION={
+  '北海道':'北海道',
+  '青森':'東北','岩手':'東北','宮城':'東北','秋田':'東北','山形':'東北','福島':'東北',
+  '茨城':'関東','栃木':'関東','群馬':'関東','埼玉':'関東','千葉':'関東','東京':'関東','神奈川':'関東',
+  '新潟':'甲信越','山梨':'甲信越','長野':'甲信越',
+  '富山':'北陸','石川':'北陸','福井':'北陸',
+  '岐阜':'東海','静岡':'東海','愛知':'東海','三重':'東海',
+  '滋賀':'近畿','京都':'近畿','大阪':'近畿','兵庫':'近畿','奈良':'近畿','和歌山':'近畿',
+  '鳥取':'中国','島根':'中国','岡山':'中国','広島':'中国','山口':'中国',
+  '徳島':'四国','香川':'四国','愛媛':'四国','高知':'四国',
+  '福岡':'九州・沖縄','佐賀':'九州・沖縄','長崎':'九州・沖縄','熊本':'九州・沖縄','大分':'九州・沖縄','宮崎':'九州・沖縄','鹿児島':'九州・沖縄','沖縄':'九州・沖縄'
+};
+const WEATHER_VENUE_PREF={
+  '岩手高原スノーパーク':'岩手','雫石スキー場':'岩手','安比高原スキー場':'岩手','花輪スキー場（アルパス）':'秋田','たざわ湖スキー場':'秋田',
+  '赤倉温泉スキー場':'山形','蔵王ライザワールド':'山形','猪苗代スキー場':'福島','フェアリーランドかねやまスキー場':'福島',
+  'カムイスキーリンクス':'北海道','ぬかびら源泉郷スキー場':'北海道','サッポロテイネ':'北海道','富良野スキー場':'北海道','ルスツリゾート':'北海道',
+  'スノーパーク尾瀬戸倉':'群馬','丸沼高原スキー場':'群馬','川場スキー場':'群馬',
+  '菅平高原パインビークスキー場':'長野','野沢温泉スキー場':'長野','志賀高原スキー場':'長野','戸隠スキー場':'長野','白馬八方尾根スキー場':'長野','よませ温泉スキー場':'長野',
+  'ロッテアライリゾート':'新潟','赤倉観光リゾートスキー場':'新潟','苗場スキー場':'新潟',
+  'あわすのスキー場':'富山','白峰アルペン競技場':'石川','たいらスキー場':'富山','IOX-AROSA':'富山',
+  'ほおのき平スキー場':'岐阜','モンデウス飛騨位山スノーパーク':'岐阜','高鷲スノーパーク':'岐阜','ダイナランド':'岐阜',
+  'ハチ・ハチ北スキー場':'兵庫','グランスノー奥伊吹':'滋賀',
+  'だいせんホワイトリゾート':'鳥取','若桜氷ノ山スキー場':'鳥取','ユートピアサイオト':'広島',
+  '石鎚スキー場':'愛媛'
+};
+function normalizePrefecture(v){
+  return String(v||'').replace(/\s/g,'').replace(/[都道府県]$/,'');
+}
+function matchOfficialVenue(place){
+  const text=String(place||'').toLowerCase();
+  return VENUE_OFFICIAL_REGISTRY.find(v=>(v.keys||[]).some(k=>text.includes(String(k).toLowerCase())))||null;
+}
 function uniqueRegisteredVenues(){
   const start=Number(db.team?.scheduleSeasonYear)||currentSeasonStartYear();
   const seen=new Set(), out=[];
@@ -1088,21 +1179,81 @@ function uniqueRegisteredVenues(){
     const key=String(e.place).trim().toLowerCase();
     if(seen.has(key))return;
     seen.add(key);
-    out.push({place:String(e.place).trim(),prefecture:e.prefecture||'',title:e.title||''});
+    const matched=matchOfficialVenue(e.place);
+    const pref=normalizePrefecture(e.prefecture||WEATHER_VENUE_PREF[matched?.name]||'');
+    const region=PREF_REGION[pref]||matched?.region||'';
+    out.push({place:String(e.place).trim(),prefecture:pref,region,title:e.title||'',matchedName:matched?.name||''});
   });
   return out;
+}
+function weatherCandidatesForVenue(v){
+  if(!v)return[];
+  const pref=normalizePrefecture(v.prefecture);
+  let arr=VENUE_OFFICIAL_REGISTRY.map(x=>({
+    name:x.name,
+    region:x.region||'',
+    prefecture:normalizePrefecture(WEATHER_VENUE_PREF[x.name]||''),
+    keys:x.keys||[]
+  }));
+  if(pref){
+    const byPref=arr.filter(x=>x.prefecture===pref);
+    if(byPref.length)arr=byPref;
+    else if(v.region)arr=arr.filter(x=>x.region===v.region);
+  }else if(v.region){
+    arr=arr.filter(x=>x.region===v.region);
+  }
+  const matched=matchOfficialVenue(v.place);
+  if(matched && !arr.some(x=>x.name===matched.name)){
+    arr.unshift({name:matched.name,region:matched.region||v.region,prefecture:normalizePrefecture(WEATHER_VENUE_PREF[matched.name]||pref),keys:matched.keys||[]});
+  }
+  arr.sort((a,b)=>{
+    const am=matched&&a.name===matched.name?0:1, bm=matched&&b.name===matched.name?0:1;
+    return am-bm||a.name.localeCompare(b.name,'ja');
+  });
+  return arr;
+}
+function renderWeatherSkiAreas(v){
+  const ski=document.getElementById('weatherSkiArea');
+  const info=document.getElementById('weatherFilterInfo');
+  if(!ski)return;
+  if(!v){
+    ski.innerHTML='<option value="">大会会場を先に選択</option>';
+    if(info)info.textContent='';
+    return;
+  }
+  const candidates=weatherCandidatesForVenue(v);
+  ski.innerHTML='<option value="">スキー場を選択</option>'+candidates.map((x,i)=>`<option value="${i}">${esc(x.name)}${x.prefecture?'（'+esc(x.prefecture)+'）':''}</option>`).join('');
+  const matched=matchOfficialVenue(v.place);
+  if(matched){
+    const idx=candidates.findIndex(x=>x.name===matched.name);
+    if(idx>=0)ski.value=String(idx);
+  }else if(candidates.length===1){
+    ski.value='0';
+  }
+  ski.dataset.candidates=JSON.stringify(candidates);
+  if(info){
+    const scope=v.prefecture?`${v.prefecture}県`:(v.region||'登録会場周辺');
+    info.textContent=`「${v.place}」から ${scope} の候補を ${candidates.length}件に絞り込みました。`;
+  }
 }
 function renderWeatherVenues(){
   const sel=document.getElementById('weatherVenue'); if(!sel)return;
   const current=sel.value;
   const venues=uniqueRegisteredVenues();
-  sel.innerHTML='<option value="">会場を選択</option>'+venues.map((v,i)=>`<option value="${i}">${esc(v.place)}</option>`).join('');
+  sel.innerHTML='<option value="">会場を選択</option>'+venues.map((v,i)=>`<option value="${i}">${esc(v.place)}${v.prefecture?'（'+esc(v.prefecture)+'）':''}</option>`).join('');
+  sel.dataset.venues=JSON.stringify(venues);
   if(current && [...sel.options].some(o=>o.value===current))sel.value=current;
   sel.onchange=()=>{
-    const v=venues[Number(sel.value)];
-    const q=document.getElementById('weatherQuery');
-    if(q)q.value=v?[v.place,v.prefecture].filter(Boolean).join(' '):'';
+    const list=JSON.parse(sel.dataset.venues||'[]');
+    const v=list[Number(sel.value)];
+    renderWeatherSkiAreas(v||null);
+    const status=document.getElementById('weatherStatus');
+    if(status)status.textContent=v?'候補からスキー場を選択して「天気を取得」を押してください。':'登録大会の会場を選択してください。';
   };
+  if(sel.value){
+    const list=JSON.parse(sel.dataset.venues||'[]');
+    renderWeatherSkiAreas(list[Number(sel.value)]||null);
+  }else renderWeatherSkiAreas(null);
 }
 function weatherLabel(code){
   if(code===0)return'快晴'; if([1,2].includes(code))return'晴れ・薄曇り'; if(code===3)return'曇り';
@@ -1111,17 +1262,36 @@ function weatherLabel(code){
 }
 async function loadVenueWeather(){
   const status=document.getElementById('weatherStatus'), cards=document.getElementById('weatherCards');
-  const q=(document.getElementById('weatherQuery')?.value||'').trim();
-  if(!q){status.textContent='大会会場を選択するか、検索地名を入力してください。';return;}
-  status.textContent='位置情報と天気予報を取得しています…'; cards.innerHTML='';
+  const venueSel=document.getElementById('weatherVenue');
+  const skiSel=document.getElementById('weatherSkiArea');
+  let venues=[]; try{venues=JSON.parse(venueSel?.dataset.venues||'[]')}catch{}
+  let candidates=[]; try{candidates=JSON.parse(skiSel?.dataset.candidates||'[]')}catch{}
+  const venue=venues[Number(venueSel?.value)];
+  const ski=candidates[Number(skiSel?.value)];
+  if(!venue){status.textContent='登録大会の会場を選択してください。';return;}
+  if(!ski){status.textContent='候補一覧からスキー場を選択してください。';return;}
+  const q=[ski.name,ski.prefecture||venue.prefecture].filter(Boolean).join(' ');
+  status.textContent=`${ski.name} の位置情報と天気予報を取得しています…`; cards.innerHTML='';
   try{
-    const gr=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=1&language=ja&format=json`);
-    const gj=await gr.json(); const loc=gj.results?.[0];
-    if(!loc)throw new Error('会場の位置を特定できません。検索地名を「スキー場名 都道府県」のように修正してください。');
+    let loc=null;
+    // Ski-area names are better resolved by OpenStreetMap. Open-Meteo geocoding remains a fallback.
+    try{
+      const nr=await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&accept-language=ja&q=${encodeURIComponent(q)}`);
+      const nj=await nr.json();
+      if(Array.isArray(nj)&&nj.length){
+        const n=nj[0]; loc={latitude:Number(n.lat),longitude:Number(n.lon),name:ski.name,admin1:ski.prefecture||venue.prefecture||''};
+      }
+    }catch{}
+    if(!loc){
+      const gr=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=5&language=ja&format=json`);
+      const gj=await gr.json(),results=gj.results||[],wantedPref=normalizePrefecture(ski.prefecture||venue.prefecture);
+      loc=results.find(x=>!wantedPref || normalizePrefecture(x.admin1)===wantedPref) || results[0] || null;
+    }
+    if(!loc)throw new Error('選択したスキー場の位置を特定できませんでした。');
     const u=`https://api.open-meteo.com/v1/forecast?latitude=${loc.latitude}&longitude=${loc.longitude}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,snowfall_sum,wind_speed_10m_max,wind_gusts_10m_max&timezone=Asia%2FTokyo&forecast_days=7`;
     const wr=await fetch(u), w=await wr.json();
     if(!wr.ok||!w.daily)throw new Error('天気予報を取得できませんでした。');
-    status.textContent=`${loc.name}${loc.admin1?' / '+loc.admin1:''}　7日間予報`;
+    status.textContent=`${ski.name} / ${loc.name}${loc.admin1?' / '+loc.admin1:''}　7日間予報`;
     cards.innerHTML=w.daily.time.map((d,i)=>`<div class="card" style="margin:0">
       <strong>${esc(d)}</strong><div style="font-size:20px;margin:7px 0">${weatherLabel(w.daily.weather_code[i])}</div>
       <div>気温 ${w.daily.temperature_2m_min[i]}〜${w.daily.temperature_2m_max[i]}℃</div>
@@ -1774,37 +1944,48 @@ renderCoaches = function(){
     <button class="btn danger no-print" style="float:right" onclick="deleteCoach('${c.id}')">削除</button></div>`).join('')||'<span class="muted">未登録</span>';
 };
 
-let snowtechPrintBusy=false;
-function printSection(id){
-  if(snowtechPrintBusy)return;
-  const target=document.getElementById(id);
-  if(!target)return;
-
-  snowtechPrintBusy=true;
-  document.querySelectorAll('section').forEach(s=>s.classList.remove('print-target'));
-  target.classList.add('print-target');
-
-  const oldTitle=document.title;
-  document.title=(db.team.name||'Alpine Team Manager')+'_'+(id==='schedule'?'年間予定表':'大会スケジュール');
-
-  const finishPrint=()=>{
-    document.title=oldTitle;
-    snowtechPrintBusy=false;
-  };
-
-  window.addEventListener('afterprint',finishPrint,{once:true});
-
-  try{
-    window.print();
-  }catch(err){
-    finishPrint();
-    console.error('Alpine Team Manager print error',err);
-  }
+let alpinePdfBusy=false;
+function pdfSafeName(v){return String(v||'Alpine_Team_Manager').replace(/[\\/:*?"<>|]/g,'_').trim()||'Alpine_Team_Manager';}
+function bytesFromBase64(b64){const bin=atob(b64),out=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)out[i]=bin.charCodeAt(i);return out;}
+function asciiBytes(s){return new TextEncoder().encode(s);}
+function joinBytes(parts){const total=parts.reduce((n,p)=>n+p.length,0),out=new Uint8Array(total);let off=0;for(const p of parts){out.set(p,off);off+=p.length;}return out;}
+function buildJpegPdf(images){
+  const objects=[];const add=(n,parts)=>objects.push({n,bytes:Array.isArray(parts)?joinBytes(parts):asciiBytes(parts)});
+  const kids=images.map((_,i)=>`${3+i*3} 0 R`).join(' ');add(1,'<< /Type /Catalog /Pages 2 0 R >>');add(2,`<< /Type /Pages /Count ${images.length} /Kids [${kids}] >>`);
+  images.forEach((img,i)=>{const page=3+i*3,image=page+1,content=page+2;add(page,`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /XObject << /Im1 ${image} 0 R >> >> /Contents ${content} 0 R >>`);add(image,[asciiBytes(`<< /Type /XObject /Subtype /Image /Width ${img.width} /Height ${img.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${img.bytes.length} >>\nstream\n`),img.bytes,asciiBytes('\nendstream')]);const cs='q\n595.28 0 0 841.89 0 0 cm\n/Im1 Do\nQ\n';add(content,`<< /Length ${asciiBytes(cs).length} >>\nstream\n${cs}endstream`);});
+  objects.sort((a,b)=>a.n-b.n);const parts=[asciiBytes('%PDF-1.4\n%PDF\n')],offsets=[0];let len=parts[0].length;for(const o of objects){offsets[o.n]=len;const pre=asciiBytes(`${o.n} 0 obj\n`),post=asciiBytes('\nendobj\n');parts.push(pre,o.bytes,post);len+=pre.length+o.bytes.length+post.length;}const xo=len,max=objects[objects.length-1].n;let x=`xref\n0 ${max+1}\n0000000000 65535 f \n`;for(let i=1;i<=max;i++)x+=`${String(offsets[i]||0).padStart(10,'0')} 00000 n \n`;x+=`trailer\n<< /Size ${max+1} /Root 1 0 R >>\nstartxref\n${xo}\n%%EOF`;parts.push(asciiBytes(x));return new Blob(parts,{type:'application/pdf'});
 }
+const PDF_FONT='"Noto Sans JP","Yu Gothic",Meiryo,sans-serif';
+function canvasToPdfImage(canvas){const data=canvas.toDataURL('image/jpeg',0.94);return{width:canvas.width,height:canvas.height,bytes:bytesFromBase64(data.split(',')[1])};}
+function drawFitText(ctx,text,x,y,maxWidth,fontSize=18,maxLines=2,lineHeight=22){
+  ctx.font=`${fontSize}px ${PDF_FONT}`;const chars=[...String(text||'')];let line='',lines=[];for(const ch of chars){const t=line+ch;if(ctx.measureText(t).width>maxWidth&&line){lines.push(line);line=ch;if(lines.length>=maxLines)break;}else line=t;}if(lines.length<maxLines&&line)lines.push(line);if(lines.length===maxLines&&chars.length&&lines.join('').length<String(text||'').length){let l=lines[maxLines-1];while(l&&ctx.measureText(l+'…').width>maxWidth)l=l.slice(0,-1);lines[maxLines-1]=l+'…';}lines.forEach((l,i)=>ctx.fillText(l,x,y+i*lineHeight));return lines.length;
+}
+function schedulePdfSpec(){
+  const startYear=Number(document.getElementById('scheduleSeason')?.value)||currentSeasonStartYear();const showOff=!!document.getElementById('scheduleOffSeason')?.checked;
+  const off=[{y:startYear,m:5,label:'5月'},{y:startYear,m:6,label:'6月'},{y:startYear,m:7,label:'7月'},{y:startYear,m:8,label:'8月'},{y:startYear,m:9,label:'9月'},{y:startYear,m:10,label:'10月'}];
+  const winter=[{y:startYear,m:11,label:'11月'},{y:startYear,m:12,label:'12月'},{y:startYear+1,m:1,label:'1月'},{y:startYear+1,m:2,label:'2月'},{y:startYear+1,m:3,label:'3月'},{y:startYear+1,m:4,label:'4月'}];
+  return{startYear,pages:showOff?[off.slice(0,3),off.slice(3),winter.slice(0,3),winter.slice(3)]:[winter.slice(0,3),winter.slice(3)]};
+}
+function schedulePdfMap(startYear){
+  const map=new Map();buildSeasonBoardItems().forEach(item=>item.dates.forEach(d=>{if(!d)return;const yr=Number(d.slice(0,4));if(yr<startYear||yr>startYear+1)return;if(!map.has(d))map.set(d,[]);map.get(d).push({label:seasonBoardLabel(item),coach:item.coach||''});}));return map;
+}
+function makeSchedulePdfImages(){
+  const {startYear,pages}=schedulePdfSpec(),map=schedulePdfMap(startYear),images=[];const W=1240,H=1754,M=45,top=118,headH=42,rowH=(H-top-M-headH)/31,colW=(W-M*2)/3;
+  pages.forEach(months=>{const c=document.createElement('canvas');c.width=W;c.height=H;const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);ctx.fillStyle='#111';ctx.font=`bold 24px ${PDF_FONT}`;ctx.fillText(`${db.team.name||'Alpine Team Manager'} 年間予定表`,M,42);ctx.font=`16px ${PDF_FONT}`;const last=months[2];ctx.fillText(`${startYear}/${startYear+1}シーズン　${months[0].y}年${months[0].m}月〜${last.y===months[0].y?'':last.y+'年'}${last.m}月`,M,72);
+    ctx.lineWidth=1;ctx.strokeStyle='#999';ctx.textBaseline='top';months.forEach((mo,ci)=>{const x=M+ci*colW;ctx.fillStyle='#f1f3f5';ctx.fillRect(x,top,colW,headH);ctx.strokeRect(x,top,colW,headH);ctx.fillStyle='#111';ctx.font=`bold 18px ${PDF_FONT}`;ctx.textAlign='center';ctx.fillText(mo.label,x+colW/2,top+10);ctx.textAlign='left';});
+    for(let day=1;day<=31;day++){const y=top+headH+(day-1)*rowH;months.forEach((mo,ci)=>{const x=M+ci*colW;ctx.fillStyle='#fff';ctx.fillRect(x,y,colW,rowH);ctx.strokeStyle='#aaa';ctx.strokeRect(x,y,colW,rowH);if(!validDateParts(mo.y,mo.m,day))return;const ds=ymd(mo.y,mo.m,day),dow=new Date(mo.y,mo.m-1,day).getDay(),holiday=HOLIDAYS.has(ds);ctx.fillStyle=holiday||dow===0?'#c40000':dow===6?'#005dcc':'#222';ctx.font=`bold 13px ${PDF_FONT}`;ctx.fillText(`${day}日(${JP_WD[dow]})`,x+5,y+4);const items=map.get(ds)||[];let yy=y+21;ctx.fillStyle='#111';for(const it of items.slice(0,2)){drawFitText(ctx,`・${it.label}`,x+5,yy,colW-10,11,1,13);yy+=13;if(it.coach&&yy<y+rowH-9){ctx.font=`9px ${PDF_FONT}`;ctx.fillText(`引率：${it.coach}`,x+10,yy);yy+=10;}}if(items.length>2){ctx.font=`9px ${PDF_FONT}`;ctx.fillText(`ほか${items.length-2}件`,x+8,Math.min(yy,y+rowH-10));}});}
+    images.push(canvasToPdfImage(c));});return images;
+}
+function makeEventPdfImages(){
+  const events=[...db.events].sort((a,b)=>(a.start||'').localeCompare(b.start||'')),pages=[];for(let i=0;i<events.length;i+=6)pages.push(events.slice(i,i+6));if(!pages.length)pages.push([]);const images=[];pages.forEach((chunk,pi)=>{const W=1240,H=1754,M=60,c=document.createElement('canvas');c.width=W;c.height=H;const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);ctx.fillStyle='#111';ctx.textBaseline='top';ctx.font=`bold 26px ${PDF_FONT}`;ctx.fillText(`${db.team.name||'Alpine Team Manager'} 大会スケジュール`,M,45);ctx.font=`14px ${PDF_FONT}`;ctx.fillText(`${pi+1} / ${pages.length}ページ`,M,82);let y=120;if(!chunk.length){ctx.font=`18px ${PDF_FONT}`;ctx.fillText('大会なし',M,y);}chunk.forEach(e=>{const h=230;ctx.strokeStyle='#aaa';ctx.strokeRect(M,y,W-M*2,h);ctx.font=`bold 20px ${PDF_FONT}`;ctx.fillStyle='#111';drawFitText(ctx,e.title||'大会',M+16,y+14,W-M*2-32,20,2,24);ctx.font=`15px ${PDF_FONT}`;ctx.fillText(`${fmt(e.start)}${e.end&&e.end!==e.start?'〜'+fmt(e.end):''}`,M+16,y+70);drawFitText(ctx,`会場：${e.place||'-'}　種目：${e.disc||'-'}`,M+16,y+98,W-M*2-32,14,2,19);const names=(e.athleteIds||[]).map(id=>db.athletes.find(a=>a.id===id)?.name).filter(Boolean);const coaches=(e.coachIds||[]).map(id=>db.coaches.find(c=>c.id===id)?.name).filter(Boolean);ctx.font=`13px ${PDF_FONT}`;drawFitText(ctx,`締切：${fmt(e.deadline)}　出場：${names.join('・')||'未設定'}`,M+16,y+142,W-M*2-32,13,2,18);drawFitText(ctx,`引率：${coaches.join('・')||'未設定'}${e.note?'　備考：'+e.note:''}`,M+16,y+180,W-M*2-32,13,2,18);y+=250;});images.push(canvasToPdfImage(c));});return images;
+}
+async function directPdfDownload(id){
+  if(alpinePdfBusy)return;alpinePdfBusy=true;const buttons=[...document.querySelectorAll(`button[onclick="printSection('${id}')"]`)];const old=buttons.map(b=>b.textContent);buttons.forEach(b=>{b.disabled=true;b.textContent='PDF作成中…';});
+  try{if(document.fonts?.ready)await document.fonts.ready;const images=id==='schedule'?makeSchedulePdfImages():id==='events'?makeEventPdfImages():[];if(!images.length)throw new Error('PDFに出力する内容がありません');const pdf=buildJpegPdf(images),url=URL.createObjectURL(pdf),a=document.createElement('a');a.href=url;a.download=pdfSafeName(db.team.name||'Alpine_Team_Manager')+'_'+(id==='schedule'?'年間予定表':'大会スケジュール')+'.pdf';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);}catch(err){console.error('PDF generation error',err);alert(`PDFの作成に失敗しました：${err.message||err}`);}finally{buttons.forEach((b,i)=>{b.disabled=false;b.textContent=old[i]||'PDF';});alpinePdfBusy=false;}
+}
+function printSection(id){return directPdfDownload(id);}
 
-
-
-// ===== v0.9.1 SAJ list athlete registration =====
+// ===== v0.9.3 SAJ list athlete registration =====
 let sajAthleteListCache=[];
 
 function setAthleteRegisterMode(mode){
@@ -2154,7 +2335,7 @@ function openCalendarFullscreen(){
   content.innerHTML='';
   const clone=source.cloneNode(true);
   clone.classList.remove('screen-season-board');
-  clone.style.minWidth='1180px';
+  clone.style.minWidth=source.style.minWidth||'1180px';
   content.appendChild(clone);
 
   overlay.classList.add('open');
