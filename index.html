@@ -259,11 +259,11 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 }
 
 
-/* v0.11.5 branding */
+/* v0.12.0 branding */
 .tool-portal-logo img{width:min(100%,1100px);height:auto;object-fit:contain;display:block;margin:0 auto}
 
 
-/* v0.11.5 top navigation: HOME + 操作ナビ / team name below */
+/* v0.12.0 top navigation: HOME + 操作ナビ / team name below */
 .top-nav-block{
   width:min(560px,100%);
   margin:0 auto 16px;
@@ -311,7 +311,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 }
 
 
-/* v0.11.5: team name is shown below HOME / 操作ナビ */
+/* v0.12.0: team name is shown below HOME / 操作ナビ */
 header .team-name,
 header .team-title,
 header #teamName,
@@ -728,7 +728,7 @@ header [data-team-name],header #teamHeader{display:none!important}
 }
 .athlete-result-main{
   display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
+  grid-template-columns:repeat(2,minmax(0,1fr));
   gap:8px;
   margin-top:12px;
 }
@@ -818,7 +818,7 @@ header [data-team-name],header #teamHeader{display:none!important}
 }
 
 
-/* v0.11.5: smartphone / PWA status-bar safe area */
+/* v0.12.0: smartphone / PWA status-bar safe area */
 header{
   padding-top:calc(10px + env(safe-area-inset-top, 0px));
 }
@@ -836,6 +836,75 @@ header{
       padding-top:max(16px, calc(env(safe-area-inset-top, 0px) + 16px));
     }
   }
+}
+
+
+.top-team-season-row{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  padding-top:8px;
+  min-width:0;
+}
+.top-team-season-row .top-team-name{
+  min-height:0;
+  padding:0;
+  flex:0 1 auto;
+}
+.global-season-select{
+  flex:0 0 auto;
+  width:auto;
+  min-width:176px;
+  max-width:220px;
+  border:1px solid #3a596a;
+  border-radius:9px;
+  background:#102734;
+  color:#f8fafc;
+  font-weight:900;
+  font-size:13px;
+  padding:8px 30px 8px 10px;
+}
+@media(max-width:620px){
+  .top-team-season-row{
+    flex-wrap:wrap;
+    gap:6px 9px;
+    padding-top:8px;
+  }
+  .top-team-season-row .top-team-name{
+    width:auto;
+    max-width:100%;
+    font-size:clamp(18px,5vw,23px);
+  }
+  .global-season-select{
+    min-width:168px;
+    font-size:12px;
+    padding-top:7px;
+    padding-bottom:7px;
+  }
+}
+.operation-guide-season{
+  border:1px solid #37616e;
+  border-left:4px solid #6ad0df;
+  border-radius:12px;
+  background:linear-gradient(180deg,rgba(20,58,71,.96),rgba(9,31,41,.96));
+  padding:14px;
+  margin-bottom:14px;
+}
+.operation-guide-season-title{
+  font-size:17px;
+  font-weight:900;
+  margin-bottom:5px;
+}
+.operation-guide-season-controls{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:8px;
+  margin-top:10px;
+}
+.operation-guide-season-controls select{min-width:0}
+@media(max-width:520px){
+  .operation-guide-season-controls{grid-template-columns:1fr}
 }
 
 </style>
@@ -864,7 +933,7 @@ header{
 <header>
   <div class="header-inner">
     <div class="header-meta-row">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.11.5</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.12.0</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
     <div class="header-title-row">
@@ -879,7 +948,10 @@ header{
     <button id="homeButton" data-tab="home" class="active top-action-btn" type="button" onclick="goHome()">HOME</button>
     <button id="guideButton" data-tab="operationGuide" class="top-action-btn guide-action-btn" type="button" onclick="openTab('operationGuide')">操作ナビ</button>
   </div>
-  <div id="topTeamName" class="top-team-name"></div>
+  <div class="top-team-season-row">
+    <div id="topTeamName" class="top-team-name"></div>
+    <select id="globalSeasonSelect" class="global-season-select" aria-label="全体シーズン" onchange="onGlobalSeasonChange(this.value)"></select>
+  </div>
 </div>
 
 
@@ -961,12 +1033,8 @@ header{
           <div class="board-caption" id="scheduleBoardCaption"></div><div class="muted no-print" style="font-size:11px">セルをタップして「期間＋予定種類＋メモ」を編集 / 1日最大2件表示</div>
         </div>
         <div class="no-print" style="min-width:220px">
-          <label>表示シーズン</label>
+          <label>シーズン（全体設定と連動）</label>
           <select id="scheduleSeason" onchange="onScheduleSeasonChange()"></select>
-          <label style="display:flex;align-items:center;gap:7px;margin-top:8px;color:var(--text);font-size:12px;cursor:pointer">
-            <input id="scheduleSeasonLock" type="checkbox" onchange="toggleScheduleSeasonLock()" style="width:auto">
-            表示シーズンをロック
-          </label>
           <label style="display:flex;align-items:center;gap:7px;margin-top:8px;color:var(--text);font-size:12px;cursor:pointer">
             <input id="scheduleOffSeason" type="checkbox" onchange="toggleScheduleOffSeason()" style="width:auto">
             オフシーズン（5〜10月）も表示・印刷
@@ -995,7 +1063,7 @@ header{
         <div class="row">
           <div>
             <label>シーズン</label>
-            <select id="sajCompetitionSeason"></select>
+            <select id="sajCompetitionSeason" onchange="onSajCompetitionSeasonChange()"></select>
           </div>
           <div style="align-self:end">
             <button class="btn primary" onclick="loadSajCompetitions()">大会情報を取得</button>
@@ -1472,11 +1540,9 @@ function renderVenues(){
   const info=document.getElementById('venueSeasonInfo');
   if(!list||!info)return;
 
-  const selected=Number(document.getElementById('scheduleSeason')?.value)
-    || Number(db.team?.scheduleSeasonYear)
-    || currentSeasonStartYear();
+  const selected=selectedGlobalSeasonYear();
 
-  info.textContent=`表示対象：${selected}/${selected+1}シーズン（年間予定の表示シーズンと連動）`;
+  info.textContent=`表示対象：${selected}/${selected+1}シーズン（アプリ全体のシーズン設定と連動）`;
 
   const events=(db.events||[]).filter(e=>{
     return !!String(e.place||'').trim() && eventSeasonStartYear(e)===selected;
@@ -1542,6 +1608,7 @@ let db=JSON.parse(localStorage.getItem(KEY)||'null')||{
     sajApiUrl:'',
     scheduleSeasonLocked:false,
     scheduleSeasonYear:null,
+    globalSeasonYear:null,
     scheduleOffSeason:false,
     sajAutoRefreshDate:''
   },
@@ -1616,60 +1683,103 @@ function collectScheduleSeasonYears(){
     const y=seasonStartYearFromDate(d);
     if(y) set.add(y);
   });
+  const g=Number(db.team?.globalSeasonYear);
+  const legacy=Number(db.team?.scheduleSeasonYear);
+  if(Number.isFinite(g) && g>2000)set.add(g);
+  if(Number.isFinite(legacy) && legacy>2000)set.add(legacy);
   return [...set].sort((a,b)=>a-b);
 }
-function initScheduleSeason(){
-  const sel=document.getElementById('scheduleSeason');
-  const lock=document.getElementById('scheduleSeasonLock');
-  const off=document.getElementById('scheduleOffSeason');
-  if(!sel) return;
+function selectedGlobalSeasonYear(){
+  const g=Number(db.team?.globalSeasonYear);
+  if(Number.isFinite(g) && g>2000)return g;
+  const legacy=Number(db.team?.scheduleSeasonYear);
+  if(Number.isFinite(legacy) && legacy>2000)return legacy;
+  return currentSeasonStartYear();
+}
+function seasonOptionLabel(y){
+  const cur=currentSeasonStartYear();
+  let role='';
+  if(y===cur-1)role='昨シーズン';
+  else if(y===cur)role='今シーズン';
+  else if(y===cur+1)role='来シーズン';
+  return `${y}/${y+1}シーズン${role?`（${role}）`:''}`;
+}
+function globalSeasonOptionsHtml(selected){
+  return collectScheduleSeasonYears().map(y=>
+    `<option value="${y}" ${y===selected?'selected':''}>${seasonOptionLabel(y)}</option>`
+  ).join('');
+}
+function syncSeasonSelectors(){
+  db.team=db.team||{};
+  const selected=selectedGlobalSeasonYear();
+  const years=collectScheduleSeasonYears();
+
+  const top=document.getElementById('globalSeasonSelect');
+  if(top){
+    top.innerHTML=globalSeasonOptionsHtml(selected);
+    top.value=String(selected);
+  }
+
+  const schedule=document.getElementById('scheduleSeason');
+  if(schedule){
+    schedule.innerHTML=years.map(y=>`<option value="${y}">${seasonOptionLabel(y)}</option>`).join('');
+    schedule.value=String(selected);
+    schedule.disabled=false;
+  }
+
+  const saj=document.getElementById('sajCompetitionSeason');
+  if(saj){
+    // SAJ season code is the ending year: 2026/2027 -> 2027.
+    saj.innerHTML=years.map(y=>`<option value="${y+1}">${seasonOptionLabel(y)}</option>`).join('');
+    saj.value=String(selected+1);
+  }
+}
+function applyGlobalSeason(year,{saveValue=true}={}){
+  const y=Number(year);
+  if(!Number.isFinite(y) || y<2000)return;
 
   db.team=db.team||{};
-  const years=collectScheduleSeasonYears();
-  const cur=currentSeasonStartYear();
+  db.team.globalSeasonYear=y;
+  // Keep the legacy annual-calendar field synchronized for old data/code paths.
+  db.team.scheduleSeasonYear=y;
+  db.team.scheduleSeasonLocked=false;
 
-  const lockedYear=Number(db.team.scheduleSeasonYear);
-  const domSelected=Number(sel.value);
-  let target=years.includes(lockedYear)
-    ? lockedYear
-    : (years.includes(domSelected)?domSelected:cur);
+  syncSeasonSelectors();
 
-  sel.innerHTML=years.map(y=>{
-    let role='';
-    if(y===cur-1) role='昨シーズン';
-    else if(y===cur) role='今シーズン';
-    else if(y===cur+1) role='来シーズン';
-    return `<option value="${y}">${y}/${y+1}${role?`（${role}）`:''}</option>`;
-  }).join('');
+  if(saveValue)localStorage.setItem(KEY,JSON.stringify(db));
 
-  if(!years.includes(target)) target=cur;
-  sel.value=String(target);
-
-  const isLocked=!!db.team.scheduleSeasonLocked;
-  sel.disabled=isLocked;
-  if(lock) lock.checked=isLocked;
-  if(off) off.checked=!!db.team.scheduleOffSeason;
-
+  renderScheduleBoard();
+  renderVenues();
+  renderWeatherVenues();
+  if(typeof renderOperationGuide==='function' && document.getElementById('operationGuide')?.classList.contains('active')){
+    renderOperationGuide();
+  }
+}
+function onGlobalSeasonChange(value){
+  applyGlobalSeason(Number(value));
+}
+function initGlobalSeason(){
+  db.team=db.team||{};
+  syncSeasonSelectors();
+  renderTopTeamName();
+}
+function initScheduleSeason(){
+  const off=document.getElementById('scheduleOffSeason');
+  db.team=db.team||{};
+  syncSeasonSelectors();
+  if(off)off.checked=!!db.team.scheduleOffSeason;
   renderScheduleBoard();
   renderVenues();
 }
 function onScheduleSeasonChange(){
   const sel=document.getElementById('scheduleSeason');
   if(!sel)return;
-  db.team=db.team||{};
-  db.team.scheduleSeasonYear=Number(sel.value);
-  localStorage.setItem(KEY,JSON.stringify(db));
-  renderScheduleBoard();
-  renderVenues();
+  applyGlobalSeason(Number(sel.value));
 }
 function toggleScheduleSeasonLock(){
-  const sel=document.getElementById('scheduleSeason');
-  const lock=document.getElementById('scheduleSeasonLock');
-  if(!sel||!lock)return;
+  // Kept only for backward compatibility with older saved data.
   db.team=db.team||{};
-  db.team.scheduleSeasonLocked=!!lock.checked;
-  db.team.scheduleSeasonYear=Number(sel.value)||currentSeasonStartYear();
-  sel.disabled=!!lock.checked;
+  db.team.scheduleSeasonLocked=false;
   localStorage.setItem(KEY,JSON.stringify(db));
 }
 function toggleScheduleOffSeason(){
@@ -1883,7 +1993,7 @@ function openTab(tabId){
 document.querySelectorAll('nav button[data-tab]').forEach(b=>b.onclick=()=>openTab(b.dataset.tab));
 
 
-// ===== v0.11.5 Weather / Team Board =====
+// ===== v0.12.0 Weather / Team Board =====
 const PREF_REGION={
   '北海道':'北海道',
   '青森':'東北','岩手':'東北','宮城':'東北','秋田':'東北','山形':'東北','福島':'東北',
@@ -2250,13 +2360,22 @@ function renderOperationGuide(){
   const box=document.getElementById('operationGuideStatus');
   if(!box)return;
 
+  db.team=db.team||{};
+  const selected=selectedGlobalSeasonYear();
+  const seasonConfirmed=Number.isFinite(Number(db.team.globalSeasonYear)) && Number(db.team.globalSeasonYear)>2000;
   const teamDone=!!String(db.team?.name||'').trim();
   const athleteCount=(db.athletes||[]).length;
   const coachCount=(db.coaches||[]).length;
-  const eventCount=(db.events||[]).length;
-  const scheduleCount=(db.schedules||[]).length+(db.events||[]).length;
+  const eventCount=(db.events||[]).filter(e=>eventSeasonStartYear(e)===selected).length;
+  const scheduleCount=(db.schedules||[]).filter(x=>seasonStartYearFromDate(x.date)===selected).length+eventCount;
 
   const items=[
+    {
+      title:'シーズン設定',
+      sub:seasonConfirmed?`${selected}/${selected+1}シーズン`:'最初に使用するシーズンを選択してください',
+      done:seasonConfirmed,
+      target:'operationGuide'
+    },
     {
       title:'チーム設定',
       sub:teamDone?`チーム名：${db.team.name}`:'チーム名が未設定です',
@@ -2277,13 +2396,13 @@ function renderOperationGuide(){
     },
     {
       title:'大会登録',
-      sub:eventCount?`${eventCount}大会登録済み`:'大会がまだ登録されていません',
+      sub:eventCount?`${eventCount}大会登録済み`:'このシーズンの大会がまだ登録されていません',
       done:eventCount>0,
       target:'events'
     },
     {
       title:'年間予定',
-      sub:scheduleCount?`${scheduleCount}件の予定があります`:'年間予定がまだ登録されていません',
+      sub:scheduleCount?`${scheduleCount}件の予定があります`:'このシーズンの年間予定がまだ登録されていません',
       done:scheduleCount>0,
       target:'schedule'
     }
@@ -2293,31 +2412,46 @@ function renderOperationGuide(){
   const completed=items.filter(x=>x.done).length;
 
   box.innerHTML=`
+    <div class="operation-guide-season">
+      <div class="operation-guide-season-title">STEP 1　シーズンを選択</div>
+      <div class="muted">ここで選んだシーズンを、年間予定・大会管理・会場情報などアプリ全体の基準シーズンにします。</div>
+      <div class="operation-guide-season-controls">
+        <select id="guideSeasonSelect">${globalSeasonOptionsHtml(selected)}</select>
+        <button class="btn primary" type="button" onclick="confirmGuideSeason()">このシーズンを使用</button>
+      </div>
+    </div>
+
     <div class="operation-guide-next">
       <div class="operation-guide-next-title">次におすすめの操作</div>
       <strong>${next?esc(next.title):'基本設定は完了しています'}</strong>
       <div class="muted" style="margin-top:4px">${next?esc(next.sub):'必要に応じて各設定を確認してください。'}</div>
-      ${next?`<button class="btn primary" type="button" style="margin-top:10px" onclick="openTab('${next.target}')">${esc(next.title)}へ</button>`:''}
+      ${next && next.target!=='operationGuide'?`<button class="btn primary" type="button" style="margin-top:10px" onclick="openTab('${next.target}')">${esc(next.title)}へ</button>`:''}
     </div>
-    <div style="font-weight:900;margin-bottom:9px">設定進捗 ${completed}/5</div>
+
+    <div style="font-weight:900;margin-bottom:9px">設定進捗 ${completed}/6</div>
     <div class="operation-guide-list">
       ${items.map(x=>`
         <div class="operation-guide-row">
           <div>
             <div class="operation-guide-row-title">${esc(x.title)}</div>
             <div class="operation-guide-row-sub">${esc(x.sub)}</div>
-            <button class="btn" type="button" onclick="openTab('${x.target}')">開く</button>
+            ${x.target!=='operationGuide'?`<button class="btn" type="button" onclick="openTab('${x.target}')">開く</button>`:''}
           </div>
           <div class="operation-guide-state ${x.done?'done':'todo'}">${x.done?'✓ 完了':'△ 未設定'}</div>
         </div>
       `).join('')}
     </div>`;
 }
+function confirmGuideSeason(){
+  const sel=document.getElementById('guideSeasonSelect');
+  if(!sel)return;
+  applyGlobalSeason(Number(sel.value));
+}
 
 function renderAll(){
   
   document.getElementById('teamName').value=db.team.name||'';
-  renderCoaches();renderAthletes();renderSchedule();renderEvents();renderRanking();refreshSelects();initSajCompetitionSeason();initScheduleSeason();renderSajRegionFilters();renderVenues();renderWeatherVenues();renderHome();
+  initGlobalSeason();renderCoaches();renderAthletes();renderSchedule();renderEvents();renderRanking();refreshSelects();initSajCompetitionSeason();initScheduleSeason();renderSajRegionFilters();renderVenues();renderWeatherVenues();renderHome();
 }
 
 function openScheduleForm(){scheduleForm.classList.remove('hidden')} function closeScheduleForm(){scheduleForm.classList.add('hidden')}
@@ -2426,19 +2560,14 @@ function currentSkiSeasonCode(){
 
 function initSajCompetitionSeason(){
   const el=document.getElementById('sajCompetitionSeason');
-  if(!el || el.options.length)return;
-  const cur=currentSkiSeasonCode();
-  [
-    {s:cur-1,label:'昨シーズン'},
-    {s:cur,label:'今シーズン'},
-    {s:cur+1,label:'来シーズン'}
-  ].forEach(x=>{
-    const o=document.createElement('option');
-    o.value=String(x.s);
-    o.textContent=`${x.s-1}/${x.s}（${x.label}）`;
-    if(x.s===cur)o.selected=true;
-    el.appendChild(o);
-  });
+  if(!el)return;
+  syncSeasonSelectors();
+}
+function onSajCompetitionSeasonChange(){
+  const el=document.getElementById('sajCompetitionSeason');
+  if(!el)return;
+  const seasonCode=Number(el.value);
+  if(Number.isFinite(seasonCode))applyGlobalSeason(seasonCode-1);
 }
 
 function setEventMode(mode){
@@ -2663,15 +2792,14 @@ function showAthlete(id,source='athletes'){
       <div class="athlete-results-desktop">
         <div class="athlete-table-wrap">
           <table>
-            <thead><tr><th>日付</th><th>大会</th><th>種目</th><th>順位</th><th>タイム</th><th>獲得P</th></tr></thead>
+            <thead><tr><th>日付</th><th>大会</th><th>種目</th><th>順位</th><th>獲得P</th></tr></thead>
             <tbody>${(a.results||[]).map(r=>`<tr>
               <td>${r.date?fmt(r.date):'—'}</td>
               <td>${esc(r.race||r.title||'—')}</td>
               <td>${esc(r.disc||'—')}</td>
               <td>${esc(String(r.rank??'—'))}</td>
-              <td>${esc(String(r.time??'—'))}</td>
               <td>${esc(String(r.point??'—'))}</td>
-            </tr>`).join('')||'<tr><td colspan="6">成績データなし</td></tr>'}</tbody>
+            </tr>`).join('')||'<tr><td colspan="5">成績データなし</td></tr>'}</tbody>
           </table>
         </div>
       </div>
@@ -2689,10 +2817,6 @@ function showAthlete(id,source='athletes'){
                 <div>
                   <div class="athlete-result-label">順位</div>
                   <div class="athlete-result-value rank">${esc(String(r.rank??'—'))}</div>
-                </div>
-                <div>
-                  <div class="athlete-result-label">タイム</div>
-                  <div class="athlete-result-value">${esc(String(r.time??'—'))}</div>
                 </div>
                 <div>
                   <div class="athlete-result-label">獲得P</div>
@@ -3192,7 +3316,7 @@ async function directPdfDownload(id){
 }
 function printSection(id){return directPdfDownload(id);}
 
-// ===== v0.11.5 SAJ list athlete registration =====
+// ===== v0.12.0 SAJ list athlete registration =====
 let sajAthleteListCache=[];
 
 function setAthleteRegisterMode(mode){
@@ -3898,7 +4022,7 @@ async function refreshAppCacheOnLaunch(){
   }
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=0115',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=0120',{updateViaCache:'none'});
     try{ await reg.update(); }catch{}
 
     if(reg.waiting){
@@ -3927,6 +4051,12 @@ setTimeout(()=>{ autoRefreshSajOnLaunch().catch(()=>{}); },300);
 function renderTopTeamName(){
   const el=document.getElementById('topTeamName');
   if(el)el.textContent=(db?.team?.name||'').trim();
+  const season=document.getElementById('globalSeasonSelect');
+  if(season){
+    const selected=selectedGlobalSeasonYear();
+    if(!season.options.length)season.innerHTML=globalSeasonOptionsHtml(selected);
+    season.value=String(selected);
+  }
 }
 
 function goHome(){
