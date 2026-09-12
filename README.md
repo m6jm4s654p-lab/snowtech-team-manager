@@ -927,3 +927,17 @@ SnowTech → 管理 → `SAJ連携API URL` にWorker URLを入力 → 保存。
 - HTML内のALGE絶対URL・一部root-relative URLもHTTPSプロキシへ書き換え
 - ALGEレスポンスはキャッシュしない
 - この変更はworker.jsを含むためCloudflare Workerの再デプロイが必要
+
+## v0.12.8 ALGE external-browser launch
+- Cloudflare WorkerのALGE HTTPSプロキシ方式を撤回
+- ALGEの実URL `http://116.58.169.162/alge/` を外部ブラウザで開く方式へ変更
+- iPhone / iPad:
+  - Chromeが入っている場合 `googlechrome://116.58.169.162/alge/` でChrome起動
+  - Chromeが起動しない場合はALGE URLをコピーし、Safari/Chromeへ貼り付ける案内を表示
+- Android:
+  - `intent://...;scheme=http;package=com.android.chrome;end` でChrome起動
+- PC/その他:
+  - 通常のHTTP URLを別タブで開く
+- iOSのSafariは、ホーム画面PWAから任意のHTTP URLをSafariへ強制的に渡す公開スキームが安定して使えないため、Chrome起動＋URLコピーを安全なフォールバックとする
+- ALGEアクセスはCloudflare Workerを経由しない
+- Service Workerをv0.12.8へ更新

@@ -261,11 +261,11 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 }
 
 
-/* v0.12.7 branding */
+/* v0.12.8 branding */
 .tool-portal-logo img{width:min(100%,1100px);height:auto;object-fit:contain;display:block;margin:0 auto}
 
 
-/* v0.12.7 top navigation: HOME + 操作ナビ / team name below */
+/* v0.12.8 top navigation: HOME + 操作ナビ / team name below */
 .top-nav-block{
   width:min(560px,100%);
   margin:0 auto 16px;
@@ -313,7 +313,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 }
 
 
-/* v0.12.7: team name is shown below HOME / 操作ナビ */
+/* v0.12.8: team name is shown below HOME / 操作ナビ */
 header .team-name,
 header .team-title,
 header #teamName,
@@ -820,7 +820,7 @@ header [data-team-name],header #teamHeader{display:none!important}
 }
 
 
-/* v0.12.7: smartphone / PWA status-bar safe area */
+/* v0.12.8: smartphone / PWA status-bar safe area */
 header{
   padding-top:calc(10px + env(safe-area-inset-top, 0px));
 }
@@ -975,7 +975,7 @@ header{
 <header>
   <div class="header-inner">
     <div class="header-meta-row">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.12.7</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.12.8</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
     <div class="header-title-row">
@@ -1292,7 +1292,7 @@ header{
 <section id="raceLive">
   <div class="card">
     <h2>レース速報</h2>
-    <div class="muted" style="margin-bottom:14px">速報サイトを選択してください。ALGEはiPhoneホーム画面アプリでも開けるようHTTPS経由で表示します。</div>
+    <div class="muted" style="margin-bottom:14px">速報サイトを選択してください。ALGEはホーム画面アプリ内ではなく、Chromeなどの外部ブラウザで開きます。</div>
 
     <div class="race-live-choice-grid no-print">
       <button class="race-live-choice-btn seiko" type="button" onclick="openSeikoSportsLink()">
@@ -1301,11 +1301,11 @@ header{
         <small>別画面で開く ↗</small>
       </button>
 
-      <a class="race-live-choice-btn alge" href="https://snowtech-saj-api.take6583.workers.dev/alge/">
+      <button class="race-live-choice-btn alge" type="button" onclick="openAlgeExternalBrowser()">
         <strong>THA&amp;KS ALGE Timing</strong>
         <span>ALGE Timing レース速報</span>
-        <small>ALGEサイトへ移動 →</small>
-      </a>
+        <small>外部ブラウザで開く ↗</small>
+      </button>
     </div>
   </div>
 </section>
@@ -2039,6 +2039,65 @@ function openSeikoSportsLink(){
   );
 }
 
+const ALGE_HTTP_URL='http://116.58.169.162/alge/';
+
+async function copyAlgeUrl(){
+  try{
+    await navigator.clipboard.writeText(ALGE_HTTP_URL);
+    return true;
+  }catch{
+    try{
+      const ta=document.createElement('textarea');
+      ta.value=ALGE_HTTP_URL;
+      ta.setAttribute('readonly','');
+      ta.style.position='fixed';
+      ta.style.opacity='0';
+      document.body.appendChild(ta);
+      ta.select();
+      const ok=document.execCommand('copy');
+      ta.remove();
+      return !!ok;
+    }catch{
+      return false;
+    }
+  }
+}
+
+function openAlgeExternalBrowser(){
+  const ua=navigator.userAgent||'';
+  const isIOS=/iPad|iPhone|iPod/.test(ua) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+  const isAndroid=/Android/i.test(ua);
+
+  // iOS: Chrome has a documented custom URL scheme.
+  // This escapes standalone PWA HTTPS-only navigation because Chrome handles the HTTP URL.
+  if(isIOS){
+    const chromeUrl='googlechrome://116.58.169.162/alge/';
+    window.location.href=chromeUrl;
+
+    // If Chrome is not installed, iOS cannot reliably force-open Safari to an arbitrary HTTP URL
+    // from a standalone HTTPS PWA. Copy the URL and show a concise fallback.
+    setTimeout(async()=>{
+      const copied=await copyAlgeUrl();
+      alert(
+        copied
+          ? 'Chromeが起動しない場合は、コピーしたALGE URLをSafariまたはChromeのアドレス欄へ貼り付けて開いてください。'
+          : `Chromeが起動しない場合は、SafariまたはChromeで次のURLを開いてください。\\n${ALGE_HTTP_URL}`
+      );
+    },900);
+    return;
+  }
+
+  // Android: use an intent URL to request Chrome directly.
+  if(isAndroid){
+    const intent='intent://116.58.169.162/alge/#Intent;scheme=http;package=com.android.chrome;end';
+    window.location.href=intent;
+    return;
+  }
+
+  // Desktop/other browsers can use the normal HTTP URL.
+  window.open(ALGE_HTTP_URL,'_blank','noopener,noreferrer');
+}
+
 function openTab(tabId){
   document.querySelectorAll('nav button[data-tab], .top-action-btn[data-tab]').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('section').forEach(x=>x.classList.remove('active'));
@@ -2055,7 +2114,7 @@ function openTab(tabId){
 document.querySelectorAll('nav button[data-tab]').forEach(b=>b.onclick=()=>openTab(b.dataset.tab));
 
 
-// ===== v0.12.7 Weather / Team Board =====
+// ===== v0.12.8 Weather / Team Board =====
 const PREF_REGION={
   '北海道':'北海道',
   '青森':'東北','岩手':'東北','宮城':'東北','秋田':'東北','山形':'東北','福島':'東北',
@@ -3481,7 +3540,7 @@ async function directPdfDownload(id){
 }
 function printSection(id){return directPdfDownload(id);}
 
-// ===== v0.12.7 SAJ list athlete registration =====
+// ===== v0.12.8 SAJ list athlete registration =====
 let sajAthleteListCache=[];
 
 function setAthleteRegisterMode(mode){
@@ -4210,7 +4269,7 @@ async function refreshAppCacheOnLaunch(){
   if(!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=0127',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=0128',{updateViaCache:'none'});
     try{ await reg.update(); }catch{}
 
     if(reg.waiting){
