@@ -1193,3 +1193,14 @@ SnowTech → 管理 → `SAJ連携API URL` にWorker URLを入力 → 保存。
 - Worker側も同じ厳密な検索語に統一
 - GitHub Pages更新 + Cloudflare Worker再デプロイが必要
 - Service Worker cache v0.13.22
+
+## v0.13.23 error-message cleanup
+- 会場URL候補0件時の案内からWorkerバージョン更新文を削除
+- エラー時は都道府県名・市町村名の確認と再検索のみ案内
+- Service Worker cache v0.13.23
+
+## v0.13.24 prefecture fallback
+- 第1検索：都道府県名 + 市町村名 + スキー場
+- 候補0件なら自動で第2検索：都道府県名 + スキー場
+- 例：福島県 金山町 スキー場 → 0件なら 福島県 スキー場
+- GitHub Pages更新 + Cloudflare Worker再デプロイが必要

@@ -19,7 +19,7 @@ export default {
       return cors(json({ok:false,error:"Method not allowed"},405), env, request);
     }
     if (url.pathname === "/health") {
-      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.13.22"}), env, request);
+      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.13.24"}), env, request);
     }
 
     if (url.pathname === "/api/debug-competition-calendar") {
@@ -58,11 +58,12 @@ export default {
       const q=String(url.searchParams.get("q")||"").trim();
       const prefecture=String(url.searchParams.get("prefecture")||"").trim();
       const municipality=String(url.searchParams.get("municipality")||"").trim();
+      const fallback=String(url.searchParams.get("fallback")||"").trim();
       if(q.length<2 || q.length>100){
         return cors(json({ok:false,error:"会場名を確認してください"},400),env,request);
       }
       try{
-        const results=await searchVenueOfficialWeb(q,{prefecture,municipality});
+        const results=await searchVenueOfficialWeb(q,{prefecture,municipality,fallback});
         return cors(json({
           ok:true,
           query:q,
@@ -303,16 +304,19 @@ function scoreVenueSearchResult(row,place,area=""){
 async function searchVenueOfficialWeb(place,location={}){
   const prefecture=String(location?.prefecture||"").trim();
   const municipality=String(location?.municipality||"").trim();
+  const fallback=String(location?.fallback||"").trim();
   const area=[prefecture,municipality].filter(Boolean).join(" ").trim();
 
   // Strict rule:
   // If both are known, search exactly "都道府県名 市町村名 スキー場".
   // Do not append venue/event names that can cause another city to match.
   let queries=[];
-  if(prefecture && municipality){
+  if(fallback==="prefecture" && prefecture){
+    queries=[`${prefecture} スキー場`];
+  }else if(prefecture && municipality){
     queries=[`${prefecture} ${municipality} スキー場`];
   }else if(prefecture){
-    queries=[`${prefecture} ${String(place||"").trim()} スキー場`];
+    queries=[`${prefecture} スキー場`];
   }else{
     queries=[`${String(place||"").trim()} スキー場`];
   }
@@ -374,7 +378,7 @@ function cors(resp,env,request){
 }
 async function getText(url){
   const r=await fetch(url,{headers:{
-    "User-Agent":"AlpineTeamManager/0.13.22 (+public SAJ data lookup)",
+    "User-Agent":"AlpineTeamManager/0.13.24 (+public SAJ data lookup)",
     "Accept":"text/html,application/xhtml+xml"
   }});
   if(!r.ok) throw new Error(`SAJ HTTP ${r.status}: ${url}`);
@@ -694,7 +698,7 @@ function parseDelimitedPointFile(text,saj,source){
 
 async function getRawText(url){
   const r=await fetch(url,{headers:{
-    "User-Agent":"AlpineTeamManager/0.13.22 (+public SAJ data lookup)",
+    "User-Agent":"AlpineTeamManager/0.13.24 (+public SAJ data lookup)",
     "Accept":"text/csv,text/plain,text/html,application/octet-stream,*/*"
   }});
   if(!r.ok) throw new Error(`SAJ HTTP ${r.status}: ${url}`);
@@ -1250,7 +1254,7 @@ async function fetchFollowingSajSession(url, init, maxRedirects=5){
       // Browser semantics: 301/302/303 after a form request become GET.
       if([301,302,303].includes(r.status)){
         currentInit={method:"GET",headers:{
-          "User-Agent":"AlpineTeamManager/0.13.22 (+public SAJ competition calendar lookup)",
+          "User-Agent":"AlpineTeamManager/0.13.24 (+public SAJ competition calendar lookup)",
           "Accept":"text/html,application/xhtml+xml"
         }};
       }
@@ -1273,7 +1277,7 @@ async function fetchFollowingSajSession(url, init, maxRedirects=5){
 async function submitCalendarForm(formInfo){
   const target=new URL(formInfo.action,SAJ_ORIGIN);
   const headers={
-    "User-Agent":"AlpineTeamManager/0.13.22 (+public SAJ competition calendar lookup)",
+    "User-Agent":"AlpineTeamManager/0.13.24 (+public SAJ competition calendar lookup)",
     "Accept":"text/html,application/xhtml+xml"
   };
 
@@ -1621,7 +1625,7 @@ async function lookupCompetitionsApi(season,month=0){
   const r=await fetch(target.toString(),{
     method:"GET",
     headers:{
-      "User-Agent":"AlpineTeamManager/0.13.22 (+public SAJ competition calendar lookup)",
+      "User-Agent":"AlpineTeamManager/0.13.24 (+public SAJ competition calendar lookup)",
       "Accept":"application/json,text/javascript,*/*;q=0.8",
       "Referer":`${SAJ_ORIGIN}/alpine/competition/calendar`
     }
@@ -1666,7 +1670,7 @@ async function debugCompetitionApi(season=2026,month=2){
   const r=await fetch(target.toString(),{
     method:"GET",
     headers:{
-      "User-Agent":"AlpineTeamManager/0.13.22 (+public SAJ competition calendar lookup)",
+      "User-Agent":"AlpineTeamManager/0.13.24 (+public SAJ competition calendar lookup)",
       "Accept":"application/json,text/javascript,*/*;q=0.8",
       "Referer":`${SAJ_ORIGIN}/alpine/competition/calendar`
     }
