@@ -261,11 +261,11 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 }
 
 
-/* v0.13.21 branding */
+/* v0.13.22 branding */
 .tool-portal-logo img{width:min(100%,1100px);height:auto;object-fit:contain;display:block;margin:0 auto}
 
 
-/* v0.13.21 top navigation: HOME + 操作ナビ / team name below */
+/* v0.13.22 top navigation: HOME + 操作ナビ / team name below */
 .top-nav-block{
   width:min(560px,100%);
   margin:0 auto 16px;
@@ -313,7 +313,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 }
 
 
-/* v0.13.21: team name is shown below HOME / 操作ナビ */
+/* v0.13.22: team name is shown below HOME / 操作ナビ */
 header .team-name,
 header .team-title,
 header #teamName,
@@ -820,7 +820,7 @@ header [data-team-name],header #teamHeader{display:none!important}
 }
 
 
-/* v0.13.21: smartphone / PWA status-bar safe area */
+/* v0.13.22: smartphone / PWA status-bar safe area */
 header{
   padding-top:calc(10px + env(safe-area-inset-top, 0px));
 }
@@ -1043,7 +1043,7 @@ header{
 }
 
 
-/* v0.13.21 two-line competition rows */
+/* v0.13.22 two-line competition rows */
 .event-simple-list{
   width:100%;
   overflow-x:auto;
@@ -1148,7 +1148,7 @@ header{
     grid-template-columns:38px 38px 40px 88px var(--event-title-width, 320px) !important;
   }
 }
-/* v0.13.21 settings alignment */
+/* v0.13.22 settings alignment */
 #coachList .list-item{
   display:flex;
   align-items:center;
@@ -1178,7 +1178,7 @@ header{
 }
 
 
-/* v0.13.21 registered competition typography */
+/* v0.13.22 registered competition typography */
 .event-two-male,
 .event-two-female,
 .event-two-date,
@@ -1188,7 +1188,7 @@ header{
 }
 
 
-/* v0.13.21 competition title wrapping */
+/* v0.13.22 competition title wrapping */
 .event-two-title{
   white-space:normal !important;
   overflow:visible !important;
@@ -1210,7 +1210,7 @@ header{
 }
 
 
-/* v0.13.21 top navigation / item help */
+/* v0.13.22 top navigation / item help */
 .top-action-row{
   grid-template-columns:2fr 1fr 1fr !important;
 }
@@ -1279,7 +1279,7 @@ header{
 }
 
 
-/* v0.13.21 calendar quick action chooser */
+/* v0.13.22 calendar quick action chooser */
 .calendar-action-modal{
   position:fixed;
   inset:0;
@@ -1322,7 +1322,7 @@ header{
 }
 
 
-/* v0.13.21 home / away training quick setting */
+/* v0.13.22 home / away training quick setting */
 .calendar-training-choice-buttons{
   grid-template-columns:1fr 1fr !important;
 }
@@ -1365,7 +1365,7 @@ header{
 }
 
 
-/* v0.13.21 athlete list + team ranking combined page */
+/* v0.13.22 athlete list + team ranking combined page */
 .home-athlete-ranking-btn strong{
   line-height:1.2;
 }
@@ -1419,7 +1419,7 @@ header{
 }
 
 
-/* v0.13.21 venue link fallback */
+/* v0.13.22 venue link fallback */
 .venue-official-search{
   border-color:#536b7d !important;
   background:#162839 !important;
@@ -1431,7 +1431,7 @@ header{
 }
 
 
-/* v0.13.21 in-app venue official-link picker */
+/* v0.13.22 in-app venue official-link picker */
 .venue-link-modal{
   position:fixed;
   inset:0;
@@ -1527,7 +1527,7 @@ header{
 }
 
 
-/* v0.13.21 municipality-based venue search */
+/* v0.13.22 municipality-based venue search */
 .venue-link-search-area{
   margin:12px 0 4px;
   padding:9px 11px;
@@ -1540,6 +1540,29 @@ header{
   line-height:1.45;
 }
 .venue-link-search-area:empty{display:none}
+
+
+/* v0.13.22 strict prefecture + municipality search */
+.venue-link-area-editor{
+  display:grid;
+  grid-template-columns:1fr 1fr auto;
+  gap:8px;
+  align-items:end;
+  margin:8px 0 12px;
+}
+.venue-link-area-editor.hidden{display:none}
+.venue-link-area-editor label{
+  display:block;
+  margin-bottom:5px;
+  font-size:11px;
+  font-weight:800;
+  color:var(--muted);
+}
+.venue-link-area-editor input{width:100%}
+@media(max-width:620px){
+  .venue-link-area-editor{grid-template-columns:1fr 1fr}
+  .venue-link-area-editor .btn{grid-column:1 / -1}
+}
 
 </style>
 </head>
@@ -1567,7 +1590,7 @@ header{
 <header>
   <div class="header-inner">
     <div class="header-meta-row">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.13.21</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.13.22</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
     <div class="header-title-row">
@@ -1760,7 +1783,7 @@ header{
     <div id="venueSeasonInfo" class="muted"></div>
     <div class="venue-note">
       大会管理で登録した大会の開催会場だけを表示します。年間予定の「表示シーズン」と連動します。
-      登録済みの公式URLは直接開きます。未登録の会場は「公式を探す」でWeb検索結果をアプリ内に候補一覧として表示し、チェックしたURLを登録できます。複数選択にも対応します。
+      登録済みの公式URLは直接開きます。未登録の会場は「公式を探す」で「都道府県名 市町村名 スキー場」を検索語として候補一覧を表示します。都道府県名・市町村名は画面上で修正して再検索でき、複数URLをチェックして登録できます。
     </div>
     <div id="venueRegisteredList" style="margin-top:14px"></div>
   </div>
@@ -2035,6 +2058,17 @@ header{
     </div>
 
     <div id="venueLinkSearchArea" class="venue-link-search-area"></div>
+    <div id="venueLinkAreaEditor" class="venue-link-area-editor hidden">
+      <div>
+        <label for="venueLinkPrefectureInput">都道府県名</label>
+        <input id="venueLinkPrefectureInput" type="text" maxlength="10" placeholder="例：サンプル県">
+      </div>
+      <div>
+        <label for="venueLinkMunicipalityInput">市町村名</label>
+        <input id="venueLinkMunicipalityInput" type="text" maxlength="20" placeholder="例：サンプル町">
+      </div>
+      <button class="btn primary" type="button" onclick="rerunVenueSearchWithArea()">この地域で再検索</button>
+    </div>
     <div id="venueLinkSearchStatus" class="muted venue-link-status">候補を検索しています…</div>
     <div id="venueLinkCandidateList" class="venue-link-candidate-list"></div>
 
@@ -2204,12 +2238,12 @@ const VENUE_OFFICIAL_REGISTRY=[
   {keys:['岩手高原'],name:'岩手高原スノーパーク',region:'東北',url:'https://iwatekogen.jp/'},
   {keys:['雫石'],name:'雫石スキー場',region:'東北',url:'https://www.princehotels.co.jp/ski/shizukuishi/'},
   {keys:['安比'],name:'安比高原スキー場',region:'東北',url:'https://www.appi.co.jp/snow-mountain-resort/'},
-  {keys:['花輪','アルパス'],name:'花輪スキー場（アルパス）',region:'東北',url:'https://r.goope.jp/alpas/'},
+  {keys:['花輪','アルパス'],name:'花輪スキー場（アルパス）',region:'東北',prefecture:'秋田県',municipality:'鹿角市',url:'https://r.goope.jp/alpas/'},
   {keys:['たざわ湖','田沢湖'],name:'たざわ湖スキー場',region:'東北',url:'https://www.tazawako-ski.com/'},
   {keys:['赤倉温泉','最上'],name:'赤倉温泉スキー場',region:'東北',url:'https://kanko-mogami.jp/spot/akakuraski/'},
   {keys:['蔵王ライザ','ライザ'],name:'蔵王ライザワールド',region:'東北',url:'https://www.zaoliza.co.jp/wntr/'},
   {keys:['猪苗代'],name:'猪苗代スキー場',region:'東北',url:'https://inawashiro-ski.com/'},
-  {keys:['フェアリーランドかねやま','かねやま'],name:'フェアリーランドかねやまスキー場',region:'東北',url:'https://www.aizukaneyama.co.jp/ski/skitop.html'},
+  {keys:['フェアリーランドかねやま','かねやま','金山'],name:'フェアリーランドかねやまスキー場',region:'東北',prefecture:'福島県',municipality:'金山町',url:'https://www.aizukaneyama.co.jp/ski/skitop.html'},
 
   {keys:['カムイスキーリンクス','カムイ'],name:'カムイスキーリンクス',region:'北海道',url:'https://www.kamui-skilinks.com/'},
   {keys:['ぬかびら'],name:'ぬかびら源泉郷スキー場',region:'北海道',url:'https://ichida54.wixsite.com/nukabiraskijyo'},
@@ -2429,7 +2463,7 @@ let db=JSON.parse(localStorage.getItem(KEY)||'null')||{
   events:[]
 };
 
-// v0.13.21 compatibility: normalize only known sex labels.
+// v0.13.22 compatibility: normalize only known sex labels.
 // Existing athlete records and point values are never removed here.
 (db.athletes||[]).forEach(a=>{
   const normalized=normalizeAthleteSex(a.sex);
@@ -2552,6 +2586,18 @@ function prefectureWithSuffix(v){
   if(!raw)return '';
   return /[都道府県]$/.test(raw) ? raw : `${raw}県`;
 }
+function extractPrefectureFromText(v){
+  const text=String(v||'');
+  const m=text.match(/(北海道|東京都|大阪府|京都府|[^\s,、，]{2,4}県)/);
+  return m?m[1]:'';
+}
+function extractMunicipalityFromText(v){
+  const text=String(v||'')
+    .replace(/北海道|東京都|大阪府|京都府|[^\s,、，]{2,4}県/g,' ')
+    .replace(/[、,，／/()（）【】\[\]]/g,' ');
+  const matches=text.match(/[^\s]{1,12}(?:市|区|町|村)/g)||[];
+  return matches.find(x=>!/スキー場|大会|競技場/.test(x))||'';
+}
 function municipalityFromAddress(address,displayName=''){
   const a=address||{};
   const direct=[
@@ -2559,70 +2605,124 @@ function municipalityFromAddress(address,displayName=''){
     a.town,
     a.village,
     a.municipality,
-    a.city_district,
-    a.county
+    a.city_district
   ].map(v=>String(v||'').trim()).find(Boolean);
   if(direct)return direct;
 
   const parts=String(displayName||'').split(',').map(x=>x.trim()).filter(Boolean);
-  const hit=parts.find(x=>/[市区町村]$/.test(x));
-  return hit||'';
+  return parts.find(x=>/[市区町村]$/.test(x))||'';
 }
-function venueEventPrefecture(place){
+function venueEventAdmin(place){
   const key=normalizeVenueLookupText(place);
-  const e=(db.events||[]).find(x=>normalizeVenueLookupText(x?.place)===key);
-  return normalizePrefecture(e?.prefecture||'');
+  const e=(db.events||[]).find(x=>normalizeVenueLookupText(x?.place)===key)||null;
+  if(!e)return {prefecture:'',municipality:''};
+
+  const text=[
+    e.place,
+    e.prefecture,
+    e.municipality,
+    e.city,
+    e.town,
+    e.address
+  ].filter(Boolean).join(' ');
+
+  const pref=prefectureWithSuffix(e.prefecture||extractPrefectureFromText(text));
+  const municipality=String(
+    e.municipality||e.city||e.town||extractMunicipalityFromText(text)||''
+  ).trim();
+
+  return {prefecture:pref,municipality};
 }
-function venueAreaFromWeatherCache(place){
+function venueAreaFromRegistry(place){
+  const reg=findVenueRegistry(place);
+  if(!reg)return null;
+  const prefecture=prefectureWithSuffix(reg.prefecture||WEATHER_VENUE_PREF[reg.name]||'');
+  const municipality=String(reg.municipality||'').trim();
+  if(!prefecture && !municipality)return null;
+  return {
+    prefecture,
+    municipality,
+    label:[prefecture,municipality].filter(Boolean).join(' '),
+    source:'registry'
+  };
+}
+function venueAreaFromWeatherCache(place,prefecture=''){
   const p=normalizeVenueLookupText(place);
   if(!p)return null;
 
   const cache=weatherGeoCache();
+  const wantedPref=normalizePrefecture(prefecture);
   let best=null;
-  let bestScore=0;
 
   Object.entries(cache||{}).forEach(([key,row])=>{
-    const label=String(row?.geocodeLabel||'');
     const name=String(row?.geocodeName||row?.resolvedName||key.split('|')[0]||'');
     const n=normalizeVenueLookupText(name);
-    let score=0;
-    if(n===p)score=1000;
-    else if(n && (p.includes(n)||n.includes(p)))score=Math.min(n.length,p.length);
-    if(score<=bestScore)return;
 
-    const parts=label.split(',').map(x=>x.trim()).filter(Boolean);
-    const pref=parts.find(x=>/[都道府県]$/.test(x))||'';
-    const city=parts.find(x=>/[市区町村]$/.test(x))||'';
-    if(pref||city){
+    // Exact venue-name match only. Never reuse a fuzzy municipality cache.
+    if(n!==p)return;
+
+    const label=String(row?.geocodeLabel||'');
+    const pref=extractPrefectureFromText(label);
+    const municipality=extractMunicipalityFromText(label);
+    if(wantedPref && pref && normalizePrefecture(pref)!==wantedPref)return;
+
+    if(pref||municipality){
       best={
-        prefecture:pref,
-        municipality:city,
-        label:[pref,city].filter(Boolean).join(' ')
+        prefecture:pref||prefecture,
+        municipality,
+        label:[pref||prefecture,municipality].filter(Boolean).join(' '),
+        source:'weather-cache'
       };
-      bestScore=score;
     }
   });
 
   return best;
 }
+function normalizeAreaInputs(prefecture,municipality){
+  const pref=prefectureWithSuffix(prefecture);
+  const muni=String(municipality||'').trim();
+  return {
+    prefecture:pref,
+    municipality:muni,
+    label:[pref,muni].filter(Boolean).join(' ')
+  };
+}
 async function resolveVenueSearchArea(place){
-  // 1) Reuse location already resolved by the weather feature when possible.
-  const cached=venueAreaFromWeatherCache(place);
+  // 1. Exact administrative text already in the event/place data.
+  const eventAdmin=venueEventAdmin(place);
+  if(eventAdmin.municipality){
+    return {...normalizeAreaInputs(eventAdmin.prefecture,eventAdmin.municipality),source:'event'};
+  }
+
+  // 2. High-confidence static registry hints.
+  const registry=venueAreaFromRegistry(place);
+  if(registry?.municipality){
+    return registry;
+  }
+
+  // 3. Weather cache only when venue name matches exactly.
+  const cached=venueAreaFromWeatherCache(
+    place,
+    eventAdmin.prefecture||registry?.prefecture||''
+  );
   if(cached?.municipality){
     return cached;
   }
 
-  // 2) Prefer prefecture already carried by SAJ/event data.
-  const eventPref=venueEventPrefecture(place);
+  // 4. Geocode only matching venue results.
+  // Never take list[0] merely because it is in the same prefecture.
+  const knownPref=eventAdmin.prefecture||registry?.prefecture||'';
   const queries=[
-    eventPref ? `${String(place||'').trim()}, ${eventPref}県` : '',
+    knownPref ? `${String(place||'').trim()}, ${knownPref}` : '',
     String(place||'').trim()
   ].filter(Boolean);
+  const wantedVenue=normalizeVenueLookupText(place);
+  const reg=findVenueRegistry(place);
 
   for(const q of queries){
     try{
       const url='https://nominatim.openstreetmap.org/search'
-        +`?format=jsonv2&limit=8&countrycodes=jp&addressdetails=1&accept-language=ja&q=${encodeURIComponent(q)}`;
+        +`?format=jsonv2&limit=12&countrycodes=jp&addressdetails=1&accept-language=ja&q=${encodeURIComponent(q)}`;
       const r=await fetch(url,{
         method:'GET',
         headers:{'Accept':'application/json'},
@@ -2633,41 +2733,53 @@ async function resolveVenueSearchArea(place){
       const list=await r.json();
       if(!Array.isArray(list)||!list.length)continue;
 
-      const wanted=normalizePrefecture(eventPref);
-      const hit=list.find(row=>{
-        if(!wanted)return true;
-        const state=normalizePrefecture(row?.address?.state||row?.address?.province||'');
-        return state===wanted || String(row?.display_name||'').includes(wanted+'県');
-      })||list[0];
+      const wantedPref=normalizePrefecture(knownPref);
+      const hit=list
+        .map(row=>{
+          const address=row?.address||{};
+          const state=normalizePrefecture(address.state||address.province||'');
+          if(wantedPref && state!==wantedPref && !String(row?.display_name||'').includes(wantedPref+'県')){
+            return null;
+          }
 
-      const address=hit?.address||{};
-      const prefRaw=String(address.state||address.province||'').trim();
-      const pref=prefRaw || (eventPref ? `${eventPref}県` : '');
-      const municipality=municipalityFromAddress(address,hit?.display_name||'');
+          const candidateName=normalizeVenueLookupText(
+            [row?.name,row?.display_name].filter(Boolean).join(' ')
+          );
 
-      if(pref||municipality){
+          let score=0;
+          if(wantedVenue && candidateName.includes(wantedVenue))score=1000;
+          for(const key of (reg?.keys||[])){
+            const nk=normalizeVenueLookupText(key);
+            if(nk && candidateName.includes(nk))score=Math.max(score,100+nk.length);
+          }
+
+          return score>0 ? {row,score} : null;
+        })
+        .filter(Boolean)
+        .sort((a,b)=>b.score-a.score)[0]?.row;
+
+      if(!hit)continue;
+
+      const address=hit.address||{};
+      const pref=String(address.state||address.province||knownPref||'').trim();
+      const municipality=municipalityFromAddress(address,hit.display_name||'');
+
+      if(municipality){
         return {
-          prefecture:pref,
-          municipality,
-          label:[pref,municipality].filter(Boolean).join(' '),
-          geocodeLabel:String(hit?.display_name||'')
+          ...normalizeAreaInputs(pref,municipality),
+          geocodeLabel:String(hit.display_name||''),
+          source:'geocode'
         };
       }
     }catch{}
   }
 
-  if(eventPref){
-    return {
-      prefecture:`${eventPref}県`,
-      municipality:'',
-      label:`${eventPref}県`
-    };
-  }
-
-  return {prefecture:'',municipality:'',label:''};
+  return normalizeAreaInputs(knownPref,'');
 }
 
-async function searchVenueOfficialCandidates(place){
+let venueForcedSearchArea=null;
+
+async function searchVenueOfficialCandidates(place,forcedArea=null){
   const rows=[];
 
   const reg=findVenueRegistry(place);
@@ -2690,22 +2802,40 @@ async function searchVenueOfficialCandidates(place){
     });
   });
 
-  // Resolve administrative area first.
-  // Example: 秋田県 鹿角市 -> search "秋田県 鹿角市 スキー場"
-  const area=await resolveVenueSearchArea(place);
-  const areaLabel=String(area?.label||'').trim();
+  const area=forcedArea
+    ? normalizeAreaInputs(forcedArea.prefecture,forcedArea.municipality)
+    : await resolveVenueSearchArea(place);
+
+  venueForcedSearchArea=area;
+
+  const prefInput=document.getElementById('venueLinkPrefectureInput');
+  const muniInput=document.getElementById('venueLinkMunicipalityInput');
+  const editor=document.getElementById('venueLinkAreaEditor');
+  if(prefInput)prefInput.value=area.prefecture||'';
+  if(muniInput)muniInput.value=area.municipality||'';
+  if(editor)editor.classList.remove('hidden');
+
   const areaEl=document.getElementById('venueLinkSearchArea');
+  const strictQuery=(area.prefecture&&area.municipality)
+    ? `${area.prefecture} ${area.municipality} スキー場`
+    : '';
+
   if(areaEl){
-    areaEl.textContent=areaLabel
-      ? `検索地域：${areaLabel}　→「${areaLabel} スキー場」を優先検索`
-      : '検索地域を特定できなかったため、会場名で検索します。';
+    areaEl.textContent=strictQuery
+      ? `検索語：「${strictQuery}」`
+      : '市町村名を特定できませんでした。都道府県名・市町村名を入力して再検索してください。';
+  }
+
+  // If the municipality is unknown, do not guess another city.
+  if(!area.prefecture || !area.municipality){
+    return mergeVenueLinkCandidates(rows);
   }
 
   try{
     const params=new URLSearchParams();
     params.set('q',String(place||'').trim());
-    if(area?.prefecture)params.set('prefecture',String(area.prefecture));
-    if(area?.municipality)params.set('municipality',String(area.municipality));
+    params.set('prefecture',area.prefecture);
+    params.set('municipality',area.municipality);
 
     const workerUrl=`${apiBase()}/api/venue-search?${params.toString()}`;
     const r=await fetch(workerUrl,{
@@ -2722,63 +2852,49 @@ async function searchVenueOfficialCandidates(place){
         rows.push({
           url,
           title:String(row?.title||venueCandidateTitleFromUrl(url)),
-          place:String(row?.snippet||row?.source||'Web検索候補'),
+          place:String(row?.snippet||row?.source||strictQuery),
           source:'web-search'
         });
       });
     }
   }catch{}
 
-  // Secondary source: Nominatim website/contact tags.
-  // Search by the resolved area as well as the original venue name.
-  const localQuery=areaLabel ? `${areaLabel} スキー場` : '';
-  const queries=[
-    localQuery,
-    areaLabel ? `${areaLabel} ${String(place||'').trim()} スキー場` : '',
-    `${String(place||'').trim()} スキー場`,
-    String(place||'').trim()
-  ].filter(Boolean);
+  // Secondary source uses exactly the same query.
+  try{
+    const url='https://nominatim.openstreetmap.org/search'
+      +`?format=jsonv2&limit=12&countrycodes=jp&addressdetails=1&extratags=1&accept-language=ja&q=${encodeURIComponent(strictQuery)}`;
+    const res=await fetch(url,{
+      method:'GET',
+      headers:{'Accept':'application/json'},
+      cache:'no-store'
+    });
 
-  for(const q of [...new Set(queries)].slice(0,4)){
-    let res;
-    try{
-      const url='https://nominatim.openstreetmap.org/search'
-        +`?format=jsonv2&limit=10&countrycodes=jp&addressdetails=1&extratags=1&accept-language=ja&q=${encodeURIComponent(q)}`;
-      res=await fetch(url,{
-        method:'GET',
-        headers:{'Accept':'application/json'},
-        cache:'no-store'
-      });
-    }catch{
-      continue;
-    }
-    if(!res.ok)continue;
+    if(res.ok){
+      const list=await res.json();
+      (Array.isArray(list)?list:[]).forEach(row=>{
+        const tags=row?.extratags||{};
+        const urls=[
+          tags.website,
+          tags['contact:website'],
+          tags.url,
+          tags['contact:url']
+        ].map(safeExternalUrl).filter(Boolean);
 
-    let list=[];
-    try{list=await res.json();}catch{list=[]}
-
-    (Array.isArray(list)?list:[]).forEach(row=>{
-      const tags=row?.extratags||{};
-      const urls=[
-        tags.website,
-        tags['contact:website'],
-        tags.url,
-        tags['contact:url']
-      ].map(safeExternalUrl).filter(Boolean);
-
-      urls.forEach(url=>{
-        rows.push({
-          url,
-          title:row?.name||row?.display_name?.split(',')?.[0]||venueCandidateTitleFromUrl(url),
-          place:row?.display_name||'',
-          source:'nominatim'
+        urls.forEach(url=>{
+          rows.push({
+            url,
+            title:row?.name||row?.display_name?.split(',')?.[0]||venueCandidateTitleFromUrl(url),
+            place:row?.display_name||strictQuery,
+            source:'nominatim'
+          });
         });
       });
-    });
-  }
+    }
+  }catch{}
 
   return mergeVenueLinkCandidates(rows).slice(0,16);
-}function renderVenueLinkCandidates(){
+}
+function renderVenueLinkCandidates(){
   const box=document.getElementById('venueLinkCandidateList');
   const status=document.getElementById('venueLinkSearchStatus');
   if(!box)return;
@@ -2786,7 +2902,7 @@ async function searchVenueOfficialCandidates(place){
   const selected=new Set(cachedVenueOfficialUrls(venueLinkModalPlaceValue));
 
   if(!venueLinkCandidates.length){
-    box.innerHTML='<div class="muted">公式URL候補を取得できませんでした。Cloudflare Workerがv0.13.21未満の場合はWorkerも更新してください。下のURL欄から手動追加もできます。</div>';
+    box.innerHTML='<div class="muted">公式URL候補を取得できませんでした。Cloudflare Workerがv0.13.22未満の場合はWorkerも更新してください。下のURL欄から手動追加もできます。</div>';
     if(status)status.textContent='候補 0件';
     return;
   }
@@ -2813,6 +2929,7 @@ async function openVenueLinkModal(place){
   const placeEl=document.getElementById('venueLinkModalPlace');
   const status=document.getElementById('venueLinkSearchStatus');
   const areaEl=document.getElementById('venueLinkSearchArea');
+  const editor=document.getElementById('venueLinkAreaEditor');
   const box=document.getElementById('venueLinkCandidateList');
   const manual=document.getElementById('venueLinkManualUrl');
 
@@ -2820,6 +2937,8 @@ async function openVenueLinkModal(place){
   if(placeEl)placeEl.textContent=venueLinkModalPlaceValue;
   if(status)status.textContent='候補を検索しています…';
   if(areaEl)areaEl.textContent='所在地を確認しています…';
+  if(editor)editor.classList.add('hidden');
+  venueForcedSearchArea=null;
   if(box)box.innerHTML='';
   if(manual)manual.value='';
 
@@ -2833,6 +2952,31 @@ async function openVenueLinkModal(place){
   }
   renderVenueLinkCandidates();
 }
+async function rerunVenueSearchWithArea(){
+  const pref=String(document.getElementById('venueLinkPrefectureInput')?.value||'').trim();
+  const municipality=String(document.getElementById('venueLinkMunicipalityInput')?.value||'').trim();
+
+  if(!pref || !municipality){
+    alert('都道府県名と市町村名の両方を入力してください。');
+    return;
+  }
+
+  const status=document.getElementById('venueLinkSearchStatus');
+  const box=document.getElementById('venueLinkCandidateList');
+  if(status)status.textContent='指定した地域で候補を再検索しています…';
+  if(box)box.innerHTML='';
+
+  try{
+    venueLinkCandidates=await searchVenueOfficialCandidates(
+      venueLinkModalPlaceValue,
+      {prefecture:pref,municipality}
+    );
+  }catch{
+    venueLinkCandidates=[];
+  }
+  renderVenueLinkCandidates();
+}
+
 function closeVenueLinkModal(){
   const modal=document.getElementById('venueLinkModal');
   if(!modal)return;
@@ -3357,7 +3501,7 @@ const ITEM_HELP_ITEMS=[
   },
   {
     title:'会場情報',
-    body:'選択中シーズンの登録大会をもとに開催会場を一覧表示します。未登録会場は「公式を探す」でWeb検索候補をアプリ内に表示し、チェックしたURLを登録できます。複数URLの登録にも対応します。'
+    body:'選択中シーズンの登録大会をもとに開催会場を一覧表示します。未登録会場は「都道府県名 市町村名 スキー場」で検索し、アプリ内に候補URLを表示します。所在地は修正して再検索でき、複数URL登録にも対応します。'
   },
   {
     title:'天気・積雪',
@@ -3412,7 +3556,7 @@ function openTab(tabId){
 document.querySelectorAll('nav button[data-tab]').forEach(b=>b.onclick=()=>openTab(b.dataset.tab));
 
 
-// ===== v0.13.21 Weather / Team Board =====
+// ===== v0.13.22 Weather / Team Board =====
 const PREF_REGION={
   '北海道':'北海道',
   '青森':'東北','岩手':'東北','宮城':'東北','秋田':'東北','山形':'東北','福島':'東北',
@@ -5214,7 +5358,7 @@ async function directPdfDownload(id){
 }
 function printSection(id){return directPdfDownload(id);}
 
-// ===== v0.13.21 SAJ list athlete registration =====
+// ===== v0.13.22 SAJ list athlete registration =====
 let sajAthleteListCache=[];
 
 function setAthleteRegisterMode(mode){
@@ -6220,7 +6364,7 @@ async function refreshAppCacheOnLaunch(){
   if(!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=01321',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=01322',{updateViaCache:'none'});
 
     if(reg.waiting){
       reg.waiting.postMessage({type:'SKIP_WAITING'});

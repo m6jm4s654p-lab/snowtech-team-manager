@@ -1177,3 +1177,19 @@ SnowTech → 管理 → `SAJ連携API URL` にWorker URLを入力 → 保存。
 - Cloudflare Worker /api/venue-search に prefecture / municipality パラメータを追加
 - v0.13.21はGitHub Pages更新とCloudflare Worker再デプロイの両方が必要
 - Service Worker cache v0.13.21
+
+## v0.13.22 strict prefecture + municipality venue search
+- 福島県金山町が福島県いわき市として検索されるケースを対策
+- 所在地が取れた場合の検索語を厳密に「都道府県名 市町村名 スキー場」に固定
+- 会場名を検索語へ追加しない
+- 例：福島県 金山町 スキー場
+- 会場文字列や大会データに市町村名がある場合は最優先
+- 天気位置情報キャッシュは会場名完全一致時のみ利用
+- Nominatimの先頭結果を無条件採用する処理を廃止
+- 花輪スキー場：秋田県 鹿角市 の行政ヒントを追加
+- フェアリーランドかねやま：福島県 金山町 の行政ヒントを追加
+- 候補画面に都道府県名・市町村名の編集欄を追加
+- 「この地域で再検索」で手動補正可能
+- Worker側も同じ厳密な検索語に統一
+- GitHub Pages更新 + Cloudflare Worker再デプロイが必要
+- Service Worker cache v0.13.22
