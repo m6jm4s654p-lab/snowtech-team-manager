@@ -261,11 +261,11 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 }
 
 
-/* v0.13.18 branding */
+/* v0.13.19 branding */
 .tool-portal-logo img{width:min(100%,1100px);height:auto;object-fit:contain;display:block;margin:0 auto}
 
 
-/* v0.13.18 top navigation: HOME + 操作ナビ / team name below */
+/* v0.13.19 top navigation: HOME + 操作ナビ / team name below */
 .top-nav-block{
   width:min(560px,100%);
   margin:0 auto 16px;
@@ -313,7 +313,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 }
 
 
-/* v0.13.18: team name is shown below HOME / 操作ナビ */
+/* v0.13.19: team name is shown below HOME / 操作ナビ */
 header .team-name,
 header .team-title,
 header #teamName,
@@ -820,7 +820,7 @@ header [data-team-name],header #teamHeader{display:none!important}
 }
 
 
-/* v0.13.18: smartphone / PWA status-bar safe area */
+/* v0.13.19: smartphone / PWA status-bar safe area */
 header{
   padding-top:calc(10px + env(safe-area-inset-top, 0px));
 }
@@ -1043,7 +1043,7 @@ header{
 }
 
 
-/* v0.13.18 two-line competition rows */
+/* v0.13.19 two-line competition rows */
 .event-simple-list{
   width:100%;
   overflow-x:auto;
@@ -1148,7 +1148,7 @@ header{
     grid-template-columns:38px 38px 40px 88px var(--event-title-width, 320px) !important;
   }
 }
-/* v0.13.18 settings alignment */
+/* v0.13.19 settings alignment */
 #coachList .list-item{
   display:flex;
   align-items:center;
@@ -1178,7 +1178,7 @@ header{
 }
 
 
-/* v0.13.18 registered competition typography */
+/* v0.13.19 registered competition typography */
 .event-two-male,
 .event-two-female,
 .event-two-date,
@@ -1188,7 +1188,7 @@ header{
 }
 
 
-/* v0.13.18 competition title wrapping */
+/* v0.13.19 competition title wrapping */
 .event-two-title{
   white-space:normal !important;
   overflow:visible !important;
@@ -1210,7 +1210,7 @@ header{
 }
 
 
-/* v0.13.18 top navigation / item help */
+/* v0.13.19 top navigation / item help */
 .top-action-row{
   grid-template-columns:2fr 1fr 1fr !important;
 }
@@ -1279,7 +1279,7 @@ header{
 }
 
 
-/* v0.13.18 calendar quick action chooser */
+/* v0.13.19 calendar quick action chooser */
 .calendar-action-modal{
   position:fixed;
   inset:0;
@@ -1322,7 +1322,7 @@ header{
 }
 
 
-/* v0.13.18 home / away training quick setting */
+/* v0.13.19 home / away training quick setting */
 .calendar-training-choice-buttons{
   grid-template-columns:1fr 1fr !important;
 }
@@ -1365,7 +1365,7 @@ header{
 }
 
 
-/* v0.13.18 athlete list + team ranking combined page */
+/* v0.13.19 athlete list + team ranking combined page */
 .home-athlete-ranking-btn strong{
   line-height:1.2;
 }
@@ -1419,7 +1419,7 @@ header{
 }
 
 
-/* v0.13.18 venue link fallback */
+/* v0.13.19 venue link fallback */
 .venue-official-search{
   border-color:#536b7d !important;
   background:#162839 !important;
@@ -1428,6 +1428,102 @@ header{
 .venue-official:disabled{
   opacity:.65;
   cursor:wait;
+}
+
+
+/* v0.13.19 in-app venue official-link picker */
+.venue-link-modal{
+  position:fixed;
+  inset:0;
+  z-index:10070;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+  background:rgba(2,8,14,.76);
+  backdrop-filter:blur(3px);
+}
+.venue-link-modal.open{display:flex}
+.venue-link-card{
+  width:min(680px,100%);
+  max-height:min(82vh,760px);
+  overflow:auto;
+  border:1px solid #385164;
+  border-radius:16px;
+  background:#0b1c29;
+  box-shadow:0 18px 50px rgba(0,0,0,.48);
+  padding:16px;
+}
+.venue-link-status{margin:12px 0}
+.venue-link-candidate-list{
+  display:grid;
+  gap:8px;
+}
+.venue-link-candidate{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  gap:10px;
+  align-items:flex-start;
+  padding:10px 12px;
+  border:1px solid #31495b;
+  border-radius:10px;
+  background:rgba(255,255,255,.03);
+}
+.venue-link-candidate input[type="checkbox"]{
+  margin-top:4px;
+  transform:scale(1.12);
+}
+.venue-link-candidate-title{
+  font-weight:900;
+  line-height:1.35;
+}
+.venue-link-candidate-url{
+  margin-top:3px;
+  color:#8fe8f2;
+  font-size:11px;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+.venue-link-candidate-place{
+  margin-top:4px;
+  color:var(--muted);
+  font-size:10px;
+  line-height:1.45;
+}
+.venue-link-manual{
+  margin-top:14px;
+  padding-top:12px;
+  border-top:1px solid #294151;
+}
+.venue-link-manual label{
+  display:block;
+  margin-bottom:6px;
+  font-weight:800;
+}
+.venue-link-manual-row{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:8px;
+}
+.venue-link-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+  margin-top:14px;
+}
+.venue-official-links{
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px;
+  justify-content:flex-end;
+}
+.venue-official-links .btn{
+  min-width:auto;
+}
+@media(max-width:520px){
+  .venue-link-card{padding:14px}
+  .venue-link-manual-row{grid-template-columns:1fr}
+  .venue-link-actions{display:grid;grid-template-columns:1fr 1fr}
 }
 
 </style>
@@ -1456,7 +1552,7 @@ header{
 <header>
   <div class="header-inner">
     <div class="header-meta-row">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.13.18</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.13.19</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
     <div class="header-title-row">
@@ -1649,7 +1745,7 @@ header{
     <div id="venueSeasonInfo" class="muted"></div>
     <div class="venue-note">
       大会管理で登録した大会の開催会場だけを表示します。年間予定の「表示シーズン」と連動します。
-      登録済みの公式URLは直接開きます。未登録の会場は「公式を探す」で公式サイトの自動取得を試し、取得できない場合は公式サイト検索を開きます。
+      登録済みの公式URLは直接開きます。未登録の会場は「公式を探す」でアプリ内に候補一覧を表示し、チェックしたURLを登録できます。複数選択にも対応します。
     </div>
     <div id="venueRegisteredList" style="margin-top:14px"></div>
   </div>
@@ -1911,6 +2007,35 @@ header{
 </div>
 
 
+
+
+<div id="venueLinkModal" class="venue-link-modal no-print" aria-hidden="true">
+  <div class="venue-link-card">
+    <div class="calendar-edit-head">
+      <div>
+        <div class="calendar-edit-title">会場の公式リンクを登録</div>
+        <div id="venueLinkModalPlace" class="calendar-edit-date"></div>
+      </div>
+      <button class="calendar-edit-close" type="button" onclick="closeVenueLinkModal()">×</button>
+    </div>
+
+    <div id="venueLinkSearchStatus" class="muted venue-link-status">候補を検索しています…</div>
+    <div id="venueLinkCandidateList" class="venue-link-candidate-list"></div>
+
+    <div class="venue-link-manual">
+      <label for="venueLinkManualUrl">候補にないURLを追加</label>
+      <div class="venue-link-manual-row">
+        <input id="venueLinkManualUrl" type="url" placeholder="https://example.invalid/">
+        <button class="btn" type="button" onclick="addManualVenueLinkCandidate()">追加</button>
+      </div>
+    </div>
+
+    <div class="venue-link-actions">
+      <button class="btn" type="button" onclick="closeVenueLinkModal()">キャンセル</button>
+      <button class="btn primary" type="button" onclick="saveSelectedVenueLinks()">選択したURLを登録</button>
+    </div>
+  </div>
+</div>
 
 <div id="calendarActionModal" class="calendar-action-modal no-print" aria-hidden="true">
   <div class="calendar-action-card">
@@ -2247,10 +2372,17 @@ function renderVenues(){
   list.innerHTML=regionOrder.filter(r=>grouped.has(r)).map(region=>{
     const cards=grouped.get(region).map(v=>{
       const titles=[...new Set(v.events.map(e=>e.title).filter(Boolean))];
-      const direct=safeExternalUrl(v.reg?.url)||cachedVenueOfficialUrl(v.place);
-      const official=direct
-        ? `<button class="btn primary venue-official" onclick="openVenueOfficial(decodeURIComponent('${encodeURIComponent(v.place)}'),decodeURIComponent('${encodeURIComponent(direct)}'),this)">公式</button>`
-        : `<button class="btn venue-official venue-official-search" onclick="openVenueOfficial(decodeURIComponent('${encodeURIComponent(v.place)}'),'',this)">公式を探す</button>`;
+      const urls=[...new Set([
+        safeExternalUrl(v.reg?.url),
+        ...cachedVenueOfficialUrls(v.place)
+      ].filter(Boolean))];
+
+      const official=urls.length
+        ? `<div class="venue-official-links">
+            ${urls.map((url,i)=>`<button class="btn primary venue-official" onclick="openVenueOfficial(decodeURIComponent('${encodeURIComponent(v.place)}'),decodeURIComponent('${encodeURIComponent(url)}'))">${urls.length===1?'公式':`公式${i+1}`}</button>`).join('')}
+            <button class="btn venue-official-search" onclick="openVenueLinkModal(decodeURIComponent('${encodeURIComponent(v.place)}'))">編集</button>
+          </div>`
+        : `<button class="btn venue-official venue-official-search" onclick="openVenueLinkModal(decodeURIComponent('${encodeURIComponent(v.place)}'))">公式を探す</button>`;
       return `<div class="venue-item">
         <div class="venue-item-name">${esc(v.display)}
           <span class="venue-item-pref">${v.events.length}大会登録</span>
@@ -2281,7 +2413,7 @@ let db=JSON.parse(localStorage.getItem(KEY)||'null')||{
   events:[]
 };
 
-// v0.13.18 compatibility: normalize only known sex labels.
+// v0.13.19 compatibility: normalize only known sex labels.
 // Existing athlete records and point values are never removed here.
 (db.athletes||[]).forEach(a=>{
   const normalized=normalizeAthleteSex(a.sex);
@@ -2341,120 +2473,241 @@ function writeVenueLinkCache(cache){
 function venueLinkCacheKey(place){
   return normalizeVenueLookupText(place);
 }
-function cachedVenueOfficialUrl(place){
+function cachedVenueOfficialUrls(place){
   const key=venueLinkCacheKey(place);
-  if(!key)return '';
-  const row=readVenueLinkCache()[key];
-  return safeExternalUrl(row?.url);
+  if(!key)return [];
+  const row=readVenueLinkCache()[key]||{};
+  const legacy=safeExternalUrl(row?.url);
+  const arr=Array.isArray(row?.urls)?row.urls:[];
+  return [...new Set([legacy,...arr].map(safeExternalUrl).filter(Boolean))];
 }
-function cacheVenueOfficialUrl(place,url){
-  const safe=safeExternalUrl(url);
-  if(!safe)return;
+function cachedVenueOfficialUrl(place){
+  return cachedVenueOfficialUrls(place)[0]||'';
+}
+function cacheVenueOfficialUrls(place,urls){
   const key=venueLinkCacheKey(place);
   if(!key)return;
+  const clean=[...new Set((urls||[]).map(safeExternalUrl).filter(Boolean))];
   const cache=readVenueLinkCache();
-  cache[key]={url:safe,updatedAt:new Date().toISOString()};
+  if(clean.length){
+    cache[key]={url:clean[0],urls:clean,updatedAt:new Date().toISOString()};
+  }else{
+    delete cache[key];
+  }
   writeVenueLinkCache(cache);
 }
-function venueOfficialSearchUrl(place){
-  const q=`${String(place||'').trim()} スキー場 公式`;
-  return `https://www.google.com/search?q=${encodeURIComponent(q)}`;
+function cacheVenueOfficialUrl(place,url){
+  const current=cachedVenueOfficialUrls(place);
+  const safe=safeExternalUrl(url);
+  if(!safe)return;
+  cacheVenueOfficialUrls(place,[...current,safe]);
 }
-async function resolveVenueOfficialWebsite(place){
-  const cached=cachedVenueOfficialUrl(place);
-  if(cached)return cached;
+let venueLinkModalPlaceValue='';
+let venueLinkCandidates=[];
 
-  const controller=new AbortController();
-  const timer=setTimeout(()=>controller.abort(),4500);
-
+function venueCandidateTitleFromUrl(url){
   try{
-    const queries=[
-      `${String(place||'').trim()} スキー場`,
-      String(place||'').trim()
-    ].filter(Boolean);
-
-    for(const q of queries){
-      const url='https://nominatim.openstreetmap.org/search'
-        +`?format=jsonv2&limit=5&addressdetails=1&extratags=1&accept-language=ja&q=${encodeURIComponent(q)}`;
-
-      let res;
-      try{
-        res=await fetch(url,{
-          method:'GET',
-          headers:{'Accept':'application/json'},
-          signal:controller.signal,
-          cache:'no-store'
-        });
-      }catch{
-        continue;
-      }
-      if(!res.ok)continue;
-
-      let rows=[];
-      try{rows=await res.json();}catch{rows=[]}
-
-      for(const row of (Array.isArray(rows)?rows:[])){
-        const tags=row?.extratags||{};
-        const candidates=[
-          tags.website,
-          tags['contact:website'],
-          tags.url,
-          tags['contact:url']
-        ];
-        for(const candidate of candidates){
-          const safe=safeExternalUrl(candidate);
-          if(safe){
-            cacheVenueOfficialUrl(place,safe);
-            clearTimeout(timer);
-            return safe;
-          }
-        }
-      }
+    const u=new URL(url);
+    return u.hostname.replace(/^www\./,'');
+  }catch{
+    return '公式サイト候補';
+  }
+}
+function mergeVenueLinkCandidates(rows){
+  const map=new Map();
+  (rows||[]).forEach(row=>{
+    const url=safeExternalUrl(row?.url);
+    if(!url)return;
+    const key=url.replace(/\/+$/,'');
+    if(!map.has(key)){
+      map.set(key,{
+        url,
+        title:String(row?.title||venueCandidateTitleFromUrl(url)),
+        place:String(row?.place||''),
+        source:String(row?.source||'')
+      });
     }
-  }finally{
-    clearTimeout(timer);
+  });
+  return [...map.values()];
+}
+async function searchVenueOfficialCandidates(place){
+  const rows=[];
+
+  const reg=findVenueRegistry(place);
+  const regUrl=safeExternalUrl(reg?.url);
+  if(regUrl){
+    rows.push({
+      url:regUrl,
+      title:`登録済み候補：${reg?.name||place}`,
+      place:reg?.region||'',
+      source:'registry'
+    });
   }
 
-  return '';
+  cachedVenueOfficialUrls(place).forEach(url=>{
+    rows.push({
+      url,
+      title:`端末登録済み：${venueCandidateTitleFromUrl(url)}`,
+      place:place,
+      source:'cache'
+    });
+  });
+
+  const queries=[
+    `${String(place||'').trim()} スキー場`,
+    String(place||'').trim()
+  ].filter(Boolean);
+
+  for(const q of queries){
+    let res;
+    try{
+      const url='https://nominatim.openstreetmap.org/search'
+        +`?format=jsonv2&limit=8&addressdetails=1&extratags=1&accept-language=ja&q=${encodeURIComponent(q)}`;
+      res=await fetch(url,{
+        method:'GET',
+        headers:{'Accept':'application/json'},
+        cache:'no-store'
+      });
+    }catch{
+      continue;
+    }
+    if(!res.ok)continue;
+
+    let list=[];
+    try{list=await res.json();}catch{list=[]}
+
+    (Array.isArray(list)?list:[]).forEach(row=>{
+      const tags=row?.extratags||{};
+      const urls=[
+        tags.website,
+        tags['contact:website'],
+        tags.url,
+        tags['contact:url']
+      ].map(safeExternalUrl).filter(Boolean);
+
+      urls.forEach(url=>{
+        rows.push({
+          url,
+          title:row?.name||row?.display_name?.split(',')?.[0]||venueCandidateTitleFromUrl(url),
+          place:row?.display_name||'',
+          source:'nominatim'
+        });
+      });
+    });
+  }
+
+  return mergeVenueLinkCandidates(rows);
 }
-async function openVenueOfficial(place,directUrl,btn){
-  const direct=safeExternalUrl(directUrl)||cachedVenueOfficialUrl(place);
+function renderVenueLinkCandidates(){
+  const box=document.getElementById('venueLinkCandidateList');
+  const status=document.getElementById('venueLinkSearchStatus');
+  if(!box)return;
+
+  const selected=new Set(cachedVenueOfficialUrls(venueLinkModalPlaceValue));
+
+  if(!venueLinkCandidates.length){
+    box.innerHTML='<div class="muted">公式URL候補を取得できませんでした。下のURL欄から手動追加もできます。</div>';
+    if(status)status.textContent='候補 0件';
+    return;
+  }
+
+  if(status)status.textContent=`候補 ${venueLinkCandidates.length}件（複数選択できます）`;
+
+  box.innerHTML=venueLinkCandidates.map((row,i)=>{
+    const checked=selected.has(row.url)?' checked':'';
+    return `<label class="venue-link-candidate">
+      <input type="checkbox" data-venue-link-index="${i}"${checked}>
+      <span>
+        <div class="venue-link-candidate-title">${esc(row.title||'公式サイト候補')}</div>
+        <div class="venue-link-candidate-url">${esc(row.url)}</div>
+        ${row.place?`<div class="venue-link-candidate-place">${esc(row.place)}</div>`:''}
+      </span>
+    </label>`;
+  }).join('');
+}
+async function openVenueLinkModal(place){
+  venueLinkModalPlaceValue=String(place||'').trim();
+  venueLinkCandidates=[];
+
+  const modal=document.getElementById('venueLinkModal');
+  const placeEl=document.getElementById('venueLinkModalPlace');
+  const status=document.getElementById('venueLinkSearchStatus');
+  const box=document.getElementById('venueLinkCandidateList');
+  const manual=document.getElementById('venueLinkManualUrl');
+
+  if(!modal)return;
+  if(placeEl)placeEl.textContent=venueLinkModalPlaceValue;
+  if(status)status.textContent='候補を検索しています…';
+  if(box)box.innerHTML='';
+  if(manual)manual.value='';
+
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden','false');
+
+  try{
+    venueLinkCandidates=await searchVenueOfficialCandidates(venueLinkModalPlaceValue);
+  }catch{
+    venueLinkCandidates=[];
+  }
+  renderVenueLinkCandidates();
+}
+function closeVenueLinkModal(){
+  const modal=document.getElementById('venueLinkModal');
+  if(!modal)return;
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden','true');
+}
+function addManualVenueLinkCandidate(){
+  const input=document.getElementById('venueLinkManualUrl');
+  if(!input)return;
+  const url=safeExternalUrl(input.value);
+  if(!url){
+    alert('http:// または https:// で始まるURLを入力してください。');
+    input.focus();
+    return;
+  }
+
+  venueLinkCandidates=mergeVenueLinkCandidates([
+    ...venueLinkCandidates,
+    {
+      url,
+      title:`手動追加：${venueCandidateTitleFromUrl(url)}`,
+      place:venueLinkModalPlaceValue,
+      source:'manual'
+    }
+  ]);
+  input.value='';
+  renderVenueLinkCandidates();
+
+  requestAnimationFrame(()=>{
+    const i=venueLinkCandidates.findIndex(x=>x.url===url);
+    const cb=document.querySelector(`input[data-venue-link-index="${i}"]`);
+    if(cb)cb.checked=true;
+  });
+}
+function saveSelectedVenueLinks(){
+  const checked=[...document.querySelectorAll('#venueLinkCandidateList input[data-venue-link-index]:checked')];
+  const urls=checked.map(el=>{
+    const i=Number(el.dataset.venueLinkIndex);
+    return venueLinkCandidates[i]?.url||'';
+  }).map(safeExternalUrl).filter(Boolean);
+
+  cacheVenueOfficialUrls(venueLinkModalPlaceValue,urls);
+  closeVenueLinkModal();
+  renderVenues();
+
+  alert(urls.length
+    ? `${urls.length}件の公式リンクを登録しました。`
+    : '公式リンクの登録を解除しました。');
+}
+function openVenueOfficial(place,directUrl){
+  const direct=safeExternalUrl(directUrl);
   if(direct){
     window.open(direct,'_blank','noopener,noreferrer');
     return;
   }
-
-  const oldText=btn?.textContent||'';
-  if(btn){
-    btn.disabled=true;
-    btn.textContent='取得中…';
-  }
-
-  try{
-    const resolved=await resolveVenueOfficialWebsite(place);
-    if(resolved){
-      if(btn){
-        btn.textContent='公式';
-        btn.disabled=false;
-      }
-      window.open(resolved,'_blank','noopener,noreferrer');
-      return;
-    }
-
-    if(btn){
-      btn.textContent='公式検索';
-      btn.disabled=false;
-    }
-    window.open(venueOfficialSearchUrl(place),'_blank','noopener,noreferrer');
-  }catch{
-    if(btn){
-      btn.textContent=oldText||'公式検索';
-      btn.disabled=false;
-    }
-    window.open(venueOfficialSearchUrl(place),'_blank','noopener,noreferrer');
-  }
+  openVenueLinkModal(place);
 }
-
 
 function pad2(n){return String(n).padStart(2,'0')}
 const JP_WD=['日','月','火','水','木','金','土'];
@@ -2922,7 +3175,7 @@ const ITEM_HELP_ITEMS=[
   },
   {
     title:'会場情報',
-    body:'選択中シーズンの登録大会をもとに開催会場を一覧表示します。登録済み会場は公式サイトを直接開き、未登録会場は「公式を探す」で公式URLの自動取得を試します。見つからない場合は公式サイト検索へ切り替えます。'
+    body:'選択中シーズンの登録大会をもとに開催会場を一覧表示します。未登録会場は「公式を探す」でアプリ内に候補URLを表示し、チェックしたURLを登録できます。複数URLの登録にも対応します。'
   },
   {
     title:'天気・積雪',
@@ -2977,7 +3230,7 @@ function openTab(tabId){
 document.querySelectorAll('nav button[data-tab]').forEach(b=>b.onclick=()=>openTab(b.dataset.tab));
 
 
-// ===== v0.13.18 Weather / Team Board =====
+// ===== v0.13.19 Weather / Team Board =====
 const PREF_REGION={
   '北海道':'北海道',
   '青森':'東北','岩手':'東北','宮城':'東北','秋田':'東北','山形':'東北','福島':'東北',
@@ -4779,7 +5032,7 @@ async function directPdfDownload(id){
 }
 function printSection(id){return directPdfDownload(id);}
 
-// ===== v0.13.18 SAJ list athlete registration =====
+// ===== v0.13.19 SAJ list athlete registration =====
 let sajAthleteListCache=[];
 
 function setAthleteRegisterMode(mode){
@@ -5785,7 +6038,7 @@ async function refreshAppCacheOnLaunch(){
   if(!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=01318',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=01319',{updateViaCache:'none'});
 
     if(reg.waiting){
       reg.waiting.postMessage({type:'SKIP_WAITING'});
