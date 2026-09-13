@@ -1274,3 +1274,15 @@ SnowTech → 管理 → `SAJ連携API URL` にWorker URLを入力 → 保存。
 - K2 / 一般、男子 / 女子、SL / GS / SG 切替は維持
 - Cloudflare Worker再デプロイ必須
 - Service Worker cache v0.13.31
+
+## v0.13.32 全国ランキング全データ抽出
+- ポイントランキング画面から「シーズン」「生年」を削除
+- /api/saj-ranking は category / sex / discipline のみ受け取る構成へ変更
+- 現行シーズンのSAJアルペンポイントリストを性別単位で全国一括取得
+- 加盟団体・生年・種目で取得段階の絞り込みを行わない
+- 取得後に生年月日からK2 / 一般を自動分類
+- 取得後にSL / GS / SGポイントで全国ソートしTOP30を生成
+- ページネーションが存在する場合は検出できた全ページを追加取得してSAJ番号で重複排除
+- 現行シーズンに有効データがない場合のみ前シーズンへ自動フォールバック
+- Cloudflare Worker再デプロイ必須
+- Service Worker cache v0.13.32

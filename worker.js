@@ -19,7 +19,7 @@ export default {
       return cors(json({ok:false,error:"Method not allowed"},405), env, request);
     }
     if (url.pathname === "/health") {
-      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.13.31"}), env, request);
+      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.13.32"}), env, request);
     }
 
     if (url.pathname === "/api/debug-competition-calendar") {
@@ -116,15 +116,7 @@ export default {
       const sex=(url.searchParams.get("sex")||"").trim();
       const category=(url.searchParams.get("category")||"").trim().toLowerCase();
       const discipline=(url.searchParams.get("discipline")||"").trim().toUpperCase();
-      const season=Number(url.searchParams.get("season"));
-      const birthYear=Number(url.searchParams.get("birthYear"));
 
-      if(!Number.isInteger(season)||season<2000||season>2100){
-        return cors(json({ok:false,error:"シーズンを指定してください"},400),env,request);
-      }
-      if(!Number.isInteger(birthYear)||birthYear<1900||birthYear>2100){
-        return cors(json({ok:false,error:"生年を指定してください"},400),env,request);
-      }
       if(!["男","女"].includes(sex)){
         return cors(json({ok:false,error:"性別は男または女を指定してください"},400),env,request);
       }
@@ -136,7 +128,7 @@ export default {
       }
 
       try{
-        const result=await lookupNationalPointRanking({sex,category,discipline,season,birthYear});
+        const result=await lookupNationalPointRanking({sex,category,discipline});
         return cors(json({ok:true,...result}),env,request);
       }catch(e){
         return cors(json({
@@ -414,7 +406,7 @@ function cors(resp,env,request){
 }
 async function getText(url){
   const r=await fetch(url,{headers:{
-    "User-Agent":"AlpineTeamManager/0.13.31 (+public SAJ data lookup)",
+    "User-Agent":"AlpineTeamManager/0.13.32 (+public SAJ data lookup)",
     "Accept":"text/html,application/xhtml+xml"
   }});
   if(!r.ok) throw new Error(`SAJ HTTP ${r.status}: ${url}`);
@@ -734,7 +726,7 @@ function parseDelimitedPointFile(text,saj,source){
 
 async function getRawText(url){
   const r=await fetch(url,{headers:{
-    "User-Agent":"AlpineTeamManager/0.13.31 (+public SAJ data lookup)",
+    "User-Agent":"AlpineTeamManager/0.13.32 (+public SAJ data lookup)",
     "Accept":"text/csv,text/plain,text/html,application/octet-stream,*/*"
   }});
   if(!r.ok) throw new Error(`SAJ HTTP ${r.status}: ${url}`);
@@ -967,74 +959,137 @@ function assignRankingPositions(rows, discipline){
     };
   });
 }
-async function fetchNationalPointRowsForSeason({season,sex,discipline,category,birthYear}){
+
+function mergePointRowsBySaj(rows){
+  const map=new Map();
+  for(const r of rows||[]){
+    const saj=String(r?.saj||"");
+    if(!saj)continue;
+    const old=map.get(saj);
+    if(!old){
+      map.set(saj,r);
+      continue;
+    }
+    // Keep the row carrying the most point values.
+    const count=x=>["dh","sc","sg","gs","sl"].reduce((n,k)=>n+(Number.isFinite(Number(x?.[k]))?1:0),0);
+    if(count(r)>count(old))map.set(saj,r);
+  }
+  return [...map.values()];
+}
+function extractPointPaginationUrls(html, baseUrl){
+  const urls=[];
+  const seen=new Set();
+  for(const m of String(html||"").matchAll(/<a\b[^>]*href=["']([^"']+)["'][^>]*>/gi)){
+    let u;
+    try{u=new URL(decodeHtml(m[1]),baseUrl);}catch{continue;}
+    const low=u.toString().toLowerCase();
+    const hasPage=[...u.searchParams.keys()].some(k=>/^(page|p|page_no|pageno|page_num|page_number)$/i.test(k));
+    if(!hasPage && !/[?&](page|p|page_no|pageno|page_num|page_number)=\d+/i.test(low))continue;
+    if(u.origin!==SAJ_ORIGIN)continue;
+    const key=u.toString();
+    if(seen.has(key))continue;
+    seen.add(key);
+    urls.push(key);
+    if(urls.length>=60)break;
+  }
+  return urls;
+}
+async function fetchAllNationalPointRowsForSeason({season,sex}){
   const baseUrl=new URL(`${SAJ_ORIGIN}/alpine/point/list`);
   baseUrl.searchParams.set("season_code",String(season));
   baseUrl.searchParams.set("sports_code","AL");
   baseUrl.searchParams.set("saj_fis","SAJ");
 
+  // Read the live form and apply only the sex filter.
+  // No organization, birth year or discipline restriction is applied:
+  // this endpoint intentionally collects the national point-list dataset.
   const formHtml=await getText(baseUrl.toString());
   const selects=parseSelectOptions(formHtml);
   const sexOpt=findSexSelectValue(selects,sex);
-  const discOpt=findDisciplineSelectValue(selects,discipline);
 
   const u=new URL(baseUrl);
   if(sexOpt)u.searchParams.set(sexOpt.name,sexOpt.value);
   else u.searchParams.set("sex",sex==="男"?"1":"2");
-  if(discOpt)u.searchParams.set(discOpt.name,discOpt.value);
-
-  // SAJ point-list search requires birth year. Apply the selected year
-  // to every detected birth-year selector (from/to when the form has both).
-  const ys=findBirthYearSelects(selects);
-  for(const ySel of ys){
-    const opt=optionValueForYear(ySel,birthYear);
-    if(opt)u.searchParams.set(ySel.name,opt.value);
-  }
 
   const variants=[u];
   for(const [k,v] of [["search","1"],["submit","1"],["action","search"]]){
     const x=new URL(u); x.searchParams.set(k,v); variants.push(x);
   }
 
-  let best={rows:[],pointListNumber:null,source:u.toString()};
+  let bestHtml="", bestUrl=u.toString(), bestRows=[];
   for(const candidate of variants){
     try{
       const html=await getText(candidate.toString());
       const rows=parsePointRows(html,"");
-      if(rows.length>best.rows.length){
-        best={rows,pointListNumber:extractSelectedPointListNumber(html),source:candidate.toString()};
+      if(rows.length>bestRows.length){
+        bestRows=rows;
+        bestHtml=html;
+        bestUrl=candidate.toString();
       }
-      if(rows.length>=30)break;
     }catch{}
   }
-  return best;
-}
-async function lookupNationalPointRanking({sex,category,discipline,season,birthYear}){
-  const fetched=await fetchNationalPointRowsForSeason({season,sex,discipline,category,birthYear});
-  const sameBirthYear=fetched.rows.filter(r=>{
-    const b=parseBirthDateLoose(r.birth);
-    return b && b.y===birthYear;
-  });
 
-  // SAJ search result is already constrained by the explicitly selected birth year.
-  // Keep a defensive birth-year filter when birth data is present in the returned rows.
-  const sourceRows=sameBirthYear.length?sameBirthYear:fetched.rows;
-  const filtered=sourceRows.filter(r=>{
-    if(category!=="k2")return true;
-    return isK2BirthForSeason(r.birth,season);
-  });
-  const ranking=assignRankingPositions(filtered,discipline);
+  // If the point list is paginated, collect every discoverable page.
+  let allRows=[...bestRows];
+  const pageUrls=extractPointPaginationUrls(bestHtml,bestUrl);
+  if(pageUrls.length){
+    const chunks=[];
+    for(let i=0;i<pageUrls.length;i+=6){
+      const batch=pageUrls.slice(i,i+6);
+      const got=await Promise.all(batch.map(async pageUrl=>{
+        try{
+          const h=await getText(pageUrl);
+          return parsePointRows(h,"");
+        }catch{return [];}
+      }));
+      chunks.push(...got);
+    }
+    for(const rows of chunks)allRows.push(...rows);
+  }
 
+  allRows=mergePointRowsBySaj(allRows);
   return {
-    season,
-    seasonLabel:`${season-1}/${season}`,
-    birthYear,
-    pointListNumber:fetched.pointListNumber,
-    sex,
-    category,
-    discipline,
-    ranking,
-    source:fetched.source,
+    rows:allRows,
+    pointListNumber:extractSelectedPointListNumber(bestHtml||formHtml),
+    source:bestUrl,
+    pageCount:1+pageUrls.length
+  };
+}
+async function lookupNationalPointRanking({sex,category,discipline}){
+  let lastError=null;
+  for(const season of getTargetSeasons()){
+    try{
+      const fetched=await fetchAllNationalPointRowsForSeason({season,sex});
+      if(!fetched.rows.length)continue;
+
+      // Category is derived after the full national dataset is obtained.
+      const filtered=fetched.rows.filter(r=>{
+        const k2=isK2BirthForSeason(r.birth,season);
+        return category==="k2"?k2:!k2;
+      });
+      const ranking=assignRankingPositions(filtered,discipline);
+      if(ranking.length){
+        return {
+          season,
+          seasonLabel:`${season-1}/${season}`,
+          pointListNumber:fetched.pointListNumber,
+          sex,
+          category,
+          discipline,
+          ranking,
+          totalRows:fetched.rows.length,
+          categoryRows:filtered.length,
+          source:fetched.source,
+          sourcePages:fetched.pageCount,
+          k2Definition:"中学生＋高校1年早生まれ"
+        };
+      }
+    }catch(e){lastError=e;}
+  }
+  if(lastError)throw lastError;
+  return {
+    season:null,seasonLabel:"",pointListNumber:null,sex,category,discipline,
+    ranking:[],totalRows:0,categoryRows:0,source:"",sourcePages:0,
     k2Definition:"中学生＋高校1年早生まれ"
   };
 }
@@ -1451,7 +1506,7 @@ async function fetchFollowingSajSession(url, init, maxRedirects=5){
       // Browser semantics: 301/302/303 after a form request become GET.
       if([301,302,303].includes(r.status)){
         currentInit={method:"GET",headers:{
-          "User-Agent":"AlpineTeamManager/0.13.31 (+public SAJ competition calendar lookup)",
+          "User-Agent":"AlpineTeamManager/0.13.32 (+public SAJ competition calendar lookup)",
           "Accept":"text/html,application/xhtml+xml"
         }};
       }
@@ -1474,7 +1529,7 @@ async function fetchFollowingSajSession(url, init, maxRedirects=5){
 async function submitCalendarForm(formInfo){
   const target=new URL(formInfo.action,SAJ_ORIGIN);
   const headers={
-    "User-Agent":"AlpineTeamManager/0.13.31 (+public SAJ competition calendar lookup)",
+    "User-Agent":"AlpineTeamManager/0.13.32 (+public SAJ competition calendar lookup)",
     "Accept":"text/html,application/xhtml+xml"
   };
 
@@ -1822,7 +1877,7 @@ async function lookupCompetitionsApi(season,month=0){
   const r=await fetch(target.toString(),{
     method:"GET",
     headers:{
-      "User-Agent":"AlpineTeamManager/0.13.31 (+public SAJ competition calendar lookup)",
+      "User-Agent":"AlpineTeamManager/0.13.32 (+public SAJ competition calendar lookup)",
       "Accept":"application/json,text/javascript,*/*;q=0.8",
       "Referer":`${SAJ_ORIGIN}/alpine/competition/calendar`
     }
@@ -1867,7 +1922,7 @@ async function debugCompetitionApi(season=2026,month=2){
   const r=await fetch(target.toString(),{
     method:"GET",
     headers:{
-      "User-Agent":"AlpineTeamManager/0.13.31 (+public SAJ competition calendar lookup)",
+      "User-Agent":"AlpineTeamManager/0.13.32 (+public SAJ competition calendar lookup)",
       "Accept":"application/json,text/javascript,*/*;q=0.8",
       "Referer":`${SAJ_ORIGIN}/alpine/competition/calendar`
     }
