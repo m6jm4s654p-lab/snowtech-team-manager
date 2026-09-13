@@ -1264,3 +1264,13 @@ SnowTech → 管理 → `SAJ連携API URL` にWorker URLを入力 → 保存。
 - 新API: /api/saj-ranking
 - Cloudflare Worker再デプロイ必須
 - Service Worker cache v0.13.30
+
+## v0.13.31 SAJランキング検索条件修正
+- 全国ポイントランキングに「シーズン」「生年」選択欄を追加
+- /api/saj-ranking へ season / birthYear を必須送信
+- Worker側でもシーズン・生年を必須検証
+- SAJポイントリスト画面の生年セレクトへ指定値を反映
+- 自動シーズンフォールバックを廃止し、ユーザー指定シーズンをそのまま検索
+- K2 / 一般、男子 / 女子、SL / GS / SG 切替は維持
+- Cloudflare Worker再デプロイ必須
+- Service Worker cache v0.13.31
