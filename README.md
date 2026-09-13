@@ -1098,3 +1098,11 @@ SnowTech → 管理 → `SAJ連携API URL` にWorker URLを入力 → 保存。
 - PWA 192x192 / 512x512 / 1024x1024 / iOS Apple Touch Icon 180x180 を更新
 - 既存の内部ファイル名は互換性維持のため変更なし
 - Service Worker cache v0.13.14
+
+## v0.13.15 fictional input examples
+- 入力欄の例示データから実在する可能性のある場所名・番号を削除
+- SAJ競技者番号例：00000000（架空番号）
+- メインのスキー場例：サンプルスキー場
+- ホーム以外の練習場所例：テスト高原スキー場
+- 実在の施設名・人物名・競技者番号を入力例として表示しない方針へ統一
+- Service Worker cache v0.13.15
