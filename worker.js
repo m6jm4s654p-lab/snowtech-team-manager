@@ -13,13 +13,38 @@ const SAJ_ORIGIN = "https://sajdb.shikuminet.jp";
 
 const SAJ_RANKING_CACHE_SECONDS = 6 * 60 * 60;      // 6 hours
 const SAJ_RANKING_STALE_SECONDS = 24 * 60 * 60;     // stale fallback
-const SAJ_RANKING_CACHE_VERSION = "v01339";
+const SAJ_RANKING_CACHE_VERSION = "v01341";
 
 
 const SAJ_POINT_CALENDAR_CACHE_SECONDS = 6 * 60 * 60;
 function pointCalendarCacheUrl(season){
   return `https://cache.alpine-team-manager.invalid/saj-point-calendar?v=${SAJ_RANKING_CACHE_VERSION}&season=${encodeURIComponent(season)}`;
 }
+function extractCalendarZipEntries(html, source){
+  const entries=[];
+  const trs=String(html||"").match(/<tr\b[\s\S]*?<\/tr>/gi)||[];
+  for(const tr of trs){
+    const rowText=strip(tr);
+    let m=rowText.match(/SAJ\s*(?:No\.?|NO\.?|Ｎｏ\.?|№)?\s*(\d{1,3})/i);
+    if(!m){
+      const cells=[...tr.matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/gi)].map(x=>strip(x[1]));
+      m=String(cells[0]||"").match(/(?:^|\D)(\d{1,3})(?:\D|$)/);
+    }
+    if(!m)continue;
+    const pointListNumber=Number(m[1]);
+    if(!(pointListNumber>0&&pointListNumber<100))continue;
+    for(const link of extractDownloadLinks(tr)){
+      if(!/\.zip(?:$|\?)/i.test(link))continue;
+      const file=link.split('/').pop()||'';
+      let sex=null;
+      if(/AW(?:_|\.|$)|WOMAN|WOMEN/i.test(file+" "+rowText))sex="女";
+      else if(/AM(?:_|\.|$)|MAN|MEN/i.test(file+" "+rowText))sex="男";
+      if(sex)entries.push({pointListNumber,sex,url:link});
+    }
+  }
+  return entries;
+}
+
 async function getLatestPointCalendarMeta(season){
   const key=new Request(pointCalendarCacheUrl(season));
   try{
@@ -31,18 +56,16 @@ async function getLatestPointCalendarMeta(season){
   }catch{}
   const source=`${SAJ_ORIGIN}/alpine/point/calendar?season_code=${encodeURIComponent(season)}`;
   const html=await getText(source);
-  const nums=[...String(html).matchAll(/(?:No\.?|LIST|リスト)[^\d]{0,12}(\d{1,3})/gi)]
-    .map(m=>Number(m[1])).filter(n=>n>0&&n<100);
-  // Download filenames also encode the SAJ list number, e.g. ...AW_J.zip / ...AM_J.zip.
-  const hrefs=[...String(html).matchAll(/<a\b[^>]*href=["']([^"']+)["'][^>]*>/gi)].map(m=>decodeHtml(m[1]));
-  const downloads=hrefs.filter(h=>/\.zip(?:$|\?)/i.test(h)).map(h=>{
-    let url=""; try{url=new URL(h,source).toString();}catch{}
-    const b=String(h).match(/(\d{1,3})(?=[A-Z]_[A-Z]\.zip|[A-Z]\.zip)/i);
-    return {url,no:b?Number(b[1]):null,sex:/AW|WOMAN/i.test(h)?"女":(/AM|MAN/i.test(h)?"男":null)};
-  }).filter(x=>x.url);
-  for(const d of downloads)if(d.no&&d.no<100)nums.push(d.no);
+  const zipEntries=extractCalendarZipEntries(html,source);
+  const nums=zipEntries.map(x=>x.pointListNumber).filter(n=>n>0&&n<100);
+  if(!nums.length){
+    for(const m of String(html).matchAll(/SAJ\s*(?:No\.?|NO\.?|Ｎｏ\.?|№)?\s*(\d{1,3})/gi)){
+      const n=Number(m[1]); if(n>0&&n<100)nums.push(n);
+    }
+  }
   const latestListNumber=nums.length?Math.max(...nums):null;
-  const data={season,latestListNumber,source,cachedAt:Date.now()};
+  const latestZips=zipEntries.filter(x=>x.pointListNumber===latestListNumber);
+  const data={season,latestListNumber,latestZips,source,cachedAt:Date.now()};
   try{
     await caches.default.put(key,new Response(JSON.stringify(data),{
       headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"public, max-age=21600"}
@@ -100,7 +123,7 @@ export default {
       return cors(json({ok:false,error:"Method not allowed"},405), env, request);
     }
     if (url.pathname === "/health") {
-      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.13.39"}), env, request);
+      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.13.41"}), env, request);
     }
 
     if (url.pathname === "/api/debug-competition-calendar") {
@@ -487,7 +510,7 @@ function cors(resp,env,request){
 }
 async function getText(url){
   const r=await fetch(url,{headers:{
-    "User-Agent":"AlpineTeamManager/0.13.39 (+public SAJ data lookup)",
+    "User-Agent":"AlpineTeamManager/0.13.41 (+public SAJ data lookup)",
     "Accept":"text/html,application/xhtml+xml"
   }});
   if(!r.ok) throw new Error(`SAJ HTTP ${r.status}: ${url}`);
@@ -808,9 +831,139 @@ function parseDelimitedPointFile(text,saj,source){
   return null;
 }
 
+
+function decodePointFileBytes(bytes){
+  if(!bytes?.length)return "";
+  if(bytes.length>=3 && bytes[0]===0xef && bytes[1]===0xbb && bytes[2]===0xbf){
+    return new TextDecoder("utf-8").decode(bytes.subarray(3));
+  }
+  const candidates=[];
+  for(const enc of ["utf-8","shift_jis"]){
+    try{
+      const text=new TextDecoder(enc).decode(bytes);
+      const replacement=(text.match(/�/g)||[]).length;
+      const headerScore=(/SAJ/i.test(text)?4:0)+(/SAJ[_\s-]*GS/i.test(text)?3:0)+(/SAJ[_\s-]*SL/i.test(text)?3:0)+(/競技者番号|加盟団体|チーム名/.test(text)?3:0);
+      candidates.push({text,score:headerScore*100-replacement});
+    }catch{}
+  }
+  candidates.sort((a,b)=>b.score-a.score);
+  return candidates[0]?.text||new TextDecoder().decode(bytes);
+}
+
+async function inflateZipEntry(bytes, method){
+  if(method===0)return bytes;
+  if(method!==8)throw new Error(`未対応のZIP圧縮方式です (${method})`);
+  const ds=new DecompressionStream("deflate-raw");
+  const out=await new Response(new Blob([bytes]).stream().pipeThrough(ds)).arrayBuffer();
+  return new Uint8Array(out);
+}
+
+async function fetchZipTextEntries(url){
+  const r=await fetch(url,{headers:{
+    "User-Agent":"AlpineTeamManager/0.13.41 (+public SAJ point zip lookup)",
+    "Accept":"application/zip,application/octet-stream,*/*"
+  }});
+  if(!r.ok)throw new Error(`SAJ ZIP HTTP ${r.status}: ${url}`);
+  const data=new Uint8Array(await r.arrayBuffer());
+  const dv=new DataView(data.buffer,data.byteOffset,data.byteLength);
+  let eocd=-1;
+  for(let i=data.length-22;i>=Math.max(0,data.length-65557);i--){
+    if(dv.getUint32(i,true)===0x06054b50){eocd=i;break;}
+  }
+  if(eocd<0)throw new Error("ZIP終端情報を確認できません");
+  const count=dv.getUint16(eocd+10,true);
+  let pos=dv.getUint32(eocd+16,true);
+  const out=[];
+  for(let n=0;n<count && pos+46<=data.length;n++){
+    if(dv.getUint32(pos,true)!==0x02014b50)break;
+    const method=dv.getUint16(pos+10,true);
+    const compSize=dv.getUint32(pos+20,true);
+    const nameLen=dv.getUint16(pos+28,true);
+    const extraLen=dv.getUint16(pos+30,true);
+    const commentLen=dv.getUint16(pos+32,true);
+    const localOff=dv.getUint32(pos+42,true);
+    const nameBytes=data.subarray(pos+46,pos+46+nameLen);
+    let name="";
+    try{name=new TextDecoder("utf-8").decode(nameBytes);}catch{}
+    if(localOff+30<=data.length && dv.getUint32(localOff,true)===0x04034b50){
+      const ln=dv.getUint16(localOff+26,true), le=dv.getUint16(localOff+28,true);
+      const start=localOff+30+ln+le;
+      const compressed=data.subarray(start,start+compSize);
+      if(!name.endsWith('/') && compressed.length===compSize){
+        const raw=await inflateZipEntry(compressed,method);
+        out.push({name,text:decodePointFileBytes(raw)});
+      }
+    }
+    pos+=46+nameLen+extraLen+commentLen;
+  }
+  if(!out.length)throw new Error("ZIP内のポイントファイルを展開できませんでした");
+  return out;
+}
+
+function parseDelimitedPointRows(text,source){
+  const lines=String(text||"").replace(/\r/g,"").split("\n").filter(x=>x.trim());
+  if(!lines.length)return [];
+  const first=lines.slice(0,10).join("\n");
+  const delimiter=first.includes("\t")?"\t":(first.includes(";")&&!first.includes(",")?";":",");
+  let headerIndex=-1,headers=[];
+  for(let i=0;i<Math.min(lines.length,40);i++){
+    const cells=splitCsvLine(lines[i],delimiter).map(x=>x.replace(/^"|"$/g,"").trim());
+    const joined=cells.join("|").toUpperCase();
+    if(/SAJ/.test(joined) && /(GS|SL)/.test(joined)){headerIndex=i;headers=cells;break;}
+  }
+  const norm=s=>String(s||"").toUpperCase().replace(/[\s_\-./（）()]/g,"");
+  const findCol=patterns=>{
+    for(let i=0;i<headers.length;i++){
+      const h=norm(headers[i]);
+      if(patterns.some(p=>h.includes(norm(p))))return i;
+    }
+    return -1;
+  };
+  const rows=[];
+  if(headerIndex>=0){
+    const idxSaj=findCol(["SAJNO","SAJ競技者番号","SAJNUMBER"]);
+    const idxName=findCol(["氏名","NAME"]);
+    const idxBirth=findCol(["BIRTH","生年月日"]);
+    const idxOrg=findCol(["加盟団体","県連盟","ORGANIZATION"]);
+    const idxTeam=findCol(["チーム名","所属","TEAM"]);
+    const idxGroup=findCol(["G","GROUP","会員区分"]);
+    const idxDH=findCol(["SAJDH"]),idxSC=findCol(["SAJSC"]),idxSG=findCol(["SAJSG"]),idxGS=findCol(["SAJGS"]),idxSL=findCol(["SAJSL"]);
+    if(idxSaj>=0){
+      for(let i=headerIndex+1;i<lines.length;i++){
+        const c=splitCsvLine(lines[i],delimiter).map(x=>x.replace(/^"|"$/g,"").trim());
+        const saj=String(c[idxSaj]||"").replace(/\D/g,"").padStart(8,"0");
+        if(!/^\d{8}$/.test(saj))continue;
+        rows.push({
+          saj,name:idxName>=0?c[idxName]||"":"",birth:idxBirth>=0?c[idxBirth]||"":"",
+          organization:idxOrg>=0?c[idxOrg]||"":"",team:idxTeam>=0?c[idxTeam]||"":"",group:idxGroup>=0?c[idxGroup]||"":"",
+          dh:idxDH>=0?numOrNull(c[idxDH]):null,sc:idxSC>=0?numOrNull(c[idxSC]):null,sg:idxSG>=0?numOrNull(c[idxSG]):null,
+          gs:idxGS>=0?numOrNull(c[idxGS]):null,sl:idxSL>=0?numOrNull(c[idxSL]):null,source
+        });
+      }
+    }
+  }
+  return rows;
+}
+
+async function fetchLatestZipPointRows({season,sex}){
+  const calendar=await getLatestPointCalendarMeta(season);
+  const listNumber=calendar?.latestListNumber??null;
+  const zips=Array.isArray(calendar?.latestZips)?calendar.latestZips:[];
+  const zip=zips.find(x=>x.sex===sex && x.pointListNumber===listNumber);
+  if(!zip?.url)throw new Error(`SAJ No.${listNumber??'—'} ${sex}子ZIPが見つかりません`);
+  const files=await fetchZipTextEntries(zip.url);
+  let rows=[];
+  for(const f of files){
+    rows.push(...parseDelimitedPointRows(f.text,`${zip.url}#${f.name}`));
+  }
+  rows=mergePointRowsBySaj(rows);
+  if(!rows.length)throw new Error(`SAJ No.${listNumber??'—'} ZIPからポイント行を解析できませんでした`);
+  return {rows,pointListNumber:listNumber,calendarListNumber:listNumber,source:zip.url,pageCount:files.length,calendarSource:calendar.source};
+}
+
 async function getRawText(url){
   const r=await fetch(url,{headers:{
-    "User-Agent":"AlpineTeamManager/0.13.39 (+public SAJ data lookup)",
+    "User-Agent":"AlpineTeamManager/0.13.41 (+public SAJ data lookup)",
     "Accept":"text/csv,text/plain,text/html,application/octet-stream,*/*"
   }});
   if(!r.ok) throw new Error(`SAJ HTTP ${r.status}: ${url}`);
@@ -1217,21 +1370,17 @@ async function fetchAllNationalPointRowsForSeasonUncached({season,sex,listNumber
 }
 
 async function fetchAllNationalPointRowsForSeason({season,sex}){
-  let calendar=null;
-  try{calendar=await getLatestPointCalendarMeta(season);}catch{}
-  const listNumber=calendar?.latestListNumber ?? null;
+  const calendar=await getLatestPointCalendarMeta(season);
+  const listNumber=calendar?.latestListNumber??null;
 
   const fresh=await readRankingDatasetCache(season,sex,listNumber);
   if(fresh?.rows?.length)return {...fresh,calendarListNumber:listNumber,calendarSource:calendar?.source||"",cacheStatus:"HIT",cacheTtlSeconds:SAJ_RANKING_CACHE_SECONDS};
 
   try{
-    const live=await fetchAllNationalPointRowsForSeasonUncached({season,sex,listNumber});
-    if(live?.rows?.length){
-      const data={...live,pointListNumber:live.pointListNumber??listNumber,calendarListNumber:listNumber,calendarSource:calendar?.source||""};
-      await writeRankingDatasetCache(season,sex,listNumber,data);
-      return {...data,cacheStatus:"MISS",cacheAgeSeconds:0,cacheTtlSeconds:SAJ_RANKING_CACHE_SECONDS};
-    }
-    return live;
+    const live=await fetchLatestZipPointRows({season,sex});
+    const data={...live,pointListNumber:listNumber,calendarListNumber:listNumber,calendarSource:calendar?.source||""};
+    await writeRankingDatasetCache(season,sex,listNumber,data);
+    return {...data,cacheStatus:"MISS",cacheAgeSeconds:0,cacheTtlSeconds:SAJ_RANKING_CACHE_SECONDS};
   }catch(err){
     const stale=await readRankingDatasetCache(season,sex,listNumber,{allowStale:true});
     if(stale?.rows?.length)return {...stale,calendarListNumber:listNumber,calendarSource:calendar?.source||"",cacheStatus:"STALE",cacheTtlSeconds:SAJ_RANKING_CACHE_SECONDS};
@@ -1363,66 +1512,48 @@ async function lookupAthleteListBySexOrganization(sex, organization){
 
 
 async function lookupOfficialPoints(saj){
+  const target=String(saj||"").replace(/\D/g,"").padStart(8,"0");
   for(const season of getTargetSeasons()){
-    const calUrl=`${SAJ_ORIGIN}/alpine/point/calendar?season_code=${season}`;
-    let cal="";
-    try{ cal=await getText(calUrl); }catch{ continue; }
-
-    // Prefer calendar rows because they carry the official SAJ point-list number.
-    const entries=extractPointListEntries(cal).reverse();
-    for(const entry of entries){
-      try{
-        let athlete=null;
-        if(entry.download){
-          const raw=await getRawText(entry.link);
-          if(raw.includes(saj)) athlete=parseDelimitedPointFile(raw,saj,entry.link);
-        }else{
-          athlete=await tryPointPage(entry.link,saj,season);
-        }
-        if(athlete){
-          athlete.seasonCode=season;
-          athlete.seasonLabel=`${season-1}/${season}`;
-          athlete.pointListNumber=entry.pointListNumber;
-          return athlete;
-        }
-      }catch{}
-    }
-
-    // Compatibility fallback for calendar layouts not recognized above.
-    const pointLinks=extractPointListLinks(cal).slice(-50).reverse();
-    for(const link of pointLinks){
-      const athlete=await tryPointPage(link,saj,season);
-      if(athlete){
-        athlete.seasonCode=season;
-        athlete.seasonLabel=`${season-1}/${season}`;
-        athlete.pointListNumber=null;
-        return athlete;
+    try{
+      const cal=await getLatestPointCalendarMeta(season);
+      const listNumber=cal?.latestListNumber??null;
+      for(const sex of ["男","女"]){
+        try{
+          const dataset=await fetchAllNationalPointRowsForSeason({season,sex});
+          const athlete=(dataset.rows||[]).find(r=>String(r.saj||"").padStart(8,"0")===target);
+          if(athlete){
+            return {...athlete,seasonCode:season,seasonLabel:`${season-1}/${season}`,pointListNumber:listNumber,source:dataset.source};
+          }
+        }catch{}
       }
-    }
 
-    const downloads=extractDownloadLinks(cal).slice(-80).reverse();
-    for(const link of downloads){
-      try{
-        const raw=await getRawText(link);
-        if(!raw.includes(saj)) continue;
-        const athlete=parseDelimitedPointFile(raw,saj,link);
-        if(athlete){
-          athlete.seasonCode=season;
-          athlete.seasonLabel=`${season-1}/${season}`;
-          athlete.pointListNumber=null;
-          return athlete;
+      // Compatibility fallback: query SAJ's point-list page directly using the latest list number.
+      const base=new URL(`${SAJ_ORIGIN}/alpine/point/list`);
+      base.searchParams.set("season_code",String(season));
+      base.searchParams.set("sports_code","AL");
+      base.searchParams.set("saj_fis","SAJ");
+      const formHtml=await getText(base.toString());
+      const selects=parseSelectOptions(formHtml);
+      let listOpt=null;
+      for(const sel of selects||[]){
+        const opt=(sel.options||[]).find(o=>new RegExp(`(?:^|\\D)${Number(listNumber)}(?:\\D|$)`).test(`${o.text||""} ${o.value||""}`));
+        if(opt){listOpt={name:sel.name,value:opt.value};break;}
+      }
+      for(const sexValue of ["1","2"]){
+        const u=new URL(base);
+        u.searchParams.set("search_saj_number",target);
+        u.searchParams.set("sex",sexValue);
+        if(listOpt)u.searchParams.set(listOpt.name,listOpt.value);
+        for(const [k,v] of [["search","1"],["submit","1"],["action","search"]]){
+          const x=new URL(u);x.searchParams.set(k,v);
+          try{
+            const h=await getText(x.toString());
+            const athlete=parsePointRow(h,target,x.toString());
+            if(athlete)return {...athlete,seasonCode:season,seasonLabel:`${season-1}/${season}`,pointListNumber:listNumber};
+          }catch{}
         }
-      }catch{}
-    }
-
-    const generic=`${SAJ_ORIGIN}/alpine/point/list`;
-    const athlete=await tryPointPage(generic,saj,season);
-    if(athlete){
-      athlete.seasonCode=season;
-      athlete.seasonLabel=`${season-1}/${season}`;
-      athlete.pointListNumber=null;
-      return athlete;
-    }
+      }
+    }catch{}
   }
   return null;
 }
@@ -1695,7 +1826,7 @@ async function fetchFollowingSajSession(url, init, maxRedirects=5){
       // Browser semantics: 301/302/303 after a form request become GET.
       if([301,302,303].includes(r.status)){
         currentInit={method:"GET",headers:{
-          "User-Agent":"AlpineTeamManager/0.13.39 (+public SAJ competition calendar lookup)",
+          "User-Agent":"AlpineTeamManager/0.13.41 (+public SAJ competition calendar lookup)",
           "Accept":"text/html,application/xhtml+xml"
         }};
       }
@@ -1718,7 +1849,7 @@ async function fetchFollowingSajSession(url, init, maxRedirects=5){
 async function submitCalendarForm(formInfo){
   const target=new URL(formInfo.action,SAJ_ORIGIN);
   const headers={
-    "User-Agent":"AlpineTeamManager/0.13.39 (+public SAJ competition calendar lookup)",
+    "User-Agent":"AlpineTeamManager/0.13.41 (+public SAJ competition calendar lookup)",
     "Accept":"text/html,application/xhtml+xml"
   };
 
@@ -2066,7 +2197,7 @@ async function lookupCompetitionsApi(season,month=0){
   const r=await fetch(target.toString(),{
     method:"GET",
     headers:{
-      "User-Agent":"AlpineTeamManager/0.13.39 (+public SAJ competition calendar lookup)",
+      "User-Agent":"AlpineTeamManager/0.13.41 (+public SAJ competition calendar lookup)",
       "Accept":"application/json,text/javascript,*/*;q=0.8",
       "Referer":`${SAJ_ORIGIN}/alpine/competition/calendar`
     }
@@ -2111,7 +2242,7 @@ async function debugCompetitionApi(season=2026,month=2){
   const r=await fetch(target.toString(),{
     method:"GET",
     headers:{
-      "User-Agent":"AlpineTeamManager/0.13.39 (+public SAJ competition calendar lookup)",
+      "User-Agent":"AlpineTeamManager/0.13.41 (+public SAJ competition calendar lookup)",
       "Accept":"application/json,text/javascript,*/*;q=0.8",
       "Referer":`${SAJ_ORIGIN}/alpine/competition/calendar`
     }

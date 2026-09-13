@@ -1906,7 +1906,7 @@ header{
 <header>
   <div class="header-inner">
     <div class="header-meta-row">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.13.39</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.13.40</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
     <div class="header-title-row">
@@ -4511,7 +4511,7 @@ function toggleItemHelp(index){
 }
 
 
-// ===== v0.13.39 National SAJ point ranking =====
+// ===== v0.13.40 National SAJ point ranking (latest SAJ calendar ZIP) =====
 let nationalRankingState={category:'k2',sex:'男',discipline:'SL'};
 const nationalRankingCache=new Map();
 
@@ -6452,7 +6452,7 @@ async function directPdfDownload(id){
 }
 function printSection(id){return directPdfDownload(id);}
 
-// ===== v0.13.39 SAJ list athlete registration =====
+// ===== v0.13.40 SAJ athlete registration =====
 let sajAthleteListCache=[];
 
 function setAthleteRegisterMode(mode){
@@ -6667,7 +6667,7 @@ async function registerAthleteFromSaj(){
       updated:new Date().toISOString().slice(0,10),
       pointListNumber:a.pointListNumber??null,
       pointSeasonLabel:a.pointSeasonLabel||'',
-      sajSource:a.source||'',results:(a.results||[]).map(r=>({date:r.date,race:r.race,disc:r.disc,rank:r.rank,time:'',point:r.point??'-',season:r.season,category:r.category}))
+      pointSource:a.pointSource||'',sajSource:a.source||'',results:(a.results||[]).map(r=>({...normalizeSajResult(r)}))
     };
     if(!item.name) throw new Error('SAJデータから氏名を取得できませんでした');
     db.athletes.push(item);
@@ -6697,6 +6697,37 @@ function saveAthleteEdit(){
   a.sl=num(aSL.value);a.gs=num(aGS.value);a.sg=num(aSG.value);
   editingAthleteId=null;closeAthleteForm();save();
 }
+function sajResultIdentity(r){
+  const norm=v=>String(v??'').replace(/\s+/g,' ').trim().toLowerCase();
+  return [norm(r.season),norm(r.date),norm(r.race),norm(r.disc),norm(r.category)].join('|');
+}
+function normalizeSajResult(r){
+  return {
+    date:r?.date||'',race:r?.race||'',disc:r?.disc||'',rank:r?.rank||'',
+    time:r?.time||'',point:r?.point??'-',season:r?.season||'',category:r?.category||'',
+    source:'saj'
+  };
+}
+function mergeSajResults(existing,incoming){
+  // Existing records are authoritative locally. Never delete or overwrite them.
+  // Only append SAJ results that are not already present.
+  const out=Array.isArray(existing)?existing.map(r=>({...r})):[];
+  const keys=new Set(out.map(sajResultIdentity));
+  for(const raw of (Array.isArray(incoming)?incoming:[])){
+    const r=normalizeSajResult(raw);
+    const key=sajResultIdentity(r);
+    if(!key || keys.has(key))continue;
+    out.push(r);
+    keys.add(key);
+  }
+  // Newest result first where an ISO-like or yyyy/mm/dd date is available.
+  const dateValue=v=>{
+    const t=String(v||'').replace(/年|月/g,'/').replace(/日/g,'').replace(/-/g,'/');
+    const m=t.match(/(\d{4})\/(\d{1,2})\/(\d{1,2})/);
+    return m ? Number(`${m[1]}${String(m[2]).padStart(2,'0')}${String(m[3]).padStart(2,'0')}`) : 0;
+  };
+  return out.sort((a,b)=>dateValue(b.date)-dateValue(a.date));
+}
 async function refreshAthleteFromSaj(id,quiet=false){
   const old=db.athletes.find(x=>x.id===id);if(!old)return false;
   try{
@@ -6709,22 +6740,11 @@ async function refreshAthleteFromSaj(id,quiet=false){
       return Number.isFinite(n)?n:(current??null);
     };
 
-    const incomingResults=Array.isArray(a.results)?a.results:[];
-    const nextResults=incomingResults.length
-      ? incomingResults.map(r=>r.race
-          ? {date:r.date,race:r.race,disc:r.disc,rank:r.rank,time:r.time||'',point:r.point??'-',season:r.season,category:r.category}
-          : r)
-      : (old.results||[]);
+    const nextResults=mergeSajResults(old.results||[],a.results||[]);
 
+    // Regular synchronization updates only official points and competition history.
+    // Profile fields entered/adjusted by the team are intentionally left untouched.
     Object.assign(old,{
-      name:a.name||old.name,
-      school:a.team||a.organization||old.school,
-      organization:a.organization||old.organization||'',
-      birth:a.birth||old.birth||'',
-      sex:normalizeAthleteSex(a.sex)||normalizeAthleteSex(old.sex)||old.sex||'',
-
-      // SAJ response can temporarily omit point values.
-      // Never erase locally saved points, because ranking depends on these fields.
       dh:keepPoint(a.dh,old.dh),
       sc:keepPoint(a.sc,old.sc),
       sg:keepPoint(a.sg,old.sg),
@@ -6734,12 +6754,13 @@ async function refreshAthleteFromSaj(id,quiet=false){
       updated:new Date().toISOString().slice(0,10),
       pointListNumber:a.pointListNumber??old.pointListNumber??null,
       pointSeasonLabel:a.pointSeasonLabel||old.pointSeasonLabel||'',
+      pointSource:a.pointSource||old.pointSource||'',
       sajSource:a.source||old.sajSource||'',
       results:nextResults
     });
 
     // Persist each successful refresh immediately so an app close during launch refresh
-    // cannot lose the latest valid ranking data.
+    // cannot lose the latest valid point/history data.
     persistDb({silent:true});
 
     if(!quiet) renderAll();
@@ -6756,7 +6777,7 @@ async function refreshAllSaj(){
   for(const a of db.athletes){
     (await refreshAthleteFromSaj(a.id,true))?ok++:ng++;
   }
-  save();alert(`ポイント更新完了：成功 ${ok}名 / 失敗 ${ng}名`);
+  save();alert(`SAJ同期完了：成功 ${ok}名 / 失敗 ${ng}名\n最新ポイントと新しい大会履歴を反映しました。`);
 }
 
 
@@ -7483,7 +7504,7 @@ async function autoRefreshSajOnLaunch(){
   if(!db.athletes.length || !apiBase()) return;
 
   const sync=document.getElementById('syncState');
-  if(sync)sync.textContent='● ポイント更新中';
+  if(sync)sync.textContent='● SAJ同期中';
 
   let changed=false;
   let cursor=0;
@@ -7495,7 +7516,7 @@ async function autoRefreshSajOnLaunch(){
       const idx=cursor++;
       if(idx>=total)return;
       const a=db.athletes[idx];
-      if(sync)sync.textContent=`● ポイント更新中 ${Math.min(idx+1,total)}/${total}`;
+      if(sync)sync.textContent=`● SAJ同期中 ${Math.min(idx+1,total)}/${total}`;
       if(await refreshAthleteFromSaj(a.id,true))changed=true;
     }
   }
@@ -7512,7 +7533,7 @@ async function refreshAppCacheOnLaunch(){
   if(!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=01339',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=01341',{updateViaCache:'none'});
 
     if(reg.waiting){
       reg.waiting.postMessage({type:'SKIP_WAITING'});
