@@ -1150,3 +1150,16 @@ SnowTech → 管理 → `SAJ連携API URL` にWorker URLを入力 → 保存。
 - 候補にないURLは手動入力して候補へ追加可能
 - 旧単一URLキャッシュとの互換性を維持
 - Service Worker cache v0.13.19
+
+## v0.13.20 venue web-search candidates
+- v0.13.19で候補0件になりやすかった原因を修正
+- 従来はOpenStreetMap/Nominatimの施設データ内にwebsite属性がある場合しか候補URLにならなかった
+- Cloudflare Workerに GET /api/venue-search?q=会場名 を追加
+- Worker側で一般Web検索結果から公式サイト候補URLを抽出
+- DuckDuckGo検索を第一候補、Bing検索をフォールバックとして使用
+- APIキー不要
+- アプリ内候補一覧に最大12件を表示
+- チェックボックス複数選択→登録のUIは維持
+- Nominatimのwebsite/contact:websiteも補助候補として継続利用
+- このバージョンはGitHub Pages更新に加えて worker.js のCloudflare再デプロイが必要
+- Service Worker cache v0.13.20
