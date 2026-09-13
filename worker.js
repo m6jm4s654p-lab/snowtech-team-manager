@@ -19,7 +19,7 @@ export default {
       return cors(json({ok:false,error:"Method not allowed"},405), env, request);
     }
     if (url.pathname === "/health") {
-      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.13.32"}), env, request);
+      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.13.34"}), env, request);
     }
 
     if (url.pathname === "/api/debug-competition-calendar") {
@@ -406,7 +406,7 @@ function cors(resp,env,request){
 }
 async function getText(url){
   const r=await fetch(url,{headers:{
-    "User-Agent":"AlpineTeamManager/0.13.32 (+public SAJ data lookup)",
+    "User-Agent":"AlpineTeamManager/0.13.34 (+public SAJ data lookup)",
     "Accept":"text/html,application/xhtml+xml"
   }});
   if(!r.ok) throw new Error(`SAJ HTTP ${r.status}: ${url}`);
@@ -422,9 +422,12 @@ function strip(s){
     .replace(/\s+/g," ").trim();
 }
 function numOrNull(v){
-  const t=String(v||"").trim();
-  if(!t || t==="-" || t==="―") return null;
-  const n=Number(t);
+  const t=String(v??"").trim();
+  if(!t || t==="-" || t==="―" || t==="—") return null;
+  const normalized=t.replace(/,/g,"");
+  const m=normalized.match(/-?\d+(?:\.\d+)?/);
+  if(!m) return null;
+  const n=Number(m[0]);
   return Number.isFinite(n)?n:null;
 }
 
@@ -726,7 +729,7 @@ function parseDelimitedPointFile(text,saj,source){
 
 async function getRawText(url){
   const r=await fetch(url,{headers:{
-    "User-Agent":"AlpineTeamManager/0.13.32 (+public SAJ data lookup)",
+    "User-Agent":"AlpineTeamManager/0.13.34 (+public SAJ data lookup)",
     "Accept":"text/csv,text/plain,text/html,application/octet-stream,*/*"
   }});
   if(!r.ok) throw new Error(`SAJ HTTP ${r.status}: ${url}`);
@@ -809,6 +812,28 @@ function findSelectValue(selects, wantedText, preferredNames=[]){
   return scored[0]||null;
 }
 
+
+function findLatestPointListValue(selects){
+  const candidates=[];
+  for(const s of selects||[]){
+    const name=String(s.name||"");
+    const looksLikeList=/list|point|number|no/i.test(name);
+    for(const o of s.options||[]){
+      const raw=`${o.text||""} ${o.value||""}`.trim();
+      if(!raw)continue;
+      const nums=[...raw.matchAll(/\d+/g)].map(m=>Number(m[0])).filter(Number.isFinite);
+      if(!nums.length)continue;
+      const n=Math.max(...nums);
+      let score=n;
+      if(looksLikeList)score+=10000;
+      if(/リスト|LIST|POINT/i.test(String(o.text||"")))score+=5000;
+      candidates.push({score,n,name:s.name,value:o.value,text:o.text});
+    }
+  }
+  candidates.sort((a,b)=>b.score-a.score || b.n-a.n);
+  return candidates[0]||null;
+}
+
 function findSexSelectValue(selects, sex){
   const labels=sex==="男" ? ["男","MAN","MEN","MALE"] : ["女","WOMAN","WOMEN","FEMALE"];
   const scored=[];
@@ -828,28 +853,64 @@ function findSexSelectValue(selects, sex){
 
 function parsePointRows(html, expectedOrg=""){
   const rows=[];
-  const trs=String(html||"").match(/<tr\b[\s\S]*?<\/tr>/gi)||[];
+  const source=String(html||"");
+  const trs=source.match(/<tr\b[\s\S]*?<\/tr>/gi)||[];
   const expected=normalizeJapaneseOrgName(expectedOrg);
+
+  // Determine column indexes from the actual SAJ table header instead of
+  // assuming fixed positions. Current public header contains:
+  // Rank / SAJ競技者番号 / 氏名 / Birth / 加盟団体 / チーム名 / G /
+  // SAJ_DH / SAJ_SC / SAJ_SG / SAJ_GS / SAJ_SL
+  let headerMap=null;
+  for(const tr of trs){
+    const hs=[...tr.matchAll(/<th\b[^>]*>([\s\S]*?)<\/th>/gi)].map(m=>strip(m[1]));
+    if(!hs.length)continue;
+    const norm=hs.map(v=>String(v||"").replace(/\s+/g,"").toUpperCase());
+    const sajIdx=norm.findIndex(v=>v.includes("SAJ競技者番号")||v==="SAJNO"||v.includes("SAJNUMBER"));
+    if(sajIdx<0)continue;
+    const find=(...keys)=>norm.findIndex(v=>keys.some(k=>v.includes(k)));
+    headerMap={
+      rank:find("RANK","順位"),
+      saj:sajIdx,
+      name:find("氏名","NAME"),
+      birth:find("BIRTH","生年"),
+      organization:find("加盟団体","所属加盟団体","ORGANIZATION"),
+      team:find("チーム名","TEAM"),
+      group:find("G"),
+      dh:find("SAJ_DH"),
+      sc:find("SAJ_SC"),
+      sg:find("SAJ_SG"),
+      gs:find("SAJ_GS"),
+      sl:find("SAJ_SL")
+    };
+    break;
+  }
+
+  const val=(cells,idx,fallback)=>idx!=null&&idx>=0 ? (cells[idx]||"") : (cells[fallback]||"");
+
   for(const tr of trs){
     const cells=[...tr.matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/gi)].map(m=>strip(m[1]));
-    if(cells.length<12) continue;
-    const saj=String(cells[1]||"").replace(/\D/g,"");
+    if(cells.length<8) continue;
+
+    const saj=String(val(cells,headerMap?.saj,1)||"").replace(/\D/g,"");
     if(!/^\d{7,9}$/.test(saj)) continue;
-    const organization=cells[4]||"";
+
+    const organization=val(cells,headerMap?.organization,4)||"";
     if(expected && normalizeJapaneseOrgName(organization)!==expected) continue;
+
     rows.push({
-      rank:cells[0]||"",
+      rank:val(cells,headerMap?.rank,0)||"",
       saj,
-      name:cells[2]||"",
-      birth:cells[3]||"",
+      name:val(cells,headerMap?.name,2)||"",
+      birth:val(cells,headerMap?.birth,3)||"",
       organization,
-      team:cells[5]||"",
-      group:cells[6]||"",
-      dh:numOrNull(cells[7]),
-      sc:numOrNull(cells[8]),
-      sg:numOrNull(cells[9]),
-      gs:numOrNull(cells[10]),
-      sl:numOrNull(cells[11])
+      team:val(cells,headerMap?.team,5)||"",
+      group:val(cells,headerMap?.group,6)||"",
+      dh:numOrNull(val(cells,headerMap?.dh,7)),
+      sc:numOrNull(val(cells,headerMap?.sc,8)),
+      sg:numOrNull(val(cells,headerMap?.sg,9)),
+      gs:numOrNull(val(cells,headerMap?.gs,10)),
+      sl:numOrNull(val(cells,headerMap?.sl,11))
     });
   }
   return rows;
@@ -930,7 +991,11 @@ function optionValueForYear(sel, year){
 }
 function rankingPointValue(row, discipline){
   const key=String(discipline||"").toLowerCase();
-  const n=Number(row?.[key]);
+  const raw=row?.[key];
+  if(raw===null || raw===undefined) return null;
+  const text=String(raw).trim();
+  if(!text || text==="-" || text==="―" || text==="—") return null;
+  const n=Number(text);
   return Number.isFinite(n)?n:null;
 }
 function assignRankingPositions(rows, discipline){
@@ -971,7 +1036,10 @@ function mergePointRowsBySaj(rows){
       continue;
     }
     // Keep the row carrying the most point values.
-    const count=x=>["dh","sc","sg","gs","sl"].reduce((n,k)=>n+(Number.isFinite(Number(x?.[k]))?1:0),0);
+    const count=x=>["dh","sc","sg","gs","sl"].reduce((n,k)=>{
+      const v=x?.[k];
+      return n+(v!==null && v!==undefined && String(v).trim()!=="" && Number.isFinite(Number(v))?1:0);
+    },0);
     if(count(r)>count(old))map.set(saj,r);
   }
   return [...map.values()];
@@ -1006,10 +1074,15 @@ async function fetchAllNationalPointRowsForSeason({season,sex}){
   const formHtml=await getText(baseUrl.toString());
   const selects=parseSelectOptions(formHtml);
   const sexOpt=findSexSelectValue(selects,sex);
+  const listOpt=findLatestPointListValue(selects);
 
   const u=new URL(baseUrl);
   if(sexOpt)u.searchParams.set(sexOpt.name,sexOpt.value);
   else u.searchParams.set("sex",sex==="男"?"1":"2");
+
+  // SAJ point-list search requires a list number. Without this parameter,
+  // rows may be returned without the actual SAJ race points or no valid list at all.
+  if(listOpt)u.searchParams.set(listOpt.name,listOpt.value);
 
   const variants=[u];
   for(const [k,v] of [["search","1"],["submit","1"],["action","search"]]){
@@ -1050,7 +1123,7 @@ async function fetchAllNationalPointRowsForSeason({season,sex}){
   allRows=mergePointRowsBySaj(allRows);
   return {
     rows:allRows,
-    pointListNumber:extractSelectedPointListNumber(bestHtml||formHtml),
+    pointListNumber:extractSelectedPointListNumber(bestHtml||formHtml) ?? (listOpt?.n ?? null),
     source:bestUrl,
     pageCount:1+pageUrls.length
   };
@@ -1506,7 +1579,7 @@ async function fetchFollowingSajSession(url, init, maxRedirects=5){
       // Browser semantics: 301/302/303 after a form request become GET.
       if([301,302,303].includes(r.status)){
         currentInit={method:"GET",headers:{
-          "User-Agent":"AlpineTeamManager/0.13.32 (+public SAJ competition calendar lookup)",
+          "User-Agent":"AlpineTeamManager/0.13.34 (+public SAJ competition calendar lookup)",
           "Accept":"text/html,application/xhtml+xml"
         }};
       }
@@ -1529,7 +1602,7 @@ async function fetchFollowingSajSession(url, init, maxRedirects=5){
 async function submitCalendarForm(formInfo){
   const target=new URL(formInfo.action,SAJ_ORIGIN);
   const headers={
-    "User-Agent":"AlpineTeamManager/0.13.32 (+public SAJ competition calendar lookup)",
+    "User-Agent":"AlpineTeamManager/0.13.34 (+public SAJ competition calendar lookup)",
     "Accept":"text/html,application/xhtml+xml"
   };
 
@@ -1877,7 +1950,7 @@ async function lookupCompetitionsApi(season,month=0){
   const r=await fetch(target.toString(),{
     method:"GET",
     headers:{
-      "User-Agent":"AlpineTeamManager/0.13.32 (+public SAJ competition calendar lookup)",
+      "User-Agent":"AlpineTeamManager/0.13.34 (+public SAJ competition calendar lookup)",
       "Accept":"application/json,text/javascript,*/*;q=0.8",
       "Referer":`${SAJ_ORIGIN}/alpine/competition/calendar`
     }
@@ -1922,7 +1995,7 @@ async function debugCompetitionApi(season=2026,month=2){
   const r=await fetch(target.toString(),{
     method:"GET",
     headers:{
-      "User-Agent":"AlpineTeamManager/0.13.32 (+public SAJ competition calendar lookup)",
+      "User-Agent":"AlpineTeamManager/0.13.34 (+public SAJ competition calendar lookup)",
       "Accept":"application/json,text/javascript,*/*;q=0.8",
       "Referer":`${SAJ_ORIGIN}/alpine/competition/calendar`
     }

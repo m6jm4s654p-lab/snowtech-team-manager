@@ -1286,3 +1286,24 @@ SnowTech → 管理 → `SAJ連携API URL` にWorker URLを入力 → 保存。
 - 現行シーズンに有効データがない場合のみ前シーズンへ自動フォールバック
 - Cloudflare Worker再デプロイ必須
 - Service Worker cache v0.13.32
+
+## v0.13.33 ランキングポイント0表示修正
+- 全国ポイントランキングで未取得ポイントが 0.00 として扱われる不具合を修正
+- 原因: JavaScript の `Number(null) === 0` により、未取得値 null が有効な0ポイントへ変換されていた
+- `rankingPointValue()` で null / undefined / 空文字 / ハイフンを明示的に除外
+- `numOrNull()` を強化し、カンマや付帯文字がある数値も安全に抽出
+- フロント側も null / 空値を 0.00 に変換せず「—」表示
+- ポイント未取得選手はランキング対象外
+- Cloudflare Worker再デプロイ必須
+- Service Worker cache v0.13.33
+
+## v0.13.34 SAJポイント実値取得修正
+- 0表示問題の本質的な原因を修正
+- SAJポイントリスト検索では「リストナンバー」が必要なため、現行シーズンの最新リストナンバーをフォームから自動選択
+- ユーザー入力は不要
+- SAJテーブルの列位置を固定値ではなく実際のヘッダー名（SAJ_DH / SAJ_SC / SAJ_SG / SAJ_GS / SAJ_SL）から動的に判定
+- 未取得値はランキング対象外
+- 有効ポイントは小さい順にランキング
+- 重複行統合時の null→0 誤判定も修正
+- Cloudflare Worker再デプロイ必須
+- Service Worker cache v0.13.34
