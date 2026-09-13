@@ -1307,3 +1307,25 @@ SnowTech → 管理 → `SAJ連携API URL` にWorker URLを入力 → 保存。
 - 重複行統合時の null→0 誤判定も修正
 - Cloudflare Worker再デプロイ必須
 - Service Worker cache v0.13.34
+
+## v0.13.35 SAJ全国ランキング キャッシュ保護
+- 全国ランキング用の全国データセットをCloudflare Worker側で6時間キャッシュ
+- キャッシュ単位: シーズン × 性別
+- 同じ性別・シーズンなら K2 / 一般、SL / GS / SG を切り替えてもSAJへ再アクセスしない
+- 6時間以内はCloudflare Cache APIから即時返却
+- 6時間経過後のみSAJへ再取得
+- SAJが一時的に失敗・ブロックした場合は最大24時間前までのキャッシュをフォールバック表示
+- 手動「更新」を連打しても6時間以内はSAJへ再アクセスしない
+- APIレスポンスに cacheStatus (HIT / MISS / STALE), cacheAgeSeconds, cacheTtlSeconds を付与
+- Cloudflare Worker再デプロイ必須
+- Service Worker cache v0.13.35
+
+## v0.13.36 ポイントリスト発行カレンダー連動
+- SAJ公式 `/alpine/point/calendar?season_code=...` を最新リスト番号の基準として使用
+- 発行カレンダーは6時間キャッシュ
+- 最新リスト番号を全国ランキングキャッシュキーへ追加
+- リスト番号が同じ間は保存済み全国データを再利用
+- 新リスト発行を検知すると新しいキャッシュへ切替
+- K2/一般・SL/GS/SG切替ではSAJ全国データを再取得しない
+- SAJ一時障害時は最大24時間のランキングキャッシュを利用
+- Cloudflare Worker再デプロイ必須
