@@ -1,4 +1,4 @@
-const CACHE='snowtech-alpine-v0139';
+const CACHE='snowtech-alpine-v01314';
 const CACHE_PREFIX='snowtech-alpine-';
 const ASSETS=[
   './','./index.html','./manifest.webmanifest','./snowtech-logo.png',
@@ -35,6 +35,25 @@ self.addEventListener('fetch',event=>{
 
   if(req.mode==='navigate'){
     event.respondWith((async()=>{
+      const cached=(await caches.match('./index.html')) || (await caches.match('./'));
+
+      // Installed PWA: show the cached app shell immediately.
+      // Refresh in the background so weak/unstable radio does not delay the title screen.
+      if(cached){
+        const refresh=(async()=>{
+          try{
+            const fresh=await fetch(req);
+            if(fresh && fresh.ok){
+              const cache=await caches.open(CACHE);
+              await cache.put('./index.html',fresh.clone());
+            }
+          }catch{}
+        })();
+        event.waitUntil(refresh);
+        return cached;
+      }
+
+      // First-ever load still requires the network because no cache exists yet.
       try{
         const fresh=await fetch(req);
         if(fresh && fresh.ok){
@@ -43,7 +62,7 @@ self.addEventListener('fetch',event=>{
         }
         return fresh;
       }catch{
-        return (await caches.match('./index.html')) || Response.error();
+        return Response.error();
       }
     })());
     return;

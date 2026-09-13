@@ -261,11 +261,11 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 }
 
 
-/* v0.13.9 branding */
+/* v0.13.14 branding */
 .tool-portal-logo img{width:min(100%,1100px);height:auto;object-fit:contain;display:block;margin:0 auto}
 
 
-/* v0.13.9 top navigation: HOME + 操作ナビ / team name below */
+/* v0.13.14 top navigation: HOME + 操作ナビ / team name below */
 .top-nav-block{
   width:min(560px,100%);
   margin:0 auto 16px;
@@ -313,7 +313,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 }
 
 
-/* v0.13.9: team name is shown below HOME / 操作ナビ */
+/* v0.13.14: team name is shown below HOME / 操作ナビ */
 header .team-name,
 header .team-title,
 header #teamName,
@@ -820,7 +820,7 @@ header [data-team-name],header #teamHeader{display:none!important}
 }
 
 
-/* v0.13.9: smartphone / PWA status-bar safe area */
+/* v0.13.14: smartphone / PWA status-bar safe area */
 header{
   padding-top:calc(10px + env(safe-area-inset-top, 0px));
 }
@@ -1043,7 +1043,7 @@ header{
 }
 
 
-/* v0.13.9 two-line competition rows */
+/* v0.13.14 two-line competition rows */
 .event-simple-list{
   width:100%;
   overflow-x:auto;
@@ -1148,7 +1148,7 @@ header{
     grid-template-columns:38px 38px 40px 88px var(--event-title-width, 320px) !important;
   }
 }
-/* v0.13.9 settings alignment */
+/* v0.13.14 settings alignment */
 #coachList .list-item{
   display:flex;
   align-items:center;
@@ -1178,7 +1178,7 @@ header{
 }
 
 
-/* v0.13.9 registered competition typography */
+/* v0.13.14 registered competition typography */
 .event-two-male,
 .event-two-female,
 .event-two-date,
@@ -1188,7 +1188,7 @@ header{
 }
 
 
-/* v0.13.9 competition title wrapping */
+/* v0.13.14 competition title wrapping */
 .event-two-title{
   white-space:normal !important;
   overflow:visible !important;
@@ -1210,7 +1210,7 @@ header{
 }
 
 
-/* v0.13.9 top navigation / item help */
+/* v0.13.14 top navigation / item help */
 .top-action-row{
   grid-template-columns:2fr 1fr 1fr !important;
 }
@@ -1278,6 +1278,92 @@ header{
   .home-action-btn{font-size:14px !important}
 }
 
+
+/* v0.13.14 calendar quick action chooser */
+.calendar-action-modal{
+  position:fixed;
+  inset:0;
+  z-index:10060;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+  background:rgba(2,8,14,.72);
+  backdrop-filter:blur(3px);
+}
+.calendar-action-modal.open{display:flex}
+.calendar-action-card{
+  width:min(440px,100%);
+  border:1px solid #385164;
+  border-radius:16px;
+  background:#0b1c29;
+  box-shadow:0 18px 50px rgba(0,0,0,.45);
+  padding:16px;
+}
+.calendar-action-buttons{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-top:18px;
+}
+.calendar-action-buttons .btn{
+  min-height:58px;
+  font-size:14px;
+  font-weight:900;
+}
+.calendar-action-help{
+  margin-top:12px;
+  color:#9fb2bf;
+  font-size:11px;
+  line-height:1.6;
+}
+@media(max-width:460px){
+  .calendar-action-buttons{grid-template-columns:1fr}
+}
+
+
+/* v0.13.14 home / away training quick setting */
+.calendar-training-choice-buttons{
+  grid-template-columns:1fr 1fr !important;
+}
+.calendar-training-choice-buttons .calendar-other-schedule-btn{
+  grid-column:1 / -1;
+}
+.calendar-away-training-panel{
+  margin-top:14px;
+  padding:12px;
+  border:1px solid #365366;
+  border-radius:12px;
+  background:rgba(255,255,255,.035);
+}
+.calendar-away-training-panel.hidden{display:none}
+.calendar-away-training-panel label{
+  display:block;
+  margin-bottom:6px;
+  font-weight:800;
+}
+.calendar-away-training-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+  margin-top:10px;
+}
+.calendar-training-remove-wrap{
+  margin-top:10px;
+}
+.calendar-training-remove-wrap.hidden{display:none}
+.calendar-training-remove-wrap .btn{
+  width:100%;
+}
+@media(max-width:460px){
+  .calendar-training-choice-buttons{
+    grid-template-columns:1fr !important;
+  }
+  .calendar-training-choice-buttons .calendar-other-schedule-btn{
+    grid-column:auto;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -1304,7 +1390,7 @@ header{
 <header>
   <div class="header-inner">
     <div class="header-meta-row">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.13.9</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.13.14</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
     <div class="header-title-row">
@@ -1685,7 +1771,12 @@ header{
   <div class="grid g2">
     <div class="card">
       <h2>チーム設定</h2>
-      <label>チーム名</label><input id="teamName" oninput="autoSaveTeamName()" onchange="autoSaveTeamName(true)">
+      <label>チーム名</label>
+      <input id="teamName" oninput="autoSaveTeamName()" onchange="autoSaveTeamName(true)">
+      <label style="margin-top:12px">メインのスキー場</label>
+      <input id="mainSkiArea" placeholder="例：岩手高原スノーパーク"
+             oninput="autoSaveMainSkiArea()" onchange="autoSaveMainSkiArea(true)">
+      <div class="muted" style="margin-top:6px">入力内容は自動保存され、年間予定の「練習日設定」に使用されます。</div>
     </div>
     <div class="card">
       <h2>所属コーチ</h2>
@@ -1748,6 +1839,43 @@ header{
 </div>
 
 
+
+<div id="calendarActionModal" class="calendar-action-modal no-print" aria-hidden="true">
+  <div class="calendar-action-card">
+    <div class="calendar-edit-head">
+      <div>
+        <div class="calendar-edit-title">予定を設定</div>
+        <div id="calendarActionDate" class="calendar-edit-date"></div>
+      </div>
+      <button class="calendar-edit-close" type="button" onclick="closeCalendarActionModal()">×</button>
+    </div>
+
+    <div class="calendar-action-buttons calendar-training-choice-buttons">
+      <button id="calendarHomeTrainingBtn" class="btn primary" type="button" onclick="setHomeTrainingFromCalendar()">ホームで練習</button>
+      <button id="calendarAwayTrainingBtn" class="btn primary" type="button" onclick="openAwayTrainingInput()">ホーム以外で練習</button>
+      <button class="btn calendar-other-schedule-btn" type="button" onclick="openOtherScheduleSettings()">その他予定設定</button>
+    </div>
+
+    <div id="calendarAwayTrainingPanel" class="calendar-away-training-panel hidden">
+      <label for="calendarAwayTrainingPlace">練習場所</label>
+      <input id="calendarAwayTrainingPlace" type="text" maxlength="60" placeholder="例：安比高原スキー場">
+      <div class="calendar-away-training-actions">
+        <button class="btn" type="button" onclick="cancelAwayTrainingInput()">キャンセル</button>
+        <button class="btn primary" type="button" onclick="confirmAwayTraining()">確定</button>
+      </div>
+    </div>
+
+    <div id="calendarTrainingRemoveWrap" class="calendar-training-remove-wrap hidden">
+      <button class="btn danger" type="button" onclick="removeTrainingFromCalendar()">練習設定を解除</button>
+    </div>
+
+    <div class="calendar-action-help">
+      「ホームで練習」はチーム設定のメインのスキー場を使用します。<br>
+      「ホーム以外で練習」は練習場所を入力して確定します。<br>
+      「その他予定設定」はこれまでの期間・予定1・予定2の入力画面を開きます。
+    </div>
+  </div>
+</div>
 
 <div id="calendarEditModal" class="calendar-edit-modal no-print" aria-hidden="true">
   <div class="calendar-edit-card">
@@ -1843,6 +1971,7 @@ function enterManagerTool(){
   if(p)p.classList.add('hidden');
   sessionStorage.setItem('snowtech_selected_tool','manager');
   openTab('home');
+  startDeferredSajRefresh();
 }
 function showToolPortal(){
   const p=document.getElementById('toolPortal');
@@ -2263,6 +2392,12 @@ function scheduleSortPriority(type){
   const i=SCHEDULE_TYPES.indexOf(normalizedScheduleType(type));
   return i<0?99:i;
 }
+function scheduleBoardItemPriority(item){
+  // Registered race is always top. Dedicated training day is next.
+  if(item?.source==='event')return -100;
+  if(item?.source==='trainingDay')return -50;
+  return scheduleSortPriority(item?.type);
+}
 function buildSeasonBoardItems(){
   const rows=[];
   const schedules=db.schedules||[];
@@ -2282,7 +2417,7 @@ function buildSeasonBoardItems(){
     }
 
     rows.push({
-      source:'schedule',
+      source:s.trainingDay?'trainingDay':'schedule',
       dates:[s.date],
       type:normalizedScheduleType(s.type),
       title:s.title||'',
@@ -2313,6 +2448,9 @@ function buildSeasonBoardItems(){
 }
 function seasonBoardLabel(item){
   if(item.source==='event') return item.note ? `${item.title} (${item.note})` : item.title;
+  if(item.source==='trainingDay'){
+    return String(item.place||item.note||item.title||db.team?.mainSkiArea||'').trim();
+  }
   const memo=String(item.note||item.title||'').trim();
   return memo || item.type;
 }
@@ -2389,9 +2527,16 @@ function renderScheduleBoard(){
         const dateStr=ymd(meta.y,meta.m,day);
         const wd=JP_WD[new Date(meta.y,meta.m-1,day).getDay()];
         const cls=dayClass(dateStr,meta.y,meta.m,day);
-        const dayItems=[...(map.get(dateStr)||[])].sort((a,b)=>scheduleSortPriority(a.type)-scheduleSortPriority(b.type));
+        const dayItems=[...(map.get(dateStr)||[])].sort((a,b)=>{
+          const pa=scheduleBoardItemPriority(a),pb=scheduleBoardItemPriority(b);
+          if(pa!==pb)return pa-pb;
+          return 0;
+        });
         const visibleItems=dayItems.slice(0,2).map(v=>{
           const coach=v.coach ? `<span class="board-coach">引率：${esc(v.coach)}</span>` : '';
+          if(v.source==='trainingDay'){
+            return `<span class="board-item ${scheduleTypeClass('練習')}"><span class="board-type">練習</span>${v.label?` ${esc(v.label)}`:''}</span>`;
+          }
           return `<span class="board-item ${scheduleTypeClass(v.type)}"><span class="board-type">${esc(v.type)}</span>${v.label&&v.label!==v.type?` ${esc(v.label)}`:''}${coach}</span>`;
         }).join('');
         const more=dayItems.length>2?`<span class="board-more">＋${dayItems.length-2}件</span>`:'';
@@ -2509,7 +2654,7 @@ const ITEM_HELP_ITEMS=[
   },
   {
     title:'年間予定',
-    body:'大会・練習・合宿・移動・休養を年間カレンダーに登録できます。期間登録、1日だけの個別編集、1日最大2件の表示、全画面表示、年間予定PDF出力に対応します。大会管理で登録した大会は自動反映されます。'
+    body:'セルをタップすると「ホームで練習」「ホーム以外で練習」「その他予定設定」を選べます。ホーム練習はチーム設定のメインのスキー場を自動使用し、ホーム以外の練習は練習場所を入力して確定します。その他予定設定では大会・練習・合宿・移動・休養の期間登録や個別編集ができます。大会管理で登録した大会は同日の最上段に表示されます。'
   },
   {
     title:'大会管理',
@@ -2525,7 +2670,7 @@ const ITEM_HELP_ITEMS=[
   },
   {
     title:'チーム設定',
-    body:'チーム名、所属コーチ、役割を管理できます。チーム名は入力すると自動保存されます。端末内データのバックアップ書き出し・読込、全データ削除もここで行います。'
+    body:'チーム名、メインのスキー場、所属コーチ、役割を管理できます。チーム名とメインのスキー場は入力すると自動保存されます。メインのスキー場は年間予定の「ホームで練習」で使用します。バックアップ書き出し・読込、全データ削除もここで行います。'
   },
   {
     title:'会場情報',
@@ -2584,7 +2729,7 @@ function openTab(tabId){
 document.querySelectorAll('nav button[data-tab]').forEach(b=>b.onclick=()=>openTab(b.dataset.tab));
 
 
-// ===== v0.13.9 Weather / Team Board =====
+// ===== v0.13.14 Weather / Team Board =====
 const PREF_REGION={
   '北海道':'北海道',
   '青森':'東北','岩手':'東北','宮城':'東北','秋田':'東北','山形':'東北','福島':'東北',
@@ -3042,6 +3187,8 @@ function confirmGuideSeason(){
 function renderAll(){
   
   document.getElementById('teamName').value=db.team.name||'';
+  const mainSkiAreaInput=document.getElementById('mainSkiArea');
+  if(mainSkiAreaInput)mainSkiAreaInput.value=db.team.mainSkiArea||'';
   initGlobalSeason();renderCoaches();renderAthletes();renderSchedule();renderEvents();renderRanking();refreshSelects();initSajCompetitionSeason();initScheduleSeason();renderSajRegionFilters();renderVenues();renderWeatherVenues();renderHome();renderBackupStatus();
 }
 
@@ -3500,6 +3647,42 @@ function autoSaveTeamName(immediate=false){
     run();
   }else{
     teamNameSaveTimer=setTimeout(run,350);
+  }
+}
+
+
+let mainSkiAreaSaveTimer=null;
+function autoSaveMainSkiArea(immediate=false){
+  if(mainSkiAreaSaveTimer){
+    clearTimeout(mainSkiAreaSaveTimer);
+    mainSkiAreaSaveTimer=null;
+  }
+  const run=()=>{
+    const input=document.getElementById('mainSkiArea');
+    if(!input)return;
+    db.team=db.team||{};
+    const value=String(input.value||'').trim();
+    if((db.team.mainSkiArea||'')===value)return;
+    db.team.mainSkiArea=value;
+    persistDb({silent:true});
+
+    // Existing dedicated training-day rows should follow the team's current main ski area.
+    (db.schedules||[]).forEach(row=>{
+      if(row?.trainingDay && row.trainingLocationType!=='away'){
+        row.trainingLocationType='home';
+        row.title=value;
+        row.place=value;
+        row.note=value;
+      }
+    });
+    persistDb({silent:true});
+    renderScheduleBoard();
+    renderHome();
+  };
+  if(immediate){
+    run();
+  }else{
+    mainSkiAreaSaveTimer=setTimeout(run,350);
   }
 }
 
@@ -4289,7 +4472,7 @@ async function directPdfDownload(id){
 }
 function printSection(id){return directPdfDownload(id);}
 
-// ===== v0.13.9 SAJ list athlete registration =====
+// ===== v0.13.14 SAJ list athlete registration =====
 let sajAthleteListCache=[];
 
 function setAthleteRegisterMode(mode){
@@ -4740,7 +4923,171 @@ function loadCalendarRangeEntries(){
     if(memoEl)memoEl.value=item?String(item.note||item.title||'').slice(0,20):'';
   }
 }
+
+let calendarActionDateValue='';
+
+function trainingDayRowForDate(dateStr){
+  return (db.schedules||[]).find(x=>x?.trainingDay && x.date===dateStr) || null;
+}
+
 function editScheduleCell(dateStr){
+  if(!dateStr)return;
+  calendarActionDateValue=dateStr;
+
+  const modal=document.getElementById('calendarActionModal');
+  const dateEl=document.getElementById('calendarActionDate');
+  const awayPanel=document.getElementById('calendarAwayTrainingPanel');
+  const awayInput=document.getElementById('calendarAwayTrainingPlace');
+  const removeWrap=document.getElementById('calendarTrainingRemoveWrap');
+  if(!modal)return;
+
+  if(dateEl)dateEl.textContent=calendarDateDisplay(dateStr);
+
+  if(awayPanel)awayPanel.classList.add('hidden');
+  if(awayInput)awayInput.value='';
+
+  const existing=trainingDayRowForDate(dateStr);
+  if(removeWrap)removeWrap.classList.toggle('hidden',!existing);
+
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden','false');
+}
+
+function closeCalendarActionModal(){
+  const modal=document.getElementById('calendarActionModal');
+  const awayPanel=document.getElementById('calendarAwayTrainingPanel');
+  if(awayPanel)awayPanel.classList.add('hidden');
+  if(!modal)return;
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden','true');
+}
+
+function refreshCalendarViewsAfterQuickEdit(){
+  renderScheduleBoard();
+  renderHome();
+
+  const overlay=document.getElementById('calendarFullscreen');
+  if(overlay && overlay.classList.contains('open')){
+    requestAnimationFrame(()=>{
+      const viewport=document.getElementById('calendarFullscreenViewport');
+      const oldLeft=viewport?viewport.scrollLeft:0;
+      const oldTop=viewport?viewport.scrollTop:0;
+      const oldScale=calendarFsScale;
+      openCalendarFullscreen();
+      requestAnimationFrame(()=>{
+        updateCalendarFullscreenScale(oldScale);
+        if(viewport){
+          viewport.scrollLeft=oldLeft;
+          viewport.scrollTop=oldTop;
+        }
+      });
+    });
+  }
+}
+
+function upsertTrainingForDate(dateStr,venue,locationType){
+  db.schedules=db.schedules||[];
+  const existing=trainingDayRowForDate(dateStr);
+
+  const row={
+    id:existing?.id||uid(),
+    date:dateStr,
+    type:'練習',
+    title:venue,
+    place:venue,
+    target:'',
+    coach:'',
+    note:venue,
+    quick:true,
+    trainingDay:true,
+    trainingLocationType:locationType
+  };
+
+  if(existing){
+    const idx=db.schedules.findIndex(x=>x.id===existing.id);
+    if(idx>=0)db.schedules[idx]={...db.schedules[idx],...row};
+  }else{
+    db.schedules.push(row);
+  }
+
+  persistDb({silent:true});
+  closeCalendarActionModal();
+  refreshCalendarViewsAfterQuickEdit();
+}
+
+function setHomeTrainingFromCalendar(){
+  const dateStr=calendarActionDateValue;
+  if(!dateStr)return;
+
+  db.team=db.team||{};
+  const venue=String(db.team.mainSkiArea||'').trim();
+  if(!venue){
+    alert('チーム設定で「メインのスキー場」を入力してください。');
+    return;
+  }
+
+  upsertTrainingForDate(dateStr,venue,'home');
+}
+
+function openAwayTrainingInput(){
+  const panel=document.getElementById('calendarAwayTrainingPanel');
+  const input=document.getElementById('calendarAwayTrainingPlace');
+  if(!panel||!input)return;
+
+  const existing=trainingDayRowForDate(calendarActionDateValue);
+  input.value=existing?.trainingLocationType==='away' ? String(existing.place||'') : '';
+  panel.classList.remove('hidden');
+
+  setTimeout(()=>{
+    input.focus();
+    input.select?.();
+  },30);
+}
+
+function cancelAwayTrainingInput(){
+  const panel=document.getElementById('calendarAwayTrainingPanel');
+  const input=document.getElementById('calendarAwayTrainingPlace');
+  if(panel)panel.classList.add('hidden');
+  if(input)input.value='';
+}
+
+function confirmAwayTraining(){
+  const dateStr=calendarActionDateValue;
+  const input=document.getElementById('calendarAwayTrainingPlace');
+  if(!dateStr||!input)return;
+
+  const venue=String(input.value||'').trim();
+  if(!venue){
+    alert('練習場所を入力してください。');
+    input.focus();
+    return;
+  }
+
+  upsertTrainingForDate(dateStr,venue,'away');
+}
+
+function removeTrainingFromCalendar(){
+  const dateStr=calendarActionDateValue;
+  if(!dateStr)return;
+
+  const existing=trainingDayRowForDate(dateStr);
+  if(!existing)return;
+
+  if(!confirm(`${calendarDateDisplay(dateStr)} の練習設定を解除しますか？`))return;
+
+  db.schedules=(db.schedules||[]).filter(x=>x.id!==existing.id);
+  persistDb({silent:true});
+  closeCalendarActionModal();
+  refreshCalendarViewsAfterQuickEdit();
+}
+
+function openOtherScheduleSettings(){
+  const dateStr=calendarActionDateValue;
+  closeCalendarActionModal();
+  if(dateStr)openCalendarOtherSettings(dateStr);
+}
+
+function openCalendarOtherSettings(dateStr){
   if(!dateStr)return;
   calendarEditDateValue=dateStr;
 
@@ -4780,7 +5127,7 @@ function editScheduleCell(dateStr){
     if(endEl){endEl.disabled=false;endEl.value=dateStr;}
 
     const direct=sameDayQuick
-      .filter(x=>!x.rangeId && !x.overrideOfRangeId && !x.overrideDelete)
+      .filter(x=>!x.rangeId && !x.overrideOfRangeId && !x.overrideDelete && !x.trainingDay)
       .slice(0,2);
 
     for(let i=0;i<2;i++){
@@ -4842,7 +5189,7 @@ function saveCalendarEdit(){
 
     // Remove legacy local-only quick entries on this ranged date, because slots 1/2 now fully represent the day.
     db.schedules=(db.schedules||[]).filter(
-      x=>!(x.quick && x.date===calendarEditDateValue && !x.rangeId && !x.overrideOfRangeId)
+      x=>!(x.quick && x.date===calendarEditDateValue && !x.rangeId && !x.overrideOfRangeId && !x.trainingDay)
     );
 
     for(let slot=1;slot<=2;slot++){
@@ -4909,7 +5256,7 @@ function saveCalendarEdit(){
     // New range registration replaces direct non-range quick entries inside the target dates.
     const dateSet=new Set(dates);
     db.schedules=(db.schedules||[]).filter(
-      x=>!(x.quick && dateSet.has(x.date) && !x.rangeId && !x.overrideOfRangeId)
+      x=>!(x.quick && dateSet.has(x.date) && !x.rangeId && !x.overrideOfRangeId && !x.trainingDay)
     );
 
     dates.forEach(date=>{
@@ -5064,6 +5411,19 @@ function localTodayYmd(){
   const d=new Date();
   return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
 }
+let sajLaunchRefreshStarted=false;
+function startDeferredSajRefresh(){
+  if(sajLaunchRefreshStarted)return;
+  sajLaunchRefreshStarted=true;
+
+  // Keep the title/tool selector completely local and responsive.
+  // SAJ network access begins only after the manager is actually opened.
+  setTimeout(()=>{
+    if(!navigator.onLine)return;
+    autoRefreshSajOnLaunch().catch(()=>{});
+  },800);
+}
+
 async function autoRefreshSajOnLaunch(){
   if(!db.athletes.length || !apiBase()) return;
 
@@ -5097,8 +5457,7 @@ async function refreshAppCacheOnLaunch(){
   if(!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=0139',{updateViaCache:'none'});
-    try{ await reg.update(); }catch{}
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=01314',{updateViaCache:'none'});
 
     if(reg.waiting){
       reg.waiting.postMessage({type:'SKIP_WAITING'});
@@ -5106,13 +5465,18 @@ async function refreshAppCacheOnLaunch(){
 
     reg.addEventListener('updatefound',()=>{
       const nw=reg.installing;
-      if(!nw) return;
+      if(!nw)return;
       nw.addEventListener('statechange',()=>{
         if(nw.state==='installed' && navigator.serviceWorker.controller){
           nw.postMessage({type:'SKIP_WAITING'});
         }
       });
     });
+
+    // Do not compete with first paint/title screen on a weak connection.
+    setTimeout(()=>{
+      if(navigator.onLine)reg.update().catch(()=>{});
+    },8000);
   }catch{}
 }
 
@@ -5121,7 +5485,11 @@ refreshAppCacheOnLaunch().catch(()=>{});
 renderAll();
 initCalendarFullscreen();
 initToolPortal();
-setTimeout(()=>{ autoRefreshSajOnLaunch().catch(()=>{}); },300);
+const _startupPortal=document.getElementById('toolPortal');
+if(_startupPortal && _startupPortal.classList.contains('hidden')){
+  startDeferredSajRefresh();
+}
+// SAJ refresh is started after the user enters the manager.
 
 function renderTopTeamName(){
   const el=document.getElementById('topTeamName');
