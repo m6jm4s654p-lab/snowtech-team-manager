@@ -19,7 +19,7 @@ export default {
       return cors(json({ok:false,error:"Method not allowed"},405), env, request);
     }
     if (url.pathname === "/health") {
-      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.13.24"}), env, request);
+      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.13.30"}), env, request);
     }
 
     if (url.pathname === "/api/debug-competition-calendar") {
@@ -110,6 +110,34 @@ export default {
       }
     }
 
+
+
+    if (url.pathname === "/api/saj-ranking") {
+      const sex=(url.searchParams.get("sex")||"").trim();
+      const category=(url.searchParams.get("category")||"").trim().toLowerCase();
+      const discipline=(url.searchParams.get("discipline")||"").trim().toUpperCase();
+
+      if(!["男","女"].includes(sex)){
+        return cors(json({ok:false,error:"性別は男または女を指定してください"},400),env,request);
+      }
+      if(!["k2","general"].includes(category)){
+        return cors(json({ok:false,error:"カテゴリーはk2またはgeneralを指定してください"},400),env,request);
+      }
+      if(!["SL","GS","SG"].includes(discipline)){
+        return cors(json({ok:false,error:"種目はSL・GS・SGのいずれかを指定してください"},400),env,request);
+      }
+
+      try{
+        const result=await lookupNationalPointRanking({sex,category,discipline});
+        return cors(json({ok:true,...result}),env,request);
+      }catch(e){
+        return cors(json({
+          ok:false,
+          error:"SAJ全国ポイントランキングの取得に失敗しました",
+          detail:String(e?.message||e)
+        },502),env,request);
+      }
+    }
 
 
     if (url.pathname === "/api/saj-athletes") {
@@ -378,7 +406,7 @@ function cors(resp,env,request){
 }
 async function getText(url){
   const r=await fetch(url,{headers:{
-    "User-Agent":"AlpineTeamManager/0.13.24 (+public SAJ data lookup)",
+    "User-Agent":"AlpineTeamManager/0.13.30 (+public SAJ data lookup)",
     "Accept":"text/html,application/xhtml+xml"
   }});
   if(!r.ok) throw new Error(`SAJ HTTP ${r.status}: ${url}`);
@@ -698,7 +726,7 @@ function parseDelimitedPointFile(text,saj,source){
 
 async function getRawText(url){
   const r=await fetch(url,{headers:{
-    "User-Agent":"AlpineTeamManager/0.13.24 (+public SAJ data lookup)",
+    "User-Agent":"AlpineTeamManager/0.13.30 (+public SAJ data lookup)",
     "Accept":"text/csv,text/plain,text/html,application/octet-stream,*/*"
   }});
   if(!r.ok) throw new Error(`SAJ HTTP ${r.status}: ${url}`);
@@ -842,6 +870,177 @@ function extractSelectedPointListNumber(html){
   }
   return null;
 }
+
+
+function parseBirthDateLoose(v){
+  const t=String(v||"").trim();
+  let m=t.match(/(\d{4})[\/年.\-](\d{1,2})[\/月.\-](\d{1,2})/);
+  if(m)return {y:Number(m[1]),m:Number(m[2]),d:Number(m[3])};
+  m=t.match(/^(\d{4})(\d{2})(\d{2})$/);
+  if(m)return {y:Number(m[1]),m:Number(m[2]),d:Number(m[3])};
+  m=t.match(/\b(\d{4})\b/);
+  return m?{y:Number(m[1]),m:7,d:1}:null;
+}
+function birthOrdinal(b){
+  if(!b)return null;
+  return b.y*10000+b.m*100+b.d;
+}
+function isK2BirthForSeason(birth, season){
+  const b=parseBirthDateLoose(birth);
+  if(!b)return false;
+  const schoolYear=Number(season)-1;
+  // User-facing definition:
+  // K2 = all junior-high students + first-year high-school students born Jan 1-Apr 1.
+  // Example 2025/26: 2010-01-01 through 2013-04-01.
+  const from=(schoolYear-15)*10000+101;
+  const to=(schoolYear-12)*10000+401;
+  const n=birthOrdinal(b);
+  return n>=from && n<=to;
+}
+function findDisciplineSelectValue(selects, discipline){
+  const aliases={
+    SL:["SL","回転","SLALOM"],
+    GS:["GS","大回転","GIANT SLALOM"],
+    SG:["SG","スーパー大回転","SUPER-G","SUPER G"]
+  }[discipline]||[discipline];
+  const candidates=[];
+  for(const sel of selects){
+    for(const opt of sel.options){
+      const text=String(opt.text||"").trim().toUpperCase();
+      let score=0;
+      if(aliases.some(a=>text===String(a).toUpperCase())) score+=100;
+      else if(aliases.some(a=>text.includes(String(a).toUpperCase()))) score+=60;
+      if(/event|discipline|competition|kyogi|sports/i.test(sel.name)) score+=20;
+      if(score)candidates.push({score,name:sel.name,value:opt.value,text:opt.text});
+    }
+  }
+  candidates.sort((a,b)=>b.score-a.score);
+  return candidates[0]||null;
+}
+function findBirthYearSelects(selects){
+  return selects.filter(sel=>{
+    const years=sel.options.map(o=>Number(String(o.text||o.value).match(/\b(19|20)\d{2}\b/)?.[0])).filter(Number.isFinite);
+    return years.length>=5 && (/birth|born|year|seinen/i.test(sel.name)||years.length>=10);
+  }).slice(0,2);
+}
+function optionValueForYear(sel, year){
+  if(!sel)return null;
+  const y=String(year);
+  return sel.options.find(o=>String(o.text||"").includes(y)||String(o.value||"")===y)||null;
+}
+function rankingPointValue(row, discipline){
+  const key=String(discipline||"").toLowerCase();
+  const n=Number(row?.[key]);
+  return Number.isFinite(n)?n:null;
+}
+function assignRankingPositions(rows, discipline){
+  const sorted=[...rows].sort((a,b)=>{
+    const ap=rankingPointValue(a,discipline), bp=rankingPointValue(b,discipline);
+    if(ap===null&&bp===null)return 0;
+    if(ap===null)return 1;
+    if(bp===null)return -1;
+    if(ap!==bp)return ap-bp;
+    return String(a.name||"").localeCompare(String(b.name||""),"ja");
+  }).filter(r=>rankingPointValue(r,discipline)!==null);
+
+  let prev=null, prevRank=0;
+  return sorted.slice(0,30).map((r,i)=>{
+    const p=rankingPointValue(r,discipline);
+    const rank=(prev!==null && p===prev)?prevRank:(i+1);
+    prev=p; prevRank=rank;
+    return {
+      rank,
+      saj:r.saj||"",
+      name:r.name||"",
+      birth:r.birth||"",
+      organization:r.organization||"",
+      team:r.team||"",
+      point:p
+    };
+  });
+}
+async function fetchNationalPointRowsForSeason({season,sex,discipline,category}){
+  const baseUrl=new URL(`${SAJ_ORIGIN}/alpine/point/list`);
+  baseUrl.searchParams.set("season_code",String(season));
+  baseUrl.searchParams.set("sports_code","AL");
+  baseUrl.searchParams.set("saj_fis","SAJ");
+
+  const formHtml=await getText(baseUrl.toString());
+  const selects=parseSelectOptions(formHtml);
+  const sexOpt=findSexSelectValue(selects,sex);
+  const discOpt=findDisciplineSelectValue(selects,discipline);
+
+  const u=new URL(baseUrl);
+  if(sexOpt)u.searchParams.set(sexOpt.name,sexOpt.value);
+  else u.searchParams.set("sex",sex==="男"?"1":"2");
+  if(discOpt)u.searchParams.set(discOpt.name,discOpt.value);
+
+  // K2 can be narrowed server-side by a broad birth-year range.
+  if(category==="k2"){
+    const schoolYear=season-1;
+    const ys=findBirthYearSelects(selects);
+    if(ys.length>=2){
+      const fromYear=schoolYear-15;
+      const toYear=schoolYear-12;
+      const a=optionValueForYear(ys[0],fromYear);
+      const b=optionValueForYear(ys[1],toYear);
+      if(a)u.searchParams.set(ys[0].name,a.value);
+      if(b)u.searchParams.set(ys[1].name,b.value);
+    }
+  }
+
+  const variants=[u];
+  for(const [k,v] of [["search","1"],["submit","1"],["action","search"]]){
+    const x=new URL(u); x.searchParams.set(k,v); variants.push(x);
+  }
+
+  let best={rows:[],pointListNumber:null,source:u.toString()};
+  for(const candidate of variants){
+    try{
+      const html=await getText(candidate.toString());
+      const rows=parsePointRows(html,"");
+      if(rows.length>best.rows.length){
+        best={rows,pointListNumber:extractSelectedPointListNumber(html),source:candidate.toString()};
+      }
+      if(rows.length>=30)break;
+    }catch{}
+  }
+  return best;
+}
+async function lookupNationalPointRanking({sex,category,discipline}){
+  let lastError=null;
+  for(const season of getTargetSeasons()){
+    try{
+      const fetched=await fetchNationalPointRowsForSeason({season,sex,discipline,category});
+      if(!fetched.rows.length)continue;
+
+      const filtered=fetched.rows.filter(r=>{
+        const k2=isK2BirthForSeason(r.birth,season);
+        return category==="k2"?k2:!k2;
+      });
+      const ranking=assignRankingPositions(filtered,discipline);
+      if(ranking.length){
+        return {
+          season,
+          seasonLabel:`${season-1}/${season}`,
+          pointListNumber:fetched.pointListNumber,
+          sex,
+          category,
+          discipline,
+          ranking,
+          source:fetched.source,
+          k2Definition:"中学生＋高校1年早生まれ"
+        };
+      }
+    }catch(e){lastError=e;}
+  }
+  if(lastError)throw lastError;
+  return {
+    season:null,seasonLabel:"",pointListNumber:null,sex,category,discipline,ranking:[],
+    source:"",k2Definition:"中学生＋高校1年早生まれ"
+  };
+}
+
 
 async function lookupAthleteListBySexOrganization(sex, organization){
   const seasons=getTargetSeasons();
@@ -1254,7 +1453,7 @@ async function fetchFollowingSajSession(url, init, maxRedirects=5){
       // Browser semantics: 301/302/303 after a form request become GET.
       if([301,302,303].includes(r.status)){
         currentInit={method:"GET",headers:{
-          "User-Agent":"AlpineTeamManager/0.13.24 (+public SAJ competition calendar lookup)",
+          "User-Agent":"AlpineTeamManager/0.13.30 (+public SAJ competition calendar lookup)",
           "Accept":"text/html,application/xhtml+xml"
         }};
       }
@@ -1277,7 +1476,7 @@ async function fetchFollowingSajSession(url, init, maxRedirects=5){
 async function submitCalendarForm(formInfo){
   const target=new URL(formInfo.action,SAJ_ORIGIN);
   const headers={
-    "User-Agent":"AlpineTeamManager/0.13.24 (+public SAJ competition calendar lookup)",
+    "User-Agent":"AlpineTeamManager/0.13.30 (+public SAJ competition calendar lookup)",
     "Accept":"text/html,application/xhtml+xml"
   };
 
@@ -1625,7 +1824,7 @@ async function lookupCompetitionsApi(season,month=0){
   const r=await fetch(target.toString(),{
     method:"GET",
     headers:{
-      "User-Agent":"AlpineTeamManager/0.13.24 (+public SAJ competition calendar lookup)",
+      "User-Agent":"AlpineTeamManager/0.13.30 (+public SAJ competition calendar lookup)",
       "Accept":"application/json,text/javascript,*/*;q=0.8",
       "Referer":`${SAJ_ORIGIN}/alpine/competition/calendar`
     }
@@ -1670,7 +1869,7 @@ async function debugCompetitionApi(season=2026,month=2){
   const r=await fetch(target.toString(),{
     method:"GET",
     headers:{
-      "User-Agent":"AlpineTeamManager/0.13.24 (+public SAJ competition calendar lookup)",
+      "User-Agent":"AlpineTeamManager/0.13.30 (+public SAJ competition calendar lookup)",
       "Accept":"application/json,text/javascript,*/*;q=0.8",
       "Referer":`${SAJ_ORIGIN}/alpine/competition/calendar`
     }

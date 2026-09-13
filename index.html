@@ -261,11 +261,11 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 }
 
 
-/* v0.13.24 branding */
+/* v0.13.30 branding */
 .tool-portal-logo img{width:min(100%,1100px);height:auto;object-fit:contain;display:block;margin:0 auto}
 
 
-/* v0.13.24 top navigation: HOME + 操作ナビ / team name below */
+/* v0.13.30 top navigation: HOME + 操作ナビ / team name below */
 .top-nav-block{
   width:min(560px,100%);
   margin:0 auto 16px;
@@ -313,7 +313,7 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 }
 
 
-/* v0.13.24: team name is shown below HOME / 操作ナビ */
+/* v0.13.30: team name is shown below HOME / 操作ナビ */
 header .team-name,
 header .team-title,
 header #teamName,
@@ -820,7 +820,7 @@ header [data-team-name],header #teamHeader{display:none!important}
 }
 
 
-/* v0.13.24: smartphone / PWA status-bar safe area */
+/* v0.13.30: smartphone / PWA status-bar safe area */
 header{
   padding-top:calc(10px + env(safe-area-inset-top, 0px));
 }
@@ -1043,7 +1043,7 @@ header{
 }
 
 
-/* v0.13.24 two-line competition rows */
+/* v0.13.30 two-line competition rows */
 .event-simple-list{
   width:100%;
   overflow-x:auto;
@@ -1148,7 +1148,7 @@ header{
     grid-template-columns:38px 38px 40px 88px var(--event-title-width, 320px) !important;
   }
 }
-/* v0.13.24 settings alignment */
+/* v0.13.30 settings alignment */
 #coachList .list-item{
   display:flex;
   align-items:center;
@@ -1178,7 +1178,7 @@ header{
 }
 
 
-/* v0.13.24 registered competition typography */
+/* v0.13.30 registered competition typography */
 .event-two-male,
 .event-two-female,
 .event-two-date,
@@ -1188,7 +1188,7 @@ header{
 }
 
 
-/* v0.13.24 competition title wrapping */
+/* v0.13.30 competition title wrapping */
 .event-two-title{
   white-space:normal !important;
   overflow:visible !important;
@@ -1210,7 +1210,7 @@ header{
 }
 
 
-/* v0.13.24 top navigation / item help */
+/* v0.13.30 top navigation / item help */
 .top-action-row{
   grid-template-columns:2fr 1fr 1fr !important;
 }
@@ -1279,7 +1279,7 @@ header{
 }
 
 
-/* v0.13.24 calendar quick action chooser */
+/* v0.13.30 calendar quick action chooser */
 .calendar-action-modal{
   position:fixed;
   inset:0;
@@ -1322,7 +1322,7 @@ header{
 }
 
 
-/* v0.13.24 home / away training quick setting */
+/* v0.13.30 home / away training quick setting */
 .calendar-training-choice-buttons{
   grid-template-columns:1fr 1fr !important;
 }
@@ -1365,7 +1365,7 @@ header{
 }
 
 
-/* v0.13.24 athlete list + team ranking combined page */
+/* v0.13.30 athlete list + team ranking combined page */
 .home-athlete-ranking-btn strong{
   line-height:1.2;
 }
@@ -1419,7 +1419,7 @@ header{
 }
 
 
-/* v0.13.24 venue link fallback */
+/* v0.13.30 venue link fallback */
 .venue-official-search{
   border-color:#536b7d !important;
   background:#162839 !important;
@@ -1431,7 +1431,7 @@ header{
 }
 
 
-/* v0.13.24 in-app venue official-link picker */
+/* v0.13.30 in-app venue official-link picker */
 .venue-link-modal{
   position:fixed;
   inset:0;
@@ -1527,7 +1527,7 @@ header{
 }
 
 
-/* v0.13.24 municipality-based venue search */
+/* v0.13.30 municipality-based venue search */
 .venue-link-search-area{
   margin:12px 0 4px;
   padding:9px 11px;
@@ -1542,7 +1542,7 @@ header{
 .venue-link-search-area:empty{display:none}
 
 
-/* v0.13.24 strict prefecture + municipality search */
+/* v0.13.30 strict prefecture + municipality search */
 .venue-link-area-editor{
   display:grid;
   grid-template-columns:1fr 1fr auto;
@@ -1564,6 +1564,243 @@ header{
   .venue-link-area-editor .btn{grid-column:1 / -1}
 }
 
+
+/* v0.13.30 official competition detail from annual schedule */
+.calendar-official-event-actions{
+  margin-top:10px;
+  display:grid;
+  gap:8px;
+}
+.calendar-official-event-actions.hidden{display:none}
+.calendar-official-event-row{
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:10px;
+  background:rgba(255,255,255,.03);
+}
+.calendar-official-event-name{
+  font-size:12px;
+  font-weight:800;
+  line-height:1.45;
+  margin-bottom:8px;
+}
+.calendar-official-event-row .btn{
+  width:100%;
+}
+
+
+/* v0.13.30 ski federation links */
+.ski-fed-list{
+  display:grid;
+  gap:8px;
+}
+.ski-fed-link{
+  display:grid;
+  grid-template-columns:72px minmax(0,1fr) auto;
+  align-items:center;
+  gap:10px;
+  padding:12px 13px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:rgba(255,255,255,.03);
+  color:var(--text);
+  text-decoration:none;
+}
+.ski-fed-link:active{transform:translateY(1px)}
+.ski-fed-national{
+  border-width:2px;
+  background:rgba(255,255,255,.06);
+}
+.ski-fed-pref{
+  font-size:12px;
+  font-weight:900;
+  white-space:nowrap;
+}
+.ski-fed-name{
+  min-width:0;
+  font-size:13px;
+  font-weight:800;
+  line-height:1.4;
+}
+.ski-fed-open{
+  font-size:12px;
+  font-weight:800;
+  color:var(--muted);
+  white-space:nowrap;
+}
+@media(max-width:520px){
+  .ski-fed-link{grid-template-columns:62px minmax(0,1fr) auto;padding:11px 10px;gap:8px}
+  .ski-fed-name{font-size:12px}
+}
+
+
+/* v0.13.30 local federation */
+.ski-fed-local{
+  margin-left:18px;
+  border-left-width:3px;
+}
+@media(max-width:520px){
+  .ski-fed-local{margin-left:10px}
+}
+
+
+/* v0.13.30 verified municipal/regional federation hierarchy */
+.ski-fed-legend{
+  display:flex;
+  gap:14px;
+  flex-wrap:wrap;
+  margin:0 0 10px;
+  font-size:11px;
+  color:var(--muted);
+}
+.ski-fed-legend .local{padding-left:8px}
+.ski-fed-local{
+  position:relative;
+  margin-left:22px;
+  border-left:3px solid var(--line);
+}
+.ski-fed-local::before{
+  content:"↳";
+  position:absolute;
+  left:-18px;
+  top:50%;
+  transform:translateY(-50%);
+  color:var(--muted);
+  font-weight:900;
+}
+.ski-fed-name small{
+  display:block;
+  margin-top:2px;
+  font-size:10px;
+  font-weight:700;
+  color:var(--muted);
+}
+@media(max-width:520px){
+  .ski-fed-local{margin-left:14px}
+  .ski-fed-local::before{left:-14px}
+}
+
+
+/* v0.13.30 federation hierarchy: region -> prefecture -> organization */
+.ski-fed-region-list{
+  display:grid;
+  gap:16px;
+  margin-top:14px;
+}
+.ski-fed-region{
+  border:1px solid var(--line);
+  border-radius:14px;
+  overflow:hidden;
+  background:rgba(255,255,255,.02);
+}
+.ski-fed-region-title{
+  margin:0;
+  padding:11px 13px;
+  font-size:15px;
+  font-weight:900;
+  border-bottom:1px solid var(--line);
+  background:rgba(255,255,255,.05);
+}
+.ski-fed-pref-group{
+  padding:10px 11px 12px;
+}
+.ski-fed-pref-group + .ski-fed-pref-group{
+  border-top:1px solid var(--line);
+}
+.ski-fed-pref-title{
+  font-size:13px;
+  font-weight:900;
+  margin:0 0 7px 2px;
+}
+.ski-fed-pref-links{
+  display:grid;
+  gap:7px;
+}
+.ski-fed-pref-links .ski-fed-link{
+  margin-left:0;
+}
+.ski-fed-pref-links .ski-fed-local{
+  margin-left:14px;
+}
+.ski-fed-pref-links .ski-fed-local::before{
+  content:"↳";
+  position:absolute;
+  left:-13px;
+  top:50%;
+  transform:translateY(-50%);
+  color:var(--muted);
+  font-weight:900;
+}
+@media(max-width:520px){
+  .ski-fed-region-title{font-size:14px}
+  .ski-fed-pref-title{font-size:12px}
+  .ski-fed-pref-links .ski-fed-local{margin-left:10px}
+}
+
+
+/* v0.13.30 National SAJ point ranking */
+.national-ranking-card{overflow:hidden}
+.national-ranking-head{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px
+}
+.national-ranking-head h2{margin-bottom:3px}
+.national-ranking-filter{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+  margin:12px 0;
+}
+.national-ranking-filter-group{
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:9px;
+  min-width:0;
+}
+.national-ranking-filter-label{
+  font-size:11px;
+  font-weight:900;
+  color:var(--muted);
+  margin-bottom:6px;
+}
+.national-ranking-seg{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+.national-ranking-filter-group:nth-child(1) .national-ranking-seg,
+.national-ranking-filter-group:nth-child(2) .national-ranking-seg{grid-template-columns:repeat(2,minmax(0,1fr))}
+.national-ranking-seg button{
+  min-height:34px;
+  padding:5px 6px;
+  font-size:12px;
+  border-radius:8px;
+  border:1px solid var(--line);
+  background:var(--panel);
+  color:var(--text);
+  font-weight:800;
+}
+.national-ranking-seg button.active{
+  border-color:#42c7d9;
+  box-shadow:inset 0 0 0 1px #42c7d9;
+}
+.national-ranking-meta{font-size:12px;margin:8px 0}
+.national-ranking-status{font-size:12px;min-height:20px;margin-bottom:6px}
+.national-ranking-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.national-ranking-table{width:100%;border-collapse:collapse;min-width:620px}
+.national-ranking-table th,
+.national-ranking-table td{padding:9px 7px;border-bottom:1px solid var(--line);font-size:12px;text-align:left;vertical-align:middle}
+.national-ranking-table th{font-size:11px;color:var(--muted);font-weight:900}
+.national-ranking-table .rank{width:48px;text-align:center}
+.national-ranking-table .point{width:74px;text-align:right;font-weight:900}
+.national-ranking-table td.rank{text-align:center;font-weight:900}
+.national-ranking-athlete{
+  border:0;background:none;color:inherit;padding:0;font:inherit;font-weight:900;text-align:left;text-decoration:underline;
+  text-decoration-color:rgba(255,255,255,.25);text-underline-offset:3px;cursor:pointer
+}
+.national-ranking-athlete-meta{font-size:10px;color:var(--muted);margin-top:2px}
+.national-ranking-note{font-size:10px;line-height:1.55;margin-top:10px}
+@media(max-width:650px){
+  .national-ranking-filter{grid-template-columns:1fr}
+  .national-ranking-table{min-width:560px}
+  .national-ranking-head{align-items:center}
+}
+
 </style>
 </head>
 <body>
@@ -1581,7 +1818,7 @@ header{
 
       <button class="tool-choice manager" type="button" onclick="enterManagerTool()">
         <div class="tool-choice-title">マネージメントツール</div>
-        <div class="tool-choice-desc">ホーム・年間予定・大会管理・会場情報・天気・積雪・レース速報・ランキング・選手・チーム設定</div>
+        <div class="tool-choice-desc">ホーム・年間予定・大会管理・会場情報・天気・積雪・レース速報・スキー連盟リンク・ランキング・選手・チーム設定</div>
       </button>
     </div>
   </div>
@@ -1590,7 +1827,7 @@ header{
 <header>
   <div class="header-inner">
     <div class="header-meta-row">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.13.24</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.13.30</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
     <div class="header-title-row">
@@ -1636,13 +1873,15 @@ header{
       <div class="home-category-icon">i</div>
       <div>
         <div class="home-category-title">情報</div>
-        <div class="home-category-sub">会場・天候・速報・外部ツール</div>
+        <div class="home-category-sub">会場・天候・速報・全国ランキング・外部ツール</div>
       </div>
     </div>
     <div class="home-menu-grid home-category-grid">
       <button class="home-menu-btn" onclick="openTab('venues')"><strong>会場情報</strong><span>登録大会の会場情報</span></button>
       <button class="home-menu-btn" onclick="openTab('weather')"><strong>天気・積雪</strong><span>大会会場の予報</span></button>
       <button class="home-menu-btn race-live-btn" onclick="openTab('raceLive')"><strong>レース速報</strong><span>SEIKO / ALGE</span></button>
+      <button class="home-menu-btn" onclick="openTab('skiFederations')"><strong>スキー連盟リンク</strong><span>SAJ・都道府県連盟</span></button>
+      <button class="home-menu-btn" onclick="openTab('nationalRanking')"><strong>全国ポイントランキング<br>TOP30</strong><span>K2・一般 / SL・GS・SG</span></button>
       <button class="home-menu-btn" onclick="showToolPortal()"><strong>ツール切り替え</strong><span>セッター／マネージメント</span></button>
     </div>
   </div>
@@ -1650,6 +1889,624 @@ header{
   <div class="card" style="margin-top:14px">
     <h2>直近1週間の予定</h2>
     <div id="homeWeekSchedule"></div>
+  </div>
+</section>
+
+
+
+
+<section id="nationalRanking">
+  <div class="card national-ranking-card">
+    <div class="national-ranking-head">
+      <div>
+        <h2>全国ポイントランキング TOP30</h2>
+        <div class="muted">SAJアルペンポイントリストをもとに全国上位30名を表示</div>
+      </div>
+      <button class="btn small" type="button" onclick="loadNationalRanking(true)">更新</button>
+    </div>
+
+    <div class="national-ranking-filter">
+      <div class="national-ranking-filter-group">
+        <div class="national-ranking-filter-label">カテゴリー</div>
+        <div class="segmented national-ranking-seg">
+          <button type="button" data-ranking-category="k2" class="active" onclick="setNationalRankingCategory('k2')">K2</button>
+          <button type="button" data-ranking-category="general" onclick="setNationalRankingCategory('general')">一般</button>
+        </div>
+      </div>
+      <div class="national-ranking-filter-group">
+        <div class="national-ranking-filter-label">性別</div>
+        <div class="segmented national-ranking-seg">
+          <button type="button" data-ranking-sex="男" class="active" onclick="setNationalRankingSex('男')">男子</button>
+          <button type="button" data-ranking-sex="女" onclick="setNationalRankingSex('女')">女子</button>
+        </div>
+      </div>
+      <div class="national-ranking-filter-group">
+        <div class="national-ranking-filter-label">種目</div>
+        <div class="segmented national-ranking-seg">
+          <button type="button" data-ranking-discipline="SL" class="active" onclick="setNationalRankingDiscipline('SL')">SL</button>
+          <button type="button" data-ranking-discipline="GS" onclick="setNationalRankingDiscipline('GS')">GS</button>
+          <button type="button" data-ranking-discipline="SG" onclick="setNationalRankingDiscipline('SG')">SG</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="nationalRankingMeta" class="national-ranking-meta muted">ランキングを取得してください。</div>
+    <div id="nationalRankingStatus" class="muted national-ranking-status"></div>
+
+    <div class="national-ranking-table-wrap">
+      <table class="national-ranking-table">
+        <thead>
+          <tr>
+            <th class="rank">順位</th>
+            <th>選手</th>
+            <th>加盟団体</th>
+            <th>チーム</th>
+            <th class="point">P</th>
+          </tr>
+        </thead>
+        <tbody id="nationalRankingBody"></tbody>
+      </table>
+    </div>
+
+    <div class="muted national-ranking-note">
+      K2は「中学生＋高校1年の早生まれ」を対象として判定します。一般はK2対象者を除外して表示します。
+      ポイントは数値が小さいほど上位です。
+    </div>
+  </div>
+</section>
+
+
+<section id="skiFederations">
+  <div class="card">
+    <h2>スキー連盟リンク</h2>
+    <div class="muted" style="margin-bottom:12px">全日本スキー連盟を先頭に、その下を「地域 → 都道府県 → 団体リンク」の順に表示します。</div>
+
+    <a class="ski-fed-link ski-fed-national" href="https://www.ski-japan.or.jp/" target="_blank" rel="noopener noreferrer">
+      <span class="ski-fed-pref">全国</span>
+      <span class="ski-fed-name">全日本スキー連盟（SAJ）</span>
+      <span class="ski-fed-open">開く ›</span>
+    </a>
+
+    <div class="ski-fed-region-list">
+      <div class="ski-fed-region">
+        <h3 class="ski-fed-region-title">北海道・東北</h3>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">北海道</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="http://www.ski-hokkaido.jp/" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">公益財団法人 北海道スキー・スノーボード連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+            <a class="ski-fed-link ski-fed-local" href="http://www.age.ne.jp/x/sas/" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">地域団体</span>
+              <span class="ski-fed-name">公益財団法人 札幌スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">青森県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="http://www.s-a-a.jp/" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">一般財団法人 青森県スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">岩手県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="https://iwateski.com/" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">一般財団法人 岩手県スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+            <a class="ski-fed-link ski-fed-local" href="https://shizuski.hp-ez.com/" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">地域団体</span>
+              <span class="ski-fed-name">NPO法人 雫石町スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">秋田県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="http://www.ski-akita.com/" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">秋田県スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">宮城県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="http://www.ski-miyagi.jp" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">宮城県スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">山形県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="http://www.ski-yamagata.jp/" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">山形県スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">福島県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="http://saf-ski.jp/" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">福島県スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+      </div>
+      <div class="ski-fed-region">
+        <h3 class="ski-fed-region-title">関東</h3>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">茨城県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="https://ski-ibaraki.jp/" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">茨城県スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">栃木県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="http://www.ski-tochigi.ne.jp" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">栃木県スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">群馬県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="http://ski-gunma.jp/" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">群馬県スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">埼玉県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="https://www.ski-saitama.jp/" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">埼玉県スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">千葉県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="http://sac-office.jp/" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">千葉県スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">東京都</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="http://www.ski-tokyo.jp" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">一般財団法人 東京都スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">神奈川県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="http://www.sak.or.jp" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">公益財団法人 神奈川県スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+      </div>
+      <div class="ski-fed-region">
+        <h3 class="ski-fed-region-title">甲信越</h3>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">新潟県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="http://nsa.jpn.com" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">公益財団法人 新潟県スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+            <a class="ski-fed-link ski-fed-local" href="https://nsa.jpn.com/general-affairs/member-organization/" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">地域団体</span>
+              <span class="ski-fed-name">新潟スキー協会</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+            <a class="ski-fed-link ski-fed-local" href="https://nsa.jpn.com/general-affairs/member-organization/" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">地域団体</span>
+              <span class="ski-fed-name">佐渡スキー協会</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+            <a class="ski-fed-link ski-fed-local" href="https://nsa.jpn.com/general-affairs/member-organization/" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">地域団体</span>
+              <span class="ski-fed-name">十日町市スキー協会</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+            <a class="ski-fed-link ski-fed-local" href="https://nsa.jpn.com/general-affairs/member-organization/" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">地域団体</span>
+              <span class="ski-fed-name">長岡スキー協会</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">山梨県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="http://www.sa-yamanashi.org/" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">NPO法人 山梨県スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">長野県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="http://www.ski-nagano.org/" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">公益財団法人 長野県スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+            <a class="ski-fed-link ski-fed-local" href="https://www.ski-nagano.org/club-school" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">地域団体</span>
+              <span class="ski-fed-name">茅野市スキー協会</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+            <a class="ski-fed-link ski-fed-local" href="https://www.ski-nagano.org/club-school" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">地域団体</span>
+              <span class="ski-fed-name">諏訪市スキー協会</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+      </div>
+      <div class="ski-fed-region">
+        <h3 class="ski-fed-region-title">北陸</h3>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">富山県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="http://www1.coralnet.or.jp/sat" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">富山県スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">石川県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="https://ishikawa-ski.com/" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">石川県スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">福井県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="http://www.ski-fukui.com/" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">福井県スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+      </div>
+      <div class="ski-fed-region">
+        <h3 class="ski-fed-region-title">東海</h3>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">岐阜県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="http://www.ski-gifu.jp" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">一般社団法人 岐阜県スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">静岡県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="https://www.sashizuoka.org/" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">静岡県スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">愛知県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="https://ski.aichi.jp/info/" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">公益社団法人 愛知県スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">三重県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="http://www.ski-mie.org" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">三重県スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+      </div>
+      <div class="ski-fed-region">
+        <h3 class="ski-fed-region-title">近畿</h3>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">滋賀県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="http://www.saj-shiga.com" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">滋賀県スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">京都府</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="https://ski-kyoto.jp/" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">京都府スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">大阪府</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="https://ski-osaka.or.jp/" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">一般財団法人 大阪府スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">兵庫県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="http://www.ski-hyogo.jp" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">一般財団法人 兵庫県スキー・スノーボード連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">奈良県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="https://ski-nara.lolipop.jp/" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">奈良県スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">和歌山県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="http://www3.cypress.ne.jp/saw" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">和歌山県スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+      </div>
+      <div class="ski-fed-region">
+        <h3 class="ski-fed-region-title">中国</h3>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">鳥取県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="http://www.skitottr.gr.jp" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">鳥取県スキー・スノーボード連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">島根県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="https://ski-shimane.org/" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">島根県スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">岡山県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="http://www.ski-okayama.com/" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">岡山県スキー・スノーボード連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">広島県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="https://ski-hiroshima.org/" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">広島県スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">山口県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="http://ski-yamaguchi.org" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">山口県スキー・スノーボード連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+      </div>
+      <div class="ski-fed-region">
+        <h3 class="ski-fed-region-title">四国</h3>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">徳島県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="https://www.ski-tokushima.org/" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">徳島県スキー・スノーボード連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">香川県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="http://www.ski-kagawa.jp" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">香川県スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">愛媛県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="https://www.ski-ehime.org/" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">愛媛県スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">高知県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="https://www.kochi-ski.com/" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">高知県スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+      </div>
+      <div class="ski-fed-region">
+        <h3 class="ski-fed-region-title">九州・沖縄</h3>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">福岡県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="http://www.fukuoka-ski.jp/" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">福岡県スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">佐賀県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="http://skisaga.net" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">佐賀県スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">長崎県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="http://nagasaki-ski.org" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">長崎県スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">熊本県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="http://kumamoto-ski.com/" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">熊本県スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">大分県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="https://skioita.net" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">大分県スキー・スノーボード連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">宮崎県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="https://saj-miyazaki.cloud-line.com" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">宮崎県スキー・スノーボード連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">鹿児島県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="http://www.ski-kagoshima.com/" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">鹿児島県スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+        <div class="ski-fed-pref-group">
+          <div class="ski-fed-pref-title">沖縄県</div>
+          <div class="ski-fed-pref-links">
+            <a class="ski-fed-link" href="https://skioki.com/" target="_blank" rel="noopener noreferrer">
+              <span class="ski-fed-pref">都道府県連盟</span>
+              <span class="ski-fed-name">沖縄県スキー連盟</span>
+              <span class="ski-fed-open">開く ›</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="muted" style="margin-top:12px;font-size:11px">地域団体は、検索・公式団体情報で確認できた団体のみ掲載しています。</div>
   </div>
 </section>
 
@@ -2103,6 +2960,8 @@ header{
       <button class="btn calendar-other-schedule-btn" type="button" onclick="openOtherScheduleSettings()">その他予定設定</button>
     </div>
 
+    <div id="calendarOfficialEventActions" class="calendar-official-event-actions hidden"></div>
+
     <div id="calendarAwayTrainingPanel" class="calendar-away-training-panel hidden">
       <label for="calendarAwayTrainingPlace">練習場所</label>
       <input id="calendarAwayTrainingPlace" type="text" maxlength="60" placeholder="例：テスト高原スキー場">
@@ -2119,7 +2978,8 @@ header{
     <div class="calendar-action-help">
       「ホームで練習」はチーム設定のメインのスキー場を使用します。<br>
       「ホーム以外で練習」は練習場所を入力して確定します。<br>
-      「その他予定設定」はこれまでの期間・予定1・予定2の入力画面を開きます。
+      「その他予定設定」はこれまでの期間・予定1・予定2の入力画面を開きます。<br>
+      公式大会が登録されている日は「大会詳細」からSAJの大会詳細ページを表示できます。
     </div>
   </div>
 </div>
@@ -2463,7 +3323,7 @@ let db=JSON.parse(localStorage.getItem(KEY)||'null')||{
   events:[]
 };
 
-// v0.13.24 compatibility: normalize only known sex labels.
+// v0.13.30 compatibility: normalize only known sex labels.
 // Existing athlete records and point values are never removed here.
 (db.athletes||[]).forEach(a=>{
   const normalized=normalizeAthleteSex(a.sex);
@@ -3497,7 +4357,7 @@ function openAlgeExternalBrowser(){
 const ITEM_HELP_ITEMS=[
   {
     title:'HOME',
-    body:'選択中のチーム名・シーズンを確認し、年間予定、大会管理、ランキング、選手・チーム設定、会場情報、天気・積雪、レース速報、ツール切り替えへ移動できます。直近1週間の予定も確認できます。'
+    body:'選択中のチーム名・シーズンを確認し、年間予定、大会管理、ランキング、選手・チーム設定、会場情報、天気・積雪、レース速報、スキー連盟リンク、全国ポイントランキング、ツール切り替えへ移動できます。直近1週間の予定も確認できます。'
   },
   {
     title:'操作ナビ',
@@ -3536,6 +4396,14 @@ const ITEM_HELP_ITEMS=[
     body:'SEIKO SPORTSLINKとTHA&KS ALGE Timingを開けます。ALGEはiPhone・Androidのホーム画面アプリから外部ブラウザへ渡して表示します。'
   },
   {
+    title:'スキー連盟リンク',
+    body:'全日本スキー連盟（SAJ）を先頭に、その下を「地域 → 都道府県 → 団体リンク」の順で表示します。市町村・地域スキー連盟／協会は、該当する都道府県の中に階層表示します。'
+  },
+  {
+    title:'全国ポイントランキング TOP30',
+    body:'SAJアルペンポイントリストから全国上位30名を表示します。K2／一般、男子／女子、SL／GS／SGを切り替えて確認できます。K2は中学生と高校1年早生まれを対象に判定し、一般はK2対象者を除外します。'
+  },
+  {
     title:'ツール切り替え',
     body:'マネージメントツールと、別途用意したセッター向けツールを切り替えるための入口です。'
   },
@@ -3563,6 +4431,105 @@ function toggleItemHelp(index){
   renderItemHelp();
 }
 
+
+// ===== v0.13.30 National SAJ point ranking =====
+let nationalRankingState={category:'k2',sex:'男',discipline:'SL'};
+const nationalRankingCache=new Map();
+
+function nationalRankingKey(){
+  const s=nationalRankingState;
+  return `${s.category}|${s.sex}|${s.discipline}`;
+}
+function syncNationalRankingButtons(){
+  document.querySelectorAll('[data-ranking-category]').forEach(b=>b.classList.toggle('active',b.dataset.rankingCategory===nationalRankingState.category));
+  document.querySelectorAll('[data-ranking-sex]').forEach(b=>b.classList.toggle('active',b.dataset.rankingSex===nationalRankingState.sex));
+  document.querySelectorAll('[data-ranking-discipline]').forEach(b=>b.classList.toggle('active',b.dataset.rankingDiscipline===nationalRankingState.discipline));
+}
+function setNationalRankingCategory(v){
+  nationalRankingState.category=v==='general'?'general':'k2';
+  syncNationalRankingButtons();
+  loadNationalRanking();
+}
+function setNationalRankingSex(v){
+  nationalRankingState.sex=v==='女'?'女':'男';
+  syncNationalRankingButtons();
+  loadNationalRanking();
+}
+function setNationalRankingDiscipline(v){
+  nationalRankingState.discipline=['SL','GS','SG'].includes(v)?v:'SL';
+  syncNationalRankingButtons();
+  loadNationalRanking();
+}
+function nationalRankingAthleteUrl(saj){
+  const n=String(saj||'').replace(/\D/g,'');
+  return /^\d{7,9}$/.test(n)?`https://sajdb.shikuminet.jp/alpine/biography/${encodeURIComponent(n)}`:'';
+}
+function openNationalRankingAthlete(saj){
+  const u=nationalRankingAthleteUrl(saj);
+  if(u)window.open(u,'_blank','noopener,noreferrer');
+}
+function renderNationalRanking(data){
+  const body=document.getElementById('nationalRankingBody');
+  const meta=document.getElementById('nationalRankingMeta');
+  const status=document.getElementById('nationalRankingStatus');
+  if(!body||!meta||!status)return;
+
+  const rows=Array.isArray(data?.ranking)?data.ranking:[];
+  const cat=nationalRankingState.category==='k2'?'K2':'一般';
+  const sex=nationalRankingState.sex==='男'?'男子':'女子';
+  meta.textContent=`${data?.seasonLabel||'シーズン—'} / ${data?.pointListNumber!=null?`SAJポイントリスト No.${data.pointListNumber}`:'ポイントリスト番号—'} / ${cat} / ${sex} / ${nationalRankingState.discipline}`;
+  status.textContent=rows.length?`${rows.length}名を表示`:'該当するランキングデータがありません。';
+
+  body.innerHTML=rows.map(r=>{
+    const saj=String(r.saj||'');
+    const safeSaj=encodeURIComponent(saj);
+    const birth=r.birth?`Birth ${esc(r.birth)}`:'';
+    return `<tr>
+      <td class="rank">${esc(String(r.rank??'—'))}</td>
+      <td>
+        <button class="national-ranking-athlete" type="button" onclick="openNationalRankingAthlete(decodeURIComponent('${safeSaj}'))">${esc(r.name||'氏名不明')}</button>
+        <div class="national-ranking-athlete-meta">SAJ ${esc(saj||'—')}${birth?` / ${birth}`:''}</div>
+      </td>
+      <td>${esc(r.organization||'—')}</td>
+      <td>${esc(r.team||'—')}</td>
+      <td class="point">${Number.isFinite(Number(r.point))?Number(r.point).toFixed(2):'—'}</td>
+    </tr>`;
+  }).join('');
+}
+async function loadNationalRanking(force=false){
+  const body=document.getElementById('nationalRankingBody');
+  const meta=document.getElementById('nationalRankingMeta');
+  const status=document.getElementById('nationalRankingStatus');
+  if(!body||!meta||!status)return;
+  syncNationalRankingButtons();
+
+  const key=nationalRankingKey();
+  if(!force && nationalRankingCache.has(key)){
+    renderNationalRanking(nationalRankingCache.get(key));
+    return;
+  }
+
+  status.textContent='SAJポイントランキングを取得しています…';
+  if(!body.children.length)body.innerHTML='<tr><td colspan="5" class="muted">読込中…</td></tr>';
+
+  try{
+    const q=new URLSearchParams({
+      category:nationalRankingState.category,
+      sex:nationalRankingState.sex,
+      discipline:nationalRankingState.discipline
+    });
+    const r=await fetch(`${apiBase()}/api/saj-ranking?${q.toString()}`,{cache:'no-store'});
+    const data=await r.json().catch(()=>({}));
+    if(!r.ok||!data?.ok)throw new Error(data?.error||`HTTP ${r.status}`);
+    nationalRankingCache.set(key,data);
+    renderNationalRanking(data);
+  }catch(e){
+    body.innerHTML='';
+    meta.textContent='全国ポイントランキング';
+    status.textContent=`取得できませんでした：${String(e?.message||e)}`;
+  }
+}
+
 function openTab(tabId){
   document.querySelectorAll('nav button[data-tab], .top-action-btn[data-tab]').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('section').forEach(x=>x.classList.remove('active'));
@@ -3575,12 +4542,13 @@ function openTab(tabId){
   if(tabId==='itemHelp')renderItemHelp();
   if(tabId==='venues')renderVenues();
   if(tabId==='weather')renderWeatherVenues();
+  if(tabId==='nationalRanking')loadNationalRanking();
   window.scrollTo(0,0);
 }
 document.querySelectorAll('nav button[data-tab]').forEach(b=>b.onclick=()=>openTab(b.dataset.tab));
 
 
-// ===== v0.13.24 Weather / Team Board =====
+// ===== v0.13.30 Weather / Team Board =====
 const PREF_REGION={
   '北海道':'北海道',
   '青森':'東北','岩手':'東北','宮城':'東北','秋田':'東北','山形':'東北','福島':'東北',
@@ -5382,7 +6350,7 @@ async function directPdfDownload(id){
 }
 function printSection(id){return directPdfDownload(id);}
 
-// ===== v0.13.24 SAJ list athlete registration =====
+// ===== v0.13.30 SAJ list athlete registration =====
 let sajAthleteListCache=[];
 
 function setAthleteRegisterMode(mode){
@@ -5861,6 +6829,53 @@ function trainingDayRowForDate(dateStr){
   return (db.schedules||[]).find(x=>x?.trainingDay && x.date===dateStr) || null;
 }
 
+function officialEventsForCalendarDate(dateStr){
+  return (db.events||[]).filter(e=>{
+    if(!e?.sajKey)return false;
+    const start=String(e.start||'');
+    const end=String(e.end||e.start||'');
+    return !!start && dateStr>=start && dateStr<=end;
+  });
+}
+
+function renderCalendarOfficialEventActions(dateStr){
+  const box=document.getElementById('calendarOfficialEventActions');
+  if(!box)return;
+
+  const events=officialEventsForCalendarDate(dateStr);
+  if(!events.length){
+    box.innerHTML='';
+    box.classList.add('hidden');
+    return;
+  }
+
+  box.innerHTML=events.map(e=>{
+    const safe=safeSajUrl(e.sajUrl);
+    const button=safe
+      ? `<button class="btn primary" type="button" onclick="openCalendarOfficialEventDetail('${esc(String(e.id||''))}')">大会詳細</button>`
+      : `<button class="btn" type="button" disabled>大会詳細</button>`;
+    return `<div class="calendar-official-event-row">
+      <div class="calendar-official-event-name">${esc(e.title||'SAJ公認大会')}</div>
+      ${button}
+      ${safe?'':'<div class="muted" style="margin-top:6px;font-size:11px">大会詳細URLを取得できていません。</div>'}
+    </div>`;
+  }).join('');
+
+  box.classList.remove('hidden');
+}
+
+function openCalendarOfficialEventDetail(eventId){
+  const e=(db.events||[]).find(x=>String(x.id||'')===String(eventId||''));
+  if(!e)return;
+  const safe=safeSajUrl(e.sajUrl);
+  if(!safe){
+    alert('この大会の詳細URLを取得できていません。');
+    return;
+  }
+  closeCalendarActionModal();
+  openCompetitionDetail(safe);
+}
+
 function editScheduleCell(dateStr){
   if(!dateStr)return;
   calendarActionDateValue=dateStr;
@@ -5880,6 +6895,8 @@ function editScheduleCell(dateStr){
   const existing=trainingDayRowForDate(dateStr);
   if(removeWrap)removeWrap.classList.toggle('hidden',!existing);
 
+  renderCalendarOfficialEventActions(dateStr);
+
   modal.classList.add('open');
   modal.setAttribute('aria-hidden','false');
 }
@@ -5887,7 +6904,12 @@ function editScheduleCell(dateStr){
 function closeCalendarActionModal(){
   const modal=document.getElementById('calendarActionModal');
   const awayPanel=document.getElementById('calendarAwayTrainingPanel');
+  const officialBox=document.getElementById('calendarOfficialEventActions');
   if(awayPanel)awayPanel.classList.add('hidden');
+  if(officialBox){
+    officialBox.innerHTML='';
+    officialBox.classList.add('hidden');
+  }
   if(!modal)return;
   modal.classList.remove('open');
   modal.setAttribute('aria-hidden','true');
@@ -6388,7 +7410,7 @@ async function refreshAppCacheOnLaunch(){
   if(!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=01324',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=01330',{updateViaCache:'none'});
 
     if(reg.waiting){
       reg.waiting.postMessage({type:'SKIP_WAITING'});
