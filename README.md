@@ -1163,3 +1163,17 @@ SnowTech → 管理 → `SAJ連携API URL` にWorker URLを入力 → 保存。
 - Nominatimのwebsite/contact:websiteも補助候補として継続利用
 - このバージョンはGitHub Pages更新に加えて worker.js のCloudflare再デプロイが必要
 - Service Worker cache v0.13.20
+
+## v0.13.21 municipality-based venue search
+- 会場URL検索を「会場名だけ」から「所在地を先に特定して検索」へ変更
+- 位置情報/天気機能で既に取得済みの geocodeLabel を優先再利用
+- 未取得時は Nominatim で会場の都道府県・市区町村を確認
+- 大会データ内の都道府県情報も補助利用
+- 例：秋田県 鹿角市まで特定できた場合、最優先検索語を「秋田県 鹿角市 スキー場」にする
+- 次に「秋田県 鹿角市 + 会場名 + スキー場」
+- 最後に「会場名 + スキー場 + 公式」
+- アプリ内候補画面に「検索地域」を表示
+- 候補最大16件、複数チェック登録は維持
+- Cloudflare Worker /api/venue-search に prefecture / municipality パラメータを追加
+- v0.13.21はGitHub Pages更新とCloudflare Worker再デプロイの両方が必要
+- Service Worker cache v0.13.21

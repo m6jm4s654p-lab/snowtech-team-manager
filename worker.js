@@ -19,7 +19,7 @@ export default {
       return cors(json({ok:false,error:"Method not allowed"},405), env, request);
     }
     if (url.pathname === "/health") {
-      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.13.20"}), env, request);
+      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.13.21"}), env, request);
     }
 
     if (url.pathname === "/api/debug-competition-calendar") {
@@ -56,14 +56,19 @@ export default {
 
     if (url.pathname === "/api/venue-search") {
       const q=String(url.searchParams.get("q")||"").trim();
+      const prefecture=String(url.searchParams.get("prefecture")||"").trim();
+      const municipality=String(url.searchParams.get("municipality")||"").trim();
       if(q.length<2 || q.length>100){
         return cors(json({ok:false,error:"会場名を確認してください"},400),env,request);
       }
       try{
-        const results=await searchVenueOfficialWeb(q);
+        const results=await searchVenueOfficialWeb(q,{prefecture,municipality});
         return cors(json({
           ok:true,
           query:q,
+          prefecture,
+          municipality,
+          searchArea:[prefecture,municipality].filter(Boolean).join(" "),
           results
         }),env,request);
       }catch(e){
@@ -281,41 +286,57 @@ function parseBingResults(html){
   }
   return out;
 }
-function scoreVenueSearchResult(row,place){
-  const hay=`${row?.title||""} ${row?.url||""} ${row?.snippet||""}`.toLowerCase();
+function scoreVenueSearchResult(row,place,area=""){
+  const hay=`${row?.title||""} ${row?.url||""} ${row?.snippet||""} ${row?.searchQuery||""}`.toLowerCase();
   const p=String(place||"").toLowerCase().replace(/\s+/g,"");
+  const a=String(area||"").toLowerCase().replace(/\s+/g,"");
   const compact=hay.replace(/\s+/g,"");
   let score=0;
+  if(a && compact.includes(a))score+=130;
   if(p && compact.includes(p))score+=100;
   if(/公式|official/.test(hay))score+=40;
-  if(/ski|スキー/.test(hay))score+=25;
+  if(/ski|スキー/.test(hay))score+=30;
   if(/resort|リゾート|snow|スノー/.test(hay))score+=10;
   if(/wikipedia|tripadvisor|jalan|じゃらん|rakuten|楽天|navitime|mapion|tenki|weather/.test(hay))score-=30;
   return score;
 }
-async function searchVenueOfficialWeb(place){
-  const query=`${String(place||"").trim()} スキー場 公式`;
+async function searchVenueOfficialWeb(place,location={}){
+  const prefecture=String(location?.prefecture||"").trim();
+  const municipality=String(location?.municipality||"").trim();
+  const area=[prefecture,municipality].filter(Boolean).join(" ").trim();
+
+  // Priority:
+  // 1) 行政区 + スキー場  (e.g. 秋田県 鹿角市 スキー場)
+  // 2) 行政区 + 会場名 + スキー場
+  // 3) 会場名 + スキー場 + 公式
+  const queries=[
+    area ? `${area} スキー場` : "",
+    area ? `${area} ${String(place||"").trim()} スキー場` : "",
+    `${String(place||"").trim()} スキー場 公式`
+  ].filter(Boolean);
+
   const rows=[];
 
-  try{
-    const ddg=`https://html.duckduckgo.com/html/?kl=jp-jp&q=${encodeURIComponent(query)}`;
-    rows.push(...parseDuckDuckGoResults(await fetchSearchHtml(ddg)));
-  }catch{}
-
-  if(rows.length<5){
+  for(const query of [...new Set(queries)]){
     try{
-      const bing=`https://www.bing.com/search?setlang=ja-JP&cc=jp&q=${encodeURIComponent(query)}`;
-      rows.push(...parseBingResults(await fetchSearchHtml(bing)));
+      const ddg=`https://html.duckduckgo.com/html/?kl=jp-jp&q=${encodeURIComponent(query)}`;
+      rows.push(...parseDuckDuckGoResults(await fetchSearchHtml(ddg)).map(x=>({...x,searchQuery:query})));
     }catch{}
+
+    if(rows.length<8){
+      try{
+        const bing=`https://www.bing.com/search?setlang=ja-JP&cc=jp&q=${encodeURIComponent(query)}`;
+        rows.push(...parseBingResults(await fetchSearchHtml(bing)).map(x=>({...x,searchQuery:query})));
+      }catch{}
+    }
   }
 
   return mergeVenueSearchResults(rows)
-    .map(row=>({...row,_score:scoreVenueSearchResult(row,place)}))
+    .map(row=>({...row,_score:scoreVenueSearchResult(row,place,area)}))
     .sort((a,b)=>b._score-a._score)
-    .slice(0,10)
+    .slice(0,14)
     .map(({_score,...row})=>row);
 }
-
 function json(obj,status=200){
   return new Response(JSON.stringify(obj),{
     status,
@@ -351,7 +372,7 @@ function cors(resp,env,request){
 }
 async function getText(url){
   const r=await fetch(url,{headers:{
-    "User-Agent":"AlpineTeamManager/0.13.20 (+public SAJ data lookup)",
+    "User-Agent":"AlpineTeamManager/0.13.21 (+public SAJ data lookup)",
     "Accept":"text/html,application/xhtml+xml"
   }});
   if(!r.ok) throw new Error(`SAJ HTTP ${r.status}: ${url}`);
@@ -671,7 +692,7 @@ function parseDelimitedPointFile(text,saj,source){
 
 async function getRawText(url){
   const r=await fetch(url,{headers:{
-    "User-Agent":"AlpineTeamManager/0.13.20 (+public SAJ data lookup)",
+    "User-Agent":"AlpineTeamManager/0.13.21 (+public SAJ data lookup)",
     "Accept":"text/csv,text/plain,text/html,application/octet-stream,*/*"
   }});
   if(!r.ok) throw new Error(`SAJ HTTP ${r.status}: ${url}`);
@@ -1227,7 +1248,7 @@ async function fetchFollowingSajSession(url, init, maxRedirects=5){
       // Browser semantics: 301/302/303 after a form request become GET.
       if([301,302,303].includes(r.status)){
         currentInit={method:"GET",headers:{
-          "User-Agent":"AlpineTeamManager/0.13.20 (+public SAJ competition calendar lookup)",
+          "User-Agent":"AlpineTeamManager/0.13.21 (+public SAJ competition calendar lookup)",
           "Accept":"text/html,application/xhtml+xml"
         }};
       }
@@ -1250,7 +1271,7 @@ async function fetchFollowingSajSession(url, init, maxRedirects=5){
 async function submitCalendarForm(formInfo){
   const target=new URL(formInfo.action,SAJ_ORIGIN);
   const headers={
-    "User-Agent":"AlpineTeamManager/0.13.20 (+public SAJ competition calendar lookup)",
+    "User-Agent":"AlpineTeamManager/0.13.21 (+public SAJ competition calendar lookup)",
     "Accept":"text/html,application/xhtml+xml"
   };
 
@@ -1598,7 +1619,7 @@ async function lookupCompetitionsApi(season,month=0){
   const r=await fetch(target.toString(),{
     method:"GET",
     headers:{
-      "User-Agent":"AlpineTeamManager/0.13.20 (+public SAJ competition calendar lookup)",
+      "User-Agent":"AlpineTeamManager/0.13.21 (+public SAJ competition calendar lookup)",
       "Accept":"application/json,text/javascript,*/*;q=0.8",
       "Referer":`${SAJ_ORIGIN}/alpine/competition/calendar`
     }
@@ -1643,7 +1664,7 @@ async function debugCompetitionApi(season=2026,month=2){
   const r=await fetch(target.toString(),{
     method:"GET",
     headers:{
-      "User-Agent":"AlpineTeamManager/0.13.20 (+public SAJ competition calendar lookup)",
+      "User-Agent":"AlpineTeamManager/0.13.21 (+public SAJ competition calendar lookup)",
       "Accept":"application/json,text/javascript,*/*;q=0.8",
       "Referer":`${SAJ_ORIGIN}/alpine/competition/calendar`
     }
