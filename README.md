@@ -1415,3 +1415,9 @@ SnowTech → 管理 → `SAJ連携API URL` にWorker URLを入力 → 保存。
 - 大会履歴取得失敗時も端末内の既存履歴を保持。
 - TOP30はv0.13.46の一括API方式を維持。
 - チームランキングの構成は変更なし。
+
+
+## v0.13.48
+- LINE/SNS share preview (OGP) thumbnail changed to Alpine Team Manager.
+- Added 1200x630 Alpine Team Manager OGP image and cache-busted image filename.
+- Added og:title/description/url/image and Twitter card metadata.

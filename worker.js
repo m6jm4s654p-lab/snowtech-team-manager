@@ -1,5 +1,5 @@
 /**
- * SnowTech SAJ API v0.13.47
+ * SnowTech SAJ API v0.13.48
  * GET /api/saj-athlete?saj=03028493
  *
  * Strategy:
@@ -13,7 +13,7 @@ const SAJ_ORIGIN = "https://sajdb.shikuminet.jp";
 
 const SAJ_RANKING_CACHE_SECONDS = 6 * 60 * 60;      // 6 hours
 const SAJ_RANKING_STALE_SECONDS = 24 * 60 * 60;     // stale fallback
-const SAJ_RANKING_CACHE_VERSION = "v01347";
+const SAJ_RANKING_CACHE_VERSION = "v01348";
 
 
 const SAJ_POINT_CALENDAR_CACHE_SECONDS = 6 * 60 * 60;
@@ -173,7 +173,7 @@ export default {
       return cors(json({ok:false,error:"Method not allowed"},405), env, request);
     }
     if (url.pathname === "/health") {
-      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.13.47"}), env, request);
+      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.13.48"}), env, request);
     }
 
     if (url.pathname === "/api/debug-competition-calendar") {

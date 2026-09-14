@@ -5,6 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <title>Alpine Team Manager by TechBit</title>
 <meta name="theme-color" content="#0b1220">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Alpine Team Manager by TechBit">
+<meta property="og:description" content="アルペンスキーチーム向けの選手・大会・年間予定・ポイント管理アプリ">
+<meta property="og:url" content="https://m6jm4s654p-lab.github.io/snowtech-team-manager/">
+<meta property="og:image" content="https://m6jm4s654p-lab.github.io/snowtech-team-manager/alpine-team-manager-og-v01348.png">
+<meta property="og:image:secure_url" content="https://m6jm4s654p-lab.github.io/snowtech-team-manager/alpine-team-manager-og-v01348.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Alpine Team Manager by TechBit">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Alpine Team Manager by TechBit">
+<meta name="twitter:description" content="アルペンスキーチーム向けの選手・大会・年間予定・ポイント管理アプリ">
+<meta name="twitter:image" content="https://m6jm4s654p-lab.github.io/snowtech-team-manager/alpine-team-manager-og-v01348.png">
 <meta name="referrer" content="no-referrer">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://snowtech-saj-api.take6583.workers.dev https://nominatim.openstreetmap.org https://geocoding-api.open-meteo.com https://api.open-meteo.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'; media-src 'none'">
 <link rel="manifest" href="manifest.webmanifest">
@@ -1906,7 +1920,7 @@ header{
 <header>
   <div class="header-inner">
     <div class="header-meta-row">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.13.47</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.13.48</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
     <div class="header-title-row">
@@ -7582,7 +7596,7 @@ async function refreshAppCacheOnLaunch(){
   if(!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=01347',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=01348',{updateViaCache:'none'});
 
     if(reg.waiting){
       reg.waiting.postMessage({type:'SKIP_WAITING'});
