@@ -13,7 +13,7 @@ const SAJ_ORIGIN = "https://sajdb.shikuminet.jp";
 
 const SAJ_RANKING_CACHE_SECONDS = 6 * 60 * 60;      // 6 hours
 const SAJ_RANKING_STALE_SECONDS = 24 * 60 * 60;     // stale fallback
-const SAJ_RANKING_CACHE_VERSION = "v01341";
+const SAJ_RANKING_CACHE_VERSION = "v01342";
 
 
 const SAJ_POINT_CALENDAR_CACHE_SECONDS = 6 * 60 * 60;
@@ -123,7 +123,7 @@ export default {
       return cors(json({ok:false,error:"Method not allowed"},405), env, request);
     }
     if (url.pathname === "/health") {
-      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.13.41"}), env, request);
+      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.13.42"}), env, request);
     }
 
     if (url.pathname === "/api/debug-competition-calendar") {
@@ -510,7 +510,7 @@ function cors(resp,env,request){
 }
 async function getText(url){
   const r=await fetch(url,{headers:{
-    "User-Agent":"AlpineTeamManager/0.13.41 (+public SAJ data lookup)",
+    "User-Agent":"AlpineTeamManager/0.13.42 (+public SAJ data lookup)",
     "Accept":"text/html,application/xhtml+xml"
   }});
   if(!r.ok) throw new Error(`SAJ HTTP ${r.status}: ${url}`);
@@ -860,7 +860,7 @@ async function inflateZipEntry(bytes, method){
 
 async function fetchZipTextEntries(url){
   const r=await fetch(url,{headers:{
-    "User-Agent":"AlpineTeamManager/0.13.41 (+public SAJ point zip lookup)",
+    "User-Agent":"AlpineTeamManager/0.13.42 (+public SAJ point zip lookup)",
     "Accept":"application/zip,application/octet-stream,*/*"
   }});
   if(!r.ok)throw new Error(`SAJ ZIP HTTP ${r.status}: ${url}`);
@@ -963,7 +963,7 @@ async function fetchLatestZipPointRows({season,sex}){
 
 async function getRawText(url){
   const r=await fetch(url,{headers:{
-    "User-Agent":"AlpineTeamManager/0.13.41 (+public SAJ data lookup)",
+    "User-Agent":"AlpineTeamManager/0.13.42 (+public SAJ data lookup)",
     "Accept":"text/csv,text/plain,text/html,application/octet-stream,*/*"
   }});
   if(!r.ok) throw new Error(`SAJ HTTP ${r.status}: ${url}`);
@@ -1378,13 +1378,34 @@ async function fetchAllNationalPointRowsForSeason({season,sex}){
 
   try{
     const live=await fetchLatestZipPointRows({season,sex});
-    const data={...live,pointListNumber:listNumber,calendarListNumber:listNumber,calendarSource:calendar?.source||""};
+    const data={...live,pointListNumber:listNumber,calendarListNumber:listNumber,calendarSource:calendar?.source||"",sourceMode:"ZIP"};
     await writeRankingDatasetCache(season,sex,listNumber,data);
     return {...data,cacheStatus:"MISS",cacheAgeSeconds:0,cacheTtlSeconds:SAJ_RANKING_CACHE_SECONDS};
-  }catch(err){
+  }catch(zipErr){
+    // ZIP is the primary source. If Cloudflare cannot inflate/parse the ZIP,
+    // use the point-list HTML for the *same* list number detected from the
+    // official issuance calendar. This keeps TOP30 available without silently
+    // switching to another list.
+    try{
+      const htmlFallback=await fetchAllNationalPointRowsForSeasonUncached({season,sex,listNumber});
+      if(htmlFallback?.rows?.length){
+        const data={
+          ...htmlFallback,
+          pointListNumber:listNumber ?? htmlFallback.pointListNumber ?? null,
+          calendarListNumber:listNumber,
+          calendarSource:calendar?.source||"",
+          sourceMode:"CALENDAR_LIST_FALLBACK",
+          zipError:String(zipErr?.message||zipErr)
+        };
+        await writeRankingDatasetCache(season,sex,listNumber,data);
+        return {...data,cacheStatus:"MISS",cacheAgeSeconds:0,cacheTtlSeconds:SAJ_RANKING_CACHE_SECONDS};
+      }
+    }catch(htmlErr){
+      zipErr=new Error(`ZIP取得/解析: ${String(zipErr?.message||zipErr)} / 同一No.ポイントリスト取得: ${String(htmlErr?.message||htmlErr)}`);
+    }
     const stale=await readRankingDatasetCache(season,sex,listNumber,{allowStale:true});
     if(stale?.rows?.length)return {...stale,calendarListNumber:listNumber,calendarSource:calendar?.source||"",cacheStatus:"STALE",cacheTtlSeconds:SAJ_RANKING_CACHE_SECONDS};
-    throw err;
+    throw zipErr;
   }
 }
 
@@ -1418,6 +1439,7 @@ async function lookupNationalPointRanking({sex,category,discipline}){
           cacheStatus:fetched.cacheStatus||"MISS",
           cacheAgeSeconds:Number(fetched.cacheAgeSeconds)||0,
           cacheTtlSeconds:Number(fetched.cacheTtlSeconds)||SAJ_RANKING_CACHE_SECONDS,
+          sourceMode:fetched.sourceMode||"ZIP",
           k2Definition:"中学生＋高校1年早生まれ"
         };
       }
@@ -1826,7 +1848,7 @@ async function fetchFollowingSajSession(url, init, maxRedirects=5){
       // Browser semantics: 301/302/303 after a form request become GET.
       if([301,302,303].includes(r.status)){
         currentInit={method:"GET",headers:{
-          "User-Agent":"AlpineTeamManager/0.13.41 (+public SAJ competition calendar lookup)",
+          "User-Agent":"AlpineTeamManager/0.13.42 (+public SAJ competition calendar lookup)",
           "Accept":"text/html,application/xhtml+xml"
         }};
       }
@@ -1849,7 +1871,7 @@ async function fetchFollowingSajSession(url, init, maxRedirects=5){
 async function submitCalendarForm(formInfo){
   const target=new URL(formInfo.action,SAJ_ORIGIN);
   const headers={
-    "User-Agent":"AlpineTeamManager/0.13.41 (+public SAJ competition calendar lookup)",
+    "User-Agent":"AlpineTeamManager/0.13.42 (+public SAJ competition calendar lookup)",
     "Accept":"text/html,application/xhtml+xml"
   };
 
@@ -2197,7 +2219,7 @@ async function lookupCompetitionsApi(season,month=0){
   const r=await fetch(target.toString(),{
     method:"GET",
     headers:{
-      "User-Agent":"AlpineTeamManager/0.13.41 (+public SAJ competition calendar lookup)",
+      "User-Agent":"AlpineTeamManager/0.13.42 (+public SAJ competition calendar lookup)",
       "Accept":"application/json,text/javascript,*/*;q=0.8",
       "Referer":`${SAJ_ORIGIN}/alpine/competition/calendar`
     }
@@ -2242,7 +2264,7 @@ async function debugCompetitionApi(season=2026,month=2){
   const r=await fetch(target.toString(),{
     method:"GET",
     headers:{
-      "User-Agent":"AlpineTeamManager/0.13.41 (+public SAJ competition calendar lookup)",
+      "User-Agent":"AlpineTeamManager/0.13.42 (+public SAJ competition calendar lookup)",
       "Accept":"application/json,text/javascript,*/*;q=0.8",
       "Referer":`${SAJ_ORIGIN}/alpine/competition/calendar`
     }
