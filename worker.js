@@ -13,7 +13,7 @@ const SAJ_ORIGIN = "https://sajdb.shikuminet.jp";
 
 const SAJ_RANKING_CACHE_SECONDS = 6 * 60 * 60;      // 6 hours
 const SAJ_RANKING_STALE_SECONDS = 24 * 60 * 60;     // stale fallback
-const SAJ_RANKING_CACHE_VERSION = "v01342";
+const SAJ_RANKING_CACHE_VERSION = "v01344";
 
 
 const SAJ_POINT_CALENDAR_CACHE_SECONDS = 6 * 60 * 60;
@@ -123,7 +123,7 @@ export default {
       return cors(json({ok:false,error:"Method not allowed"},405), env, request);
     }
     if (url.pathname === "/health") {
-      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.13.42"}), env, request);
+      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.13.44"}), env, request);
     }
 
     if (url.pathname === "/api/debug-competition-calendar") {
@@ -510,7 +510,7 @@ function cors(resp,env,request){
 }
 async function getText(url){
   const r=await fetch(url,{headers:{
-    "User-Agent":"AlpineTeamManager/0.13.42 (+public SAJ data lookup)",
+    "User-Agent":"AlpineTeamManager/0.13.44 (+public SAJ data lookup)",
     "Accept":"text/html,application/xhtml+xml"
   }});
   if(!r.ok) throw new Error(`SAJ HTTP ${r.status}: ${url}`);
@@ -817,8 +817,17 @@ function parseDelimitedPointFile(text,saj,source){
     if(numeric.length>=2){
       return {
         saj,
-        name:c[codeIdx+2]||c[codeIdx+1]||"",
-        birth:"",
+        name:(/[一-龠々〆ヵヶぁ-ゖァ-ヺ]/.test(String(c[codeIdx+3]||""))?c[codeIdx+3]:(c[codeIdx+2]||c[codeIdx+1]||"")),
+        birth:(()=>{
+          for(const raw of c){
+            const t=String(raw||"").trim();
+            let m=t.match(/^((?:19|20)\d{2})(\d{2})(\d{2})$/);
+            if(m){const mo=Number(m[2]),d=Number(m[3]);if(mo>=1&&mo<=12&&d>=1&&d<=31)return `${m[1]}-${m[2]}-${m[3]}`;}
+            m=t.match(/((?:19|20)\d{2})[\/年.\-](\d{1,2})[\/月.\-](\d{1,2})/);
+            if(m)return `${m[1]}-${String(m[2]).padStart(2,"0")}-${String(m[3]).padStart(2,"0")}`;
+          }
+          return "";
+        })(),
         organization:"",
         team:"",
         group:"",
@@ -860,7 +869,7 @@ async function inflateZipEntry(bytes, method){
 
 async function fetchZipTextEntries(url){
   const r=await fetch(url,{headers:{
-    "User-Agent":"AlpineTeamManager/0.13.42 (+public SAJ point zip lookup)",
+    "User-Agent":"AlpineTeamManager/0.13.44 (+public SAJ point zip lookup)",
     "Accept":"application/zip,application/octet-stream,*/*"
   }});
   if(!r.ok)throw new Error(`SAJ ZIP HTTP ${r.status}: ${url}`);
@@ -919,22 +928,65 @@ function parseDelimitedPointRows(text,source){
     }
     return -1;
   };
+  const findJapaneseNameCol=()=>{
+    // ZIPには「ローマ字氏名」と「漢字氏名」が共存するため、漢字列を最優先する。
+    const strong=["漢字氏名","氏名漢字","漢字名","日本語氏名","選手氏名","氏名"];
+    for(const ptn of strong){
+      for(let i=0;i<headers.length;i++){
+        const h=norm(headers[i]);
+        if(h.includes(norm(ptn)) && !/(ROMAN|ローマ字|ENGLISH|ALPHABET)/i.test(String(headers[i]||"")))return i;
+      }
+    }
+    return -1;
+  };
+  const looksJapaneseName=v=>/[一-龠々〆ヵヶぁ-ゖァ-ヺ]/.test(String(v||""));
+  const inferBirth=c=>{
+    for(const raw of c){
+      const t=String(raw||"").trim();
+      let m=t.match(/^(19|20)(\d{2})(\d{2})(\d{2})$/);
+      if(m){
+        const y=Number(m[1]+m[2]),mo=Number(m[3]),d=Number(m[4]);
+        if(y>=1900&&y<=2100&&mo>=1&&mo<=12&&d>=1&&d<=31)return `${y}-${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+      }
+      m=t.match(/((?:19|20)\d{2})[\/年.\-](\d{1,2})[\/月.\-](\d{1,2})/);
+      if(m){
+        const y=Number(m[1]),mo=Number(m[2]),d=Number(m[3]);
+        if(mo>=1&&mo<=12&&d>=1&&d<=31)return `${y}-${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+      }
+    }
+    return "";
+  };
   const rows=[];
   if(headerIndex>=0){
     const idxSaj=findCol(["SAJNO","SAJ競技者番号","SAJNUMBER"]);
-    const idxName=findCol(["氏名","NAME"]);
-    const idxBirth=findCol(["BIRTH","生年月日"]);
+    const idxFis=findCol(["FISNO","FIS競技者番号","FISNUMBER"]);
+    const idxNameJa=findJapaneseNameCol();
+    const idxRoman=findCol(["ローマ字氏名","ROMANNAME","ROMAN","ENGLISHNAME"]);
+    const idxBirth=findCol(["BIRTH","生年月日","誕生日"]);
     const idxOrg=findCol(["加盟団体","県連盟","ORGANIZATION"]);
     const idxTeam=findCol(["チーム名","所属","TEAM"]);
     const idxGroup=findCol(["G","GROUP","会員区分"]);
+    // FISポイント列は絶対に採用しない。SAJ接頭辞を持つ列だけを使用する。
     const idxDH=findCol(["SAJDH"]),idxSC=findCol(["SAJSC"]),idxSG=findCol(["SAJSG"]),idxGS=findCol(["SAJGS"]),idxSL=findCol(["SAJSL"]);
     if(idxSaj>=0){
       for(let i=headerIndex+1;i<lines.length;i++){
         const c=splitCsvLine(lines[i],delimiter).map(x=>x.replace(/^"|"$/g,"").trim());
         const saj=String(c[idxSaj]||"").replace(/\D/g,"").padStart(8,"0");
         if(!/^\d{8}$/.test(saj))continue;
+        let name=idxNameJa>=0?String(c[idxNameJa]||"").trim():"";
+        // 既知のSAJ ZIP並び: SAJ No., FIS No., ローマ字氏名, 漢字氏名, ...
+        // ヘッダー解釈に失敗してもSAJ番号から+3列目の漢字氏名を救済する。
+        if(!looksJapaneseName(name) && idxFis===idxSaj+1){
+          const positional=String(c[idxSaj+3]||"").trim();
+          if(looksJapaneseName(positional))name=positional;
+        }
+        if(!name){
+          const candidate=c.find((v,j)=>j!==idxSaj&&j!==idxFis&&j!==idxRoman&&looksJapaneseName(v));
+          name=String(candidate||"").trim();
+        }
+        const birth=(idxBirth>=0?String(c[idxBirth]||"").trim():"") || inferBirth(c);
         rows.push({
-          saj,name:idxName>=0?c[idxName]||"":"",birth:idxBirth>=0?c[idxBirth]||"":"",
+          saj,name,birth,
           organization:idxOrg>=0?c[idxOrg]||"":"",team:idxTeam>=0?c[idxTeam]||"":"",group:idxGroup>=0?c[idxGroup]||"":"",
           dh:idxDH>=0?numOrNull(c[idxDH]):null,sc:idxSC>=0?numOrNull(c[idxSC]):null,sg:idxSG>=0?numOrNull(c[idxSG]):null,
           gs:idxGS>=0?numOrNull(c[idxGS]):null,sl:idxSL>=0?numOrNull(c[idxSL]):null,source
@@ -963,7 +1015,7 @@ async function fetchLatestZipPointRows({season,sex}){
 
 async function getRawText(url){
   const r=await fetch(url,{headers:{
-    "User-Agent":"AlpineTeamManager/0.13.42 (+public SAJ data lookup)",
+    "User-Agent":"AlpineTeamManager/0.13.44 (+public SAJ data lookup)",
     "Accept":"text/csv,text/plain,text/html,application/octet-stream,*/*"
   }});
   if(!r.ok) throw new Error(`SAJ HTTP ${r.status}: ${url}`);
@@ -971,9 +1023,13 @@ async function getRawText(url){
 }
 
 function getTargetSeasons(now=new Date()){
-  const y=now.getUTCFullYear();
-  const m=now.getUTCMonth()+1;
+  // SAJの「現在シーズン」はアプリ画面で選択されたシーズンではなく、
+  // 実際の現在日付（日本時間）から自動判定する。7月1日をシーズン切替日とする。
+  const jst=new Date(now.getTime()+9*60*60*1000);
+  const y=jst.getUTCFullYear();
+  const m=jst.getUTCMonth()+1;
   const current=(m>=7)?y+1:y;
+  // 現在シーズンに対象性別の有効なポイントZIPが無い場合のみ1シーズン前へフォールバック。
   return [current,current-1];
 }
 
@@ -1372,6 +1428,11 @@ async function fetchAllNationalPointRowsForSeasonUncached({season,sex,listNumber
 async function fetchAllNationalPointRowsForSeason({season,sex}){
   const calendar=await getLatestPointCalendarMeta(season);
   const listNumber=calendar?.latestListNumber??null;
+  const latestZips=Array.isArray(calendar?.latestZips)?calendar.latestZips:[];
+  const expectedZip=latestZips.find(x=>x.sex===sex && x.pointListNumber===listNumber);
+  // 「データのある最新シーズン」を選ぶため、対象性別の最新ZIPが発行されていない
+  // シーズンは採用せず、呼び出し元で1シーズン前へ自動フォールバックする。
+  if(!expectedZip?.url)throw new Error(`${season-1}/${season} SAJ No.${listNumber??'—'} ${sex}子の有効なポイントZIPがありません`);
 
   const fresh=await readRankingDatasetCache(season,sex,listNumber);
   if(fresh?.rows?.length)return {...fresh,calendarListNumber:listNumber,calendarSource:calendar?.source||"",cacheStatus:"HIT",cacheTtlSeconds:SAJ_RANKING_CACHE_SECONDS};
@@ -1416,33 +1477,32 @@ async function lookupNationalPointRanking({sex,category,discipline}){
       const fetched=await fetchAllNationalPointRowsForSeason({season,sex});
       if(!fetched.rows.length)continue;
 
-      // Category is derived after the full national dataset is obtained.
+      // 最初に取得できた（= 対象性別の最新ZIPが存在し、データもある）シーズンを採用する。
+      // K2が0人だったことを理由に古いシーズンへ落とさない。
       const filtered=fetched.rows.filter(r=>{
         const k2=isK2BirthForSeason(r.birth,season);
         return category==="k2"?k2:!k2;
       });
       const ranking=assignRankingPositions(filtered,discipline);
-      if(ranking.length){
-        return {
-          season,
-          seasonLabel:`${season-1}/${season}`,
-          pointListNumber:fetched.pointListNumber,
-          calendarListNumber:fetched.calendarListNumber??fetched.pointListNumber??null,
-          sex,
-          category,
-          discipline,
-          ranking,
-          totalRows:fetched.rows.length,
-          categoryRows:filtered.length,
-          source:fetched.source,
-          sourcePages:fetched.pageCount,
-          cacheStatus:fetched.cacheStatus||"MISS",
-          cacheAgeSeconds:Number(fetched.cacheAgeSeconds)||0,
-          cacheTtlSeconds:Number(fetched.cacheTtlSeconds)||SAJ_RANKING_CACHE_SECONDS,
-          sourceMode:fetched.sourceMode||"ZIP",
-          k2Definition:"中学生＋高校1年早生まれ"
-        };
-      }
+      return {
+        season,
+        seasonLabel:`${season-1}/${season}`,
+        pointListNumber:fetched.pointListNumber,
+        calendarListNumber:fetched.calendarListNumber??fetched.pointListNumber??null,
+        sex,
+        category,
+        discipline,
+        ranking,
+        totalRows:fetched.rows.length,
+        categoryRows:filtered.length,
+        source:fetched.source,
+        sourcePages:fetched.pageCount,
+        cacheStatus:fetched.cacheStatus||"MISS",
+        cacheAgeSeconds:Number(fetched.cacheAgeSeconds)||0,
+        cacheTtlSeconds:Number(fetched.cacheTtlSeconds)||SAJ_RANKING_CACHE_SECONDS,
+        sourceMode:fetched.sourceMode||"ZIP",
+        k2Definition:"中学生＋高校1年早生まれ"
+      };
     }catch(e){lastError=e;}
   }
   if(lastError)throw lastError;
@@ -1453,85 +1513,6 @@ async function lookupNationalPointRanking({sex,category,discipline}){
     k2Definition:"中学生＋高校1年早生まれ"
   };
 }
-
-
-async function lookupAthleteListBySexOrganization(sex, organization){
-  const seasons=getTargetSeasons();
-  let lastError=null;
-
-  for(const season of seasons){
-    try{
-      const baseUrl=new URL(`${SAJ_ORIGIN}/alpine/point/list`);
-      baseUrl.searchParams.set("season_code",String(season));
-      baseUrl.searchParams.set("sports_code","AL");
-      baseUrl.searchParams.set("saj_fis","SAJ");
-
-      // Read the live form first, so SnowTech uses SAJ's actual option values
-      // rather than hard-coded federation codes.
-      const formHtml=await getText(baseUrl.toString());
-      const selects=parseSelectOptions(formHtml);
-
-      const sexOpt=findSexSelectValue(selects,sex);
-      const orgOpt=findSelectValue(selects,organization,["organization","pref","member","association","group"]);
-
-      const u=new URL(baseUrl);
-      if(sexOpt) u.searchParams.set(sexOpt.name,sexOpt.value);
-      else u.searchParams.set("sex",sex==="男"?"1":"2");
-
-      if(orgOpt) u.searchParams.set(orgOpt.name,orgOpt.value);
-      else{
-        // Compatibility aliases. The visible-name filter below prevents
-        // incorrect rows if SAJ ignores an unknown query key.
-        u.searchParams.set("organization",organization);
-      }
-
-      const resultHtml=await getText(u.toString());
-      let athletes=parsePointRows(resultHtml,organization);
-
-      // Some SAJ forms require one additional "search" submit field.
-      // If no rows are returned, retry common submit styles without assuming
-      // that any one of them is permanently required.
-      if(!athletes.length){
-        for(const [k,v] of [["search","1"],["submit","1"],["action","search"]]){
-          const retry=new URL(u);
-          retry.searchParams.set(k,v);
-          try{
-            const h=await getText(retry.toString());
-            athletes=parsePointRows(h,organization);
-            if(athletes.length){
-              return {
-                season,
-                seasonLabel:`${season-1}/${season}`,
-                pointListNumber:extractSelectedPointListNumber(h),
-                sex,
-                organization,
-                athletes,
-                source:retry.toString()
-              };
-            }
-          }catch{}
-        }
-      }
-
-      if(athletes.length){
-        return {
-          season,
-          seasonLabel:`${season-1}/${season}`,
-          pointListNumber:extractSelectedPointListNumber(resultHtml),
-          sex,
-          organization,
-          athletes,
-          source:u.toString()
-        };
-      }
-    }catch(e){
-      lastError=e;
-    }
-  }
-  if(lastError) throw lastError;
-  return {season:null,seasonLabel:"",pointListNumber:null,sex,organization,athletes:[],source:""};
-}
-
 
 async function lookupOfficialPoints(saj){
   const target=String(saj||"").replace(/\D/g,"").padStart(8,"0");
@@ -1848,7 +1829,7 @@ async function fetchFollowingSajSession(url, init, maxRedirects=5){
       // Browser semantics: 301/302/303 after a form request become GET.
       if([301,302,303].includes(r.status)){
         currentInit={method:"GET",headers:{
-          "User-Agent":"AlpineTeamManager/0.13.42 (+public SAJ competition calendar lookup)",
+          "User-Agent":"AlpineTeamManager/0.13.44 (+public SAJ competition calendar lookup)",
           "Accept":"text/html,application/xhtml+xml"
         }};
       }
@@ -1871,7 +1852,7 @@ async function fetchFollowingSajSession(url, init, maxRedirects=5){
 async function submitCalendarForm(formInfo){
   const target=new URL(formInfo.action,SAJ_ORIGIN);
   const headers={
-    "User-Agent":"AlpineTeamManager/0.13.42 (+public SAJ competition calendar lookup)",
+    "User-Agent":"AlpineTeamManager/0.13.44 (+public SAJ competition calendar lookup)",
     "Accept":"text/html,application/xhtml+xml"
   };
 
@@ -2219,7 +2200,7 @@ async function lookupCompetitionsApi(season,month=0){
   const r=await fetch(target.toString(),{
     method:"GET",
     headers:{
-      "User-Agent":"AlpineTeamManager/0.13.42 (+public SAJ competition calendar lookup)",
+      "User-Agent":"AlpineTeamManager/0.13.44 (+public SAJ competition calendar lookup)",
       "Accept":"application/json,text/javascript,*/*;q=0.8",
       "Referer":`${SAJ_ORIGIN}/alpine/competition/calendar`
     }
@@ -2264,7 +2245,7 @@ async function debugCompetitionApi(season=2026,month=2){
   const r=await fetch(target.toString(),{
     method:"GET",
     headers:{
-      "User-Agent":"AlpineTeamManager/0.13.42 (+public SAJ competition calendar lookup)",
+      "User-Agent":"AlpineTeamManager/0.13.44 (+public SAJ competition calendar lookup)",
       "Accept":"application/json,text/javascript,*/*;q=0.8",
       "Referer":`${SAJ_ORIGIN}/alpine/competition/calendar`
     }

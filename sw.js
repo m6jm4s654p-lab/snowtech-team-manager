@@ -1,4 +1,4 @@
-const CACHE='snowtech-alpine-v01342';
+const CACHE='snowtech-alpine-v01344';
 const CACHE_PREFIX='snowtech-alpine-';
 const ASSETS=[
   './','./index.html','./manifest.webmanifest','./snowtech-logo.png',
