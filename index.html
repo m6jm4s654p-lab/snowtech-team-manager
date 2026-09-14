@@ -1409,6 +1409,21 @@ header{
 .ranking-athlete-overview-name{
   min-width:0;
 }
+.ranking-athlete-name-line{
+  display:flex;
+  align-items:baseline;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.ranking-athlete-national-rank{
+  font-size:11px;
+  font-weight:800;
+  color:var(--muted);
+  line-height:1.4;
+}
+.ranking-athlete-national-rank b{
+  color:#dceff2;
+}
 .ranking-athlete-overview-name button{
   border:0;
   background:transparent;
@@ -1920,7 +1935,7 @@ header{
 <header>
   <div class="header-inner">
     <div class="header-meta-row">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.13.51</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.13.52</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
     <div class="header-title-row">
@@ -5705,7 +5720,50 @@ function athleteAgeYears(birth){
   return Number.isFinite(age) && age>=0 ? age : null;
 }
 
-function renderRankingAthleteList(){
+const rankingAthleteNationalRankCache=new Map();
+let rankingAthleteNationalRankRequestSeq=0;
+
+function normalizeSajNumberForRank(v){
+  const n=String(v||'').replace(/\D/g,'');
+  return n? n.padStart(8,'0') : '';
+}
+function rankingAthleteRankText(a){
+  const saj=normalizeSajNumberForRank(a?.saj);
+  const info=rankingAthleteNationalRankCache.get(saj);
+  if(!saj)return '全国ランク —';
+  if(!info)return '全国ランク 取得中…';
+  const cat=info.categoryLabel||'—';
+  const r=info.ranks||{};
+  const f=v=>Number.isFinite(Number(v))?`${Number(v)}位`:'—';
+  return `全国ランク（${cat}）　SL ${f(r.SL)}　GS ${f(r.GS)}　SG ${f(r.SG)}`;
+}
+
+async function loadRankingAthleteNationalRanks(){
+  const seq=++rankingAthleteNationalRankRequestSeq;
+  const groups=[
+    ['男',(db.athletes||[]).filter(a=>normalizeAthleteSex(a.sex)==='男')],
+    ['女',(db.athletes||[]).filter(a=>normalizeAthleteSex(a.sex)==='女')]
+  ];
+  for(const [sex,athletes] of groups){
+    const sajs=[...new Set(athletes.map(a=>normalizeSajNumberForRank(a.saj)).filter(Boolean))];
+    if(!sajs.length)continue;
+    try{
+      const q=new URLSearchParams({sex,sajs:sajs.join(',')});
+      const r=await fetch(`${apiBase()}/api/saj-athlete-ranks?${q.toString()}`,{cache:'no-store'});
+      const data=await r.json().catch(()=>({}));
+      if(!r.ok||!data?.ok)throw new Error(data?.detail||data?.error||`HTTP ${r.status}`);
+      if(seq!==rankingAthleteNationalRankRequestSeq)return;
+      (data.athletes||[]).forEach(x=>rankingAthleteNationalRankCache.set(normalizeSajNumberForRank(x.saj),x));
+    }catch(e){
+      if(seq!==rankingAthleteNationalRankRequestSeq)return;
+      sajs.forEach(saj=>rankingAthleteNationalRankCache.set(saj,{categoryLabel:'—',ranks:{SL:null,GS:null,SG:null}}));
+      console.warn('所属選手全国ランク取得失敗',sex,e);
+    }
+  }
+  if(seq===rankingAthleteNationalRankRequestSeq)renderRankingAthleteList(false);
+}
+
+function renderRankingAthleteList(loadRanks=true){
   const box=document.getElementById('rankingAthleteList');
   if(!box)return;
 
@@ -5725,7 +5783,10 @@ function renderRankingAthleteList(){
     const school=[a.school||'',a.grade||''].filter(Boolean).join(' ');
     return `<div class="ranking-athlete-overview-row">
       <div class="ranking-athlete-overview-name">
-        <button type="button" onclick="showAthlete(decodeURIComponent('${id}'),'ranking')">${esc(a.name||'氏名未設定')}</button>
+        <div class="ranking-athlete-name-line">
+          <button type="button" onclick="showAthlete(decodeURIComponent('${id}'),'ranking')">${esc(a.name||'氏名未設定')}</button>
+          <span class="ranking-athlete-national-rank">${esc(rankingAthleteRankText(a))}</span>
+        </div>
       </div>
       <div class="ranking-athlete-overview-age">${age===null?'年齢—':`${age}歳`}</div>
       <div class="ranking-athlete-overview-meta">
@@ -5755,6 +5816,7 @@ function renderRankingAthleteList(){
     html+=`<div class="ranking-athlete-group-title">性別未設定</div>${renderRows(other)}`;
   }
   box.innerHTML=html;
+  if(loadRanks)loadRankingAthleteNationalRanks();
 }
 
 function renderRanking(){

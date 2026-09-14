@@ -1,5 +1,5 @@
 /**
- * SnowTech SAJ API v0.13.51
+ * SnowTech SAJ API v0.13.52
  * GET /api/saj-athlete?saj=03028493
  *
  * Strategy:
@@ -173,7 +173,7 @@ export default {
       return cors(json({ok:false,error:"Method not allowed"},405), env, request);
     }
     if (url.pathname === "/health") {
-      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.13.51"}), env, request);
+      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.13.52"}), env, request);
     }
 
     if (url.pathname === "/api/debug-competition-calendar") {
@@ -288,6 +288,31 @@ export default {
         return cors(json({
           ok:false,
           error:"SAJ全国ポイントランキングの取得に失敗しました",
+          detail:String(e?.message||e)
+        },502),env,request);
+      }
+    }
+
+
+    if (url.pathname === "/api/saj-athlete-ranks") {
+      const sex=(url.searchParams.get("sex")||"").trim();
+      const sajs=String(url.searchParams.get("sajs")||"")
+        .split(",")
+        .map(v=>String(v||"").replace(/\D/g,"").padStart(8,"0"))
+        .filter(v=>/^\d{8}$/.test(v));
+      if(!["男","女"].includes(sex)){
+        return cors(json({ok:false,error:"性別は男または女を指定してください"},400),env,request);
+      }
+      if(!sajs.length || sajs.length>100){
+        return cors(json({ok:false,error:"SAJ No.を1〜100名指定してください"},400),env,request);
+      }
+      try{
+        const result=await lookupAthleteNationalRanks({sex,sajs});
+        return cors(json({ok:true,...result}),env,request);
+      }catch(e){
+        return cors(json({
+          ok:false,
+          error:"所属選手の全国ランキング取得に失敗しました",
           detail:String(e?.message||e)
         },502),env,request);
       }
@@ -1595,6 +1620,84 @@ async function fetchAllNationalPointRowsForSeason({season,sex}){
     }
     throw err;
   }
+}
+
+function assignAllRankingPositions(rows, discipline){
+  const sorted=[...rows].sort((a,b)=>{
+    const ap=rankingPointValue(a,discipline), bp=rankingPointValue(b,discipline);
+    if(ap===null&&bp===null)return 0;
+    if(ap===null)return 1;
+    if(bp===null)return -1;
+    if(ap!==bp)return ap-bp;
+    return String(a.name||"").localeCompare(String(b.name||""),"ja");
+  }).filter(r=>rankingPointValue(r,discipline)!==null);
+
+  let prev=null, prevRank=0;
+  return sorted.map((r,i)=>{
+    const point=rankingPointValue(r,discipline);
+    const rank=(prev!==null && point===prev)?prevRank:(i+1);
+    prev=point; prevRank=rank;
+    return {saj:String(r.saj||"").replace(/\D/g,"").padStart(8,"0"),rank,point};
+  });
+}
+
+async function lookupAthleteNationalRanks({sex,sajs}){
+  const wanted=new Set(sajs);
+  let lastError=null;
+  for(const season of getTargetSeasons()){
+    try{
+      const fetched=await fetchAllNationalPointRowsForSeason({season,sex});
+      if(!fetched.rows.length)continue;
+
+      const categories={
+        k2:fetched.rows.filter(r=>isK2BirthForSeason(r.birth,season)),
+        general:fetched.rows.filter(r=>!isK2BirthForSeason(r.birth,season))
+      };
+      const rankMaps={};
+      for(const category of ["k2","general"]){
+        rankMaps[category]={};
+        for(const discipline of ["SL","GS","SG"]){
+          rankMaps[category][discipline]=new Map(
+            assignAllRankingPositions(categories[category],discipline).map(x=>[x.saj,x.rank])
+          );
+        }
+      }
+
+      const athletes=[];
+      for(const saj of sajs){
+        const row=fetched.rows.find(r=>String(r.saj||"").replace(/\D/g,"").padStart(8,"0")===saj);
+        if(!row){
+          athletes.push({saj,found:false,category:null,categoryLabel:"—",ranks:{SL:null,GS:null,SG:null}});
+          continue;
+        }
+        const category=isK2BirthForSeason(row.birth,season)?"k2":"general";
+        athletes.push({
+          saj,
+          found:true,
+          category,
+          categoryLabel:category==="k2"?"K2":"一般",
+          ranks:{
+            SL:rankMaps[category].SL.get(saj)??null,
+            GS:rankMaps[category].GS.get(saj)??null,
+            SG:rankMaps[category].SG.get(saj)??null
+          }
+        });
+      }
+      if(athletes.some(a=>a.found)){
+        return {
+          season,
+          seasonLabel:`${season-1}/${season}`,
+          pointListNumber:fetched.pointListNumber,
+          sex,
+          athletes,
+          source:fetched.source,
+          cacheStatus:fetched.cacheStatus||"MISS"
+        };
+      }
+    }catch(e){lastError=e;}
+  }
+  if(lastError)throw lastError;
+  return {season:null,seasonLabel:"",pointListNumber:null,sex,athletes:sajs.map(saj=>({saj,found:false,category:null,categoryLabel:"—",ranks:{SL:null,GS:null,SG:null}})),source:"",cacheStatus:"MISS"};
 }
 
 async function lookupNationalPointRanking({sex,category,discipline}){
