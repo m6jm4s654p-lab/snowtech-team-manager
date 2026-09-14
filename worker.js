@@ -1,5 +1,5 @@
 /**
- * SnowTech SAJ API v0.3.5
+ * SnowTech SAJ API v0.13.47
  * GET /api/saj-athlete?saj=03028493
  *
  * Strategy:
@@ -13,7 +13,7 @@ const SAJ_ORIGIN = "https://sajdb.shikuminet.jp";
 
 const SAJ_RANKING_CACHE_SECONDS = 6 * 60 * 60;      // 6 hours
 const SAJ_RANKING_STALE_SECONDS = 24 * 60 * 60;     // stale fallback
-const SAJ_RANKING_CACHE_VERSION = "v01346";
+const SAJ_RANKING_CACHE_VERSION = "v01347";
 
 
 const SAJ_POINT_CALENDAR_CACHE_SECONDS = 6 * 60 * 60;
@@ -113,6 +113,57 @@ async function writeRankingDatasetCache(season, sex, data){
   }catch{}
 }
 
+const SAJ_ATHLETE_RESULTS_CACHE_SECONDS = 6 * 60 * 60;
+const SAJ_ATHLETE_RESULTS_STALE_SECONDS = 24 * 60 * 60;
+
+function athleteResultsCacheUrl(saj){
+  const u=new URL("https://cache.alpine-team-manager.invalid/saj-athlete-results");
+  u.searchParams.set("v",SAJ_RANKING_CACHE_VERSION);
+  u.searchParams.set("saj",String(saj));
+  return u.toString();
+}
+async function readAthleteResultsCache(saj,{allowStale=false}={}){
+  try{
+    const key=new Request(athleteResultsCacheUrl(saj),{method:"GET"});
+    const hit=await caches.default.match(key);
+    if(!hit)return null;
+    const data=await hit.json();
+    const savedAt=Number(data?.cachedAt)||0;
+    if(!savedAt)return null;
+    const age=Math.max(0,Date.now()-savedAt);
+    const maxAge=(allowStale?SAJ_ATHLETE_RESULTS_STALE_SECONDS:SAJ_ATHLETE_RESULTS_CACHE_SECONDS)*1000;
+    if(age>maxAge)return null;
+    return {...data,cacheAgeSeconds:Math.floor(age/1000)};
+  }catch{return null;}
+}
+async function writeAthleteResultsCache(saj,data){
+  try{
+    const key=new Request(athleteResultsCacheUrl(saj),{method:"GET"});
+    const payload={...data,cachedAt:Date.now()};
+    await caches.default.put(key,new Response(JSON.stringify(payload),{
+      headers:{
+        "Content-Type":"application/json; charset=utf-8",
+        "Cache-Control":`public, max-age=${SAJ_ATHLETE_RESULTS_STALE_SECONDS}`
+      }
+    }));
+  }catch{}
+}
+async function lookupAthleteResultsCached(saj){
+  const fresh=await readAthleteResultsCache(saj);
+  if(fresh)return {...fresh,cacheStatus:"HIT"};
+  try{
+    const biography=await lookupBiography(saj);
+    if(!biography)throw new Error("SAJバイオグラフィーに該当選手が見つかりません");
+    const data={saj,results:Array.isArray(biography.results)?biography.results:[],source:biography.source};
+    await writeAthleteResultsCache(saj,data);
+    return {...data,cacheStatus:"MISS",cachedAt:Date.now()};
+  }catch(e){
+    const stale=await readAthleteResultsCache(saj,{allowStale:true});
+    if(stale)return {...stale,cacheStatus:"STALE"};
+    throw e;
+  }
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -122,7 +173,7 @@ export default {
       return cors(json({ok:false,error:"Method not allowed"},405), env, request);
     }
     if (url.pathname === "/health") {
-      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.13.46"}), env, request);
+      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.13.47"}), env, request);
     }
 
     if (url.pathname === "/api/debug-competition-calendar") {
@@ -261,6 +312,37 @@ export default {
           error:"SAJポイントリストの選手一覧取得に失敗しました",
           detail:String(e?.message||e)
         },502),env,request);
+      }
+    }
+
+    if (url.pathname === "/api/saj-athlete-points") {
+      const saj=(url.searchParams.get("saj")||"").replace(/\D/g,"");
+      if(!/^\d{8}$/.test(saj)){
+        return cors(json({ok:false,error:"SAJ競技者番号を8桁で入力してください"},400),env,request);
+      }
+      try{
+        const points=await lookupOfficialPoints(saj);
+        if(!points)return cors(json({ok:false,error:"SAJポイントを取得できませんでした"},404),env,request);
+        return cors(json({ok:true,points:{
+          saj,dh:points.dh??null,sc:points.sc??null,sg:points.sg??null,gs:points.gs??null,sl:points.sl??null,
+          pointSeasonCode:points.seasonCode??null,pointSeasonLabel:points.seasonLabel??null,
+          pointListNumber:points.pointListNumber??null,pointSource:points.source??null
+        }}),env,request);
+      }catch(e){
+        return cors(json({ok:false,error:"SAJポイント取得に失敗しました",detail:String(e?.message||e)},502),env,request);
+      }
+    }
+
+    if (url.pathname === "/api/saj-athlete-results") {
+      const saj=(url.searchParams.get("saj")||"").replace(/\D/g,"");
+      if(!/^\d{8}$/.test(saj)){
+        return cors(json({ok:false,error:"SAJ競技者番号を8桁で入力してください"},400),env,request);
+      }
+      try{
+        const result=await lookupAthleteResultsCached(saj);
+        return cors(json({ok:true,saj,results:result.results||[],source:result.source||"",cacheStatus:result.cacheStatus||"",cachedAt:result.cachedAt||null}),env,request);
+      }catch(e){
+        return cors(json({ok:false,error:"SAJ大会成績の取得に失敗しました",detail:String(e?.message||e)},502),env,request);
       }
     }
 

@@ -1906,7 +1906,7 @@ header{
 <header>
   <div class="header-inner">
     <div class="header-meta-row">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.13.46</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.13.47</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
     <div class="header-title-row">
@@ -5477,6 +5477,9 @@ function showAthlete(id,source='athletes'){
   document.querySelectorAll('main > section').forEach(sec=>sec.classList.remove('active'));
   document.getElementById('athleteDetailScreen').classList.add('active');
   window.scrollTo({top:0,behavior:'smooth'});
+
+  // 大会履歴は選手詳細を開いた時だけ軽量同期する。保存済み履歴は先に表示済み。
+  void refreshAthleteResultsOnDetail(id);
 }
 
 function backFromAthleteDetail(){
@@ -6652,6 +6655,55 @@ async function fetchSajAthlete(saj){
   if(!r.ok || !data.ok) throw new Error(data.error||`SAJ取得エラー (${r.status})`);
   return data.athlete;
 }
+async function fetchSajAthletePoints(saj){
+  const base=apiBase();
+  if(!base) throw new Error('SAJ連携サービスを利用できません');
+  const r=await fetch(`${base}/api/saj-athlete-points?saj=${encodeURIComponent(saj)}`,{headers:{'Accept':'application/json'}});
+  let data={}; try{data=await r.json()}catch{}
+  if(!r.ok || !data.ok) throw new Error(data.error||`SAJポイント取得エラー (${r.status})`);
+  return data.points||{};
+}
+async function fetchSajAthleteResults(saj){
+  const base=apiBase();
+  if(!base) throw new Error('SAJ連携サービスを利用できません');
+  const r=await fetch(`${base}/api/saj-athlete-results?saj=${encodeURIComponent(saj)}`,{headers:{'Accept':'application/json'}});
+  let data={}; try{data=await r.json()}catch{}
+  if(!r.ok || !data.ok) throw new Error(data.error||`SAJ大会成績取得エラー (${r.status})`);
+  return data;
+}
+const ATHLETE_RESULTS_CLIENT_TTL_MS=6*60*60*1000;
+function athleteResultsCheckedRecently(a){
+  const t=Date.parse(a?.resultsCheckedAt||'');
+  return Number.isFinite(t) && (Date.now()-t)>=0 && (Date.now()-t)<ATHLETE_RESULTS_CLIENT_TTL_MS;
+}
+async function refreshAthleteResultsOnDetail(id){
+  const a=db.athletes.find(x=>x.id===id);
+  if(!a || !navigator.onLine || !apiBase() || !normalizedSaj(a.saj))return;
+  if(athleteResultsCheckedRecently(a))return;
+
+  // 同じ選手を短時間に連打しても重複通信しない。
+  if(a._resultsSyncing)return;
+  a._resultsSyncing=true;
+  try{
+    const data=await fetchSajAthleteResults(normalizedSaj(a.saj));
+    const before=(a.results||[]).length;
+    const merged=mergeSajResults(a.results||[],data.results||[]);
+    a.results=merged;
+    a.resultsCheckedAt=new Date().toISOString();
+    if(data.source)a.sajResultsSource=data.source;
+    persistDb({silent:true});
+
+    // 新規成績が追加された時だけ詳細画面を再描画。
+    if(merged.length!==before && document.getElementById('athleteDetailScreen')?.classList.contains('active')){
+      showAthlete(id,athleteDetailReturnTarget);
+    }
+  }catch(e){
+    // 通信失敗でも保存済み履歴はそのまま表示し続ける。
+    console.warn('SAJ athlete results sync failed',e);
+  }finally{
+    delete a._resultsSyncing;
+  }
+}
 async function registerAthleteFromSaj(){
   const saj=normalizedSaj(aSaj.value);
   if(!/^0?\d{7,9}$/.test(saj)){setSajStatus('SAJ競技者番号を確認してください。','status-danger');return}
@@ -6731,7 +6783,7 @@ function mergeSajResults(existing,incoming){
 async function refreshAthleteFromSaj(id,quiet=false){
   const old=db.athletes.find(x=>x.id===id);if(!old)return false;
   try{
-    const a=await fetchSajAthlete(normalizedSaj(old.saj));
+    const a=await fetchSajAthletePoints(normalizedSaj(old.saj));
 
     const keepPoint=(fresh,current)=>{
       if(fresh===undefined || fresh===null || fresh==='') return current??null;
@@ -6740,9 +6792,7 @@ async function refreshAthleteFromSaj(id,quiet=false){
       return Number.isFinite(n)?n:(current??null);
     };
 
-    const nextResults=mergeSajResults(old.results||[],a.results||[]);
-
-    // Regular synchronization updates only official points and competition history.
+    // 起動時・一括同期はポイントだけを軽量取得する。大会履歴は選手詳細を開いた時だけ取得。
     // Profile fields entered/adjusted by the team are intentionally left untouched.
     Object.assign(old,{
       dh:keepPoint(a.dh,old.dh),
@@ -6755,8 +6805,7 @@ async function refreshAthleteFromSaj(id,quiet=false){
       pointListNumber:a.pointListNumber??old.pointListNumber??null,
       pointSeasonLabel:a.pointSeasonLabel||old.pointSeasonLabel||'',
       pointSource:a.pointSource||old.pointSource||'',
-      sajSource:a.source||old.sajSource||'',
-      results:nextResults
+      sajSource:a.pointSource||old.sajSource||''
     });
 
     // Persist each successful refresh immediately so an app close during launch refresh
@@ -6777,7 +6826,7 @@ async function refreshAllSaj(){
   for(const a of db.athletes){
     (await refreshAthleteFromSaj(a.id,true))?ok++:ng++;
   }
-  save();alert(`SAJ同期完了：成功 ${ok}名 / 失敗 ${ng}名\n最新ポイントと新しい大会履歴を反映しました。`);
+  save();alert(`SAJ同期完了：成功 ${ok}名 / 失敗 ${ng}名\n最新ポイントを反映しました。大会履歴は選手詳細を開いた時に差分同期します。`);
 }
 
 
@@ -7533,7 +7582,7 @@ async function refreshAppCacheOnLaunch(){
   if(!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=01346',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=01347',{updateViaCache:'none'});
 
     if(reg.waiting){
       reg.waiting.postMessage({type:'SKIP_WAITING'});
