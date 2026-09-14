@@ -1,5 +1,5 @@
 /**
- * SnowTech SAJ API v0.13.48
+ * SnowTech SAJ API v0.13.49
  * GET /api/saj-athlete?saj=03028493
  *
  * Strategy:
@@ -13,7 +13,7 @@ const SAJ_ORIGIN = "https://sajdb.shikuminet.jp";
 
 const SAJ_RANKING_CACHE_SECONDS = 6 * 60 * 60;      // 6 hours
 const SAJ_RANKING_STALE_SECONDS = 24 * 60 * 60;     // stale fallback
-const SAJ_RANKING_CACHE_VERSION = "v01348";
+const SAJ_RANKING_CACHE_VERSION = "v01349";
 
 
 const SAJ_POINT_CALENDAR_CACHE_SECONDS = 6 * 60 * 60;
@@ -173,7 +173,7 @@ export default {
       return cors(json({ok:false,error:"Method not allowed"},405), env, request);
     }
     if (url.pathname === "/health") {
-      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.13.48"}), env, request);
+      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.13.49"}), env, request);
     }
 
     if (url.pathname === "/api/debug-competition-calendar") {
@@ -2195,10 +2195,17 @@ function normalizeSajDate(value){
   return `${m[1]}-${String(m[2]).padStart(2,"0")}-${String(m[3]).padStart(2,"0")}`;
 }
 
+function sajCompetitionFieldText(value){
+  if(value && typeof value==="object"){
+    value=value.name ?? value.label ?? value.code ?? value.value ?? value.id ?? "";
+  }
+  return String(value??"").trim();
+}
+
 function normalizeDisciplines(races){
   const vals=[];
   for(const r of (Array.isArray(races)?races:[])){
-    const d=String(r?.discipline||"").trim();
+    const d=sajCompetitionFieldText(r?.discipline);
     if(d && !vals.includes(d)) vals.push(d);
   }
   return vals.join(" / ");
@@ -2237,9 +2244,9 @@ function mapSajCompetition(c,season){
     disc:normalizeDisciplines(races),
     races:races.map(r=>({
       date:normalizeSajDate(r?.start_date),
-      category:r?.category ?? null,
-      discipline:r?.discipline ?? null,
-      sex:r?.sex ?? null,
+      category:sajCompetitionFieldText(r?.category)||null,
+      discipline:sajCompetitionFieldText(r?.discipline)||null,
+      sex:sajCompetitionFieldText(r?.sex)||null,
       codex:r?.codex ?? null,
       status:r?.status ?? null,
       resultUrl:r?.result_url ? new URL(String(r.result_url),SAJ_ORIGIN).toString() : null

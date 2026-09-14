@@ -9,8 +9,8 @@
 <meta property="og:title" content="Alpine Team Manager by TechBit">
 <meta property="og:description" content="アルペンスキーチーム向けの選手・大会・年間予定・ポイント管理アプリ">
 <meta property="og:url" content="https://m6jm4s654p-lab.github.io/snowtech-team-manager/">
-<meta property="og:image" content="https://m6jm4s654p-lab.github.io/snowtech-team-manager/alpine-team-manager-og-v01348.png">
-<meta property="og:image:secure_url" content="https://m6jm4s654p-lab.github.io/snowtech-team-manager/alpine-team-manager-og-v01348.png">
+<meta property="og:image" content="https://m6jm4s654p-lab.github.io/snowtech-team-manager/alpine-team-manager-og-v01349.png">
+<meta property="og:image:secure_url" content="https://m6jm4s654p-lab.github.io/snowtech-team-manager/alpine-team-manager-og-v01349.png">
 <meta property="og:image:type" content="image/png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -18,7 +18,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Alpine Team Manager by TechBit">
 <meta name="twitter:description" content="アルペンスキーチーム向けの選手・大会・年間予定・ポイント管理アプリ">
-<meta name="twitter:image" content="https://m6jm4s654p-lab.github.io/snowtech-team-manager/alpine-team-manager-og-v01348.png">
+<meta name="twitter:image" content="https://m6jm4s654p-lab.github.io/snowtech-team-manager/alpine-team-manager-og-v01349.png">
 <meta name="referrer" content="no-referrer">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://snowtech-saj-api.take6583.workers.dev https://nominatim.openstreetmap.org https://geocoding-api.open-meteo.com https://api.open-meteo.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'; media-src 'none'">
 <link rel="manifest" href="manifest.webmanifest">
@@ -1920,7 +1920,7 @@ header{
 <header>
   <div class="header-inner">
     <div class="header-meta-row">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.13.48</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.13.49</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
     <div class="header-title-row">
@@ -2694,7 +2694,30 @@ header{
             </div>
           </div>
           <div id="sajRegionFilters" class="checks" style="margin-top:8px"></div>
-          <div class="muted" style="margin-top:6px">大会出場するエリアにチェックを入れてください。設定はこの端末に保存されます。</div>
+
+          <div style="border-top:1px solid var(--line);margin:12px 0 0;padding-top:12px">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+              <b>カテゴリー</b>
+              <div class="toolbar" style="margin:0">
+                <button class="btn" type="button" onclick="setAllSajCategories(true)">全ON</button>
+                <button class="btn" type="button" onclick="setAllSajCategories(false)">全OFF</button>
+              </div>
+            </div>
+            <div id="sajCategoryFilters" class="checks" style="margin-top:8px"></div>
+          </div>
+
+          <div style="border-top:1px solid var(--line);margin:12px 0 0;padding-top:12px">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+              <b>種目</b>
+              <div class="toolbar" style="margin:0">
+                <button class="btn" type="button" onclick="setAllSajDisciplines(true)">全ON</button>
+                <button class="btn" type="button" onclick="setAllSajDisciplines(false)">全OFF</button>
+              </div>
+            </div>
+            <div id="sajDisciplineFilters" class="checks" style="margin-top:8px"></div>
+          </div>
+
+          <div class="muted" style="margin-top:8px">地域・カテゴリー・種目のチェック条件に一致する大会だけを表示します。設定はこの端末に保存されます。</div>
         </div>
         <div id="sajCompetitionStatus" class="muted" style="margin:8px 0">SAJ競技データバンクから大会情報を取得します。</div>
         <div class="toolbar" id="sajCompetitionActionsTop" style="display:none;margin-bottom:10px">
@@ -5102,7 +5125,7 @@ function renderAll(){
   document.getElementById('teamName').value=db.team.name||'';
   const mainSkiAreaInput=document.getElementById('mainSkiArea');
   if(mainSkiAreaInput)mainSkiAreaInput.value=db.team.mainSkiArea||'';
-  initGlobalSeason();renderCoaches();renderAthletes();renderSchedule();renderEvents();renderRanking();refreshSelects();initSajCompetitionSeason();initScheduleSeason();renderSajRegionFilters();renderVenues();renderWeatherVenues();renderHome();renderBackupStatus();
+  initGlobalSeason();renderCoaches();renderAthletes();renderSchedule();renderEvents();renderRanking();refreshSelects();initSajCompetitionSeason();initScheduleSeason();renderSajRegionFilters();renderSajCategoryFilters();renderSajDisciplineFilters();renderVenues();renderWeatherVenues();renderHome();renderBackupStatus();
 }
 
 function openScheduleForm(){scheduleForm.classList.remove('hidden')} function closeScheduleForm(){scheduleForm.classList.add('hidden')}
@@ -5133,6 +5156,23 @@ function renderEvents(){
 
 
 const SAJ_REGION_STORAGE='snowtech_saj_regions_v2';
+const SAJ_COMP_FILTER_STORAGE='alpine_team_manager_saj_comp_filters_v1';
+const SAJ_CATEGORIES=[
+  {id:'A',name:'A'},
+  {id:'B',name:'B'},
+  {id:'A_YH',name:'A(YH)'},
+  {id:'B_YH',name:'B(YH)'},
+  {id:'OTHER',name:'その他'}
+];
+const SAJ_DISCIPLINES=[
+  {id:'SL',name:'SL'},
+  {id:'GS',name:'GS'},
+  {id:'SG',name:'SG'},
+  {id:'DH',name:'DH'},
+  {id:'AC',name:'AC'},
+  {id:'SC',name:'SC'},
+  {id:'OTHER',name:'その他'}
+];
 const SAJ_REGIONS=[
   {id:'hokkaido',name:'北海道',prefs:['北海道']},
   {id:'tohoku',name:'東北',prefs:['青森県','岩手県','宮城県','秋田県','山形県','福島県']},
@@ -5160,6 +5200,81 @@ function loadSajRegionState(){
 }
 
 let sajRegionState=loadSajRegionState();
+
+function loadSajCompetitionFilterState(){
+  const defaults={
+    categories:Object.fromEntries(SAJ_CATEGORIES.map(x=>[x.id,true])),
+    disciplines:Object.fromEntries(SAJ_DISCIPLINES.map(x=>[x.id,true]))
+  };
+  try{
+    const raw=localStorage.getItem(SAJ_COMP_FILTER_STORAGE);
+    if(!raw)return defaults;
+    const saved=JSON.parse(raw||'{}');
+    for(const x of SAJ_CATEGORIES){
+      if(saved?.categories?.[x.id]===false)defaults.categories[x.id]=false;
+    }
+    for(const x of SAJ_DISCIPLINES){
+      if(saved?.disciplines?.[x.id]===false)defaults.disciplines[x.id]=false;
+    }
+  }catch{}
+  return defaults;
+}
+
+let sajCompetitionFilterState=loadSajCompetitionFilterState();
+
+function saveSajCompetitionFilterState(){
+  localStorage.setItem(SAJ_COMP_FILTER_STORAGE,JSON.stringify(sajCompetitionFilterState));
+}
+
+function renderSajCategoryFilters(){
+  const el=document.getElementById('sajCategoryFilters');
+  if(!el)return;
+  el.innerHTML=SAJ_CATEGORIES.map(x=>`
+    <label class="check">
+      <input type="checkbox" ${sajCompetitionFilterState.categories[x.id]?'checked':''}
+        onchange="toggleSajCategory('${x.id}',this.checked)">
+      ${x.name}
+    </label>`).join('');
+}
+
+function renderSajDisciplineFilters(){
+  const el=document.getElementById('sajDisciplineFilters');
+  if(!el)return;
+  el.innerHTML=SAJ_DISCIPLINES.map(x=>`
+    <label class="check">
+      <input type="checkbox" ${sajCompetitionFilterState.disciplines[x.id]?'checked':''}
+        onchange="toggleSajDiscipline('${x.id}',this.checked)">
+      ${x.name}
+    </label>`).join('');
+}
+
+function toggleSajCategory(id,checked){
+  if(!(id in sajCompetitionFilterState.categories))return;
+  sajCompetitionFilterState.categories[id]=!!checked;
+  saveSajCompetitionFilterState();
+  renderSajCompetitionCandidates();
+}
+
+function toggleSajDiscipline(id,checked){
+  if(!(id in sajCompetitionFilterState.disciplines))return;
+  sajCompetitionFilterState.disciplines[id]=!!checked;
+  saveSajCompetitionFilterState();
+  renderSajCompetitionCandidates();
+}
+
+function setAllSajCategories(on){
+  SAJ_CATEGORIES.forEach(x=>sajCompetitionFilterState.categories[x.id]=!!on);
+  saveSajCompetitionFilterState();
+  renderSajCategoryFilters();
+  renderSajCompetitionCandidates();
+}
+
+function setAllSajDisciplines(on){
+  SAJ_DISCIPLINES.forEach(x=>sajCompetitionFilterState.disciplines[x.id]=!!on);
+  saveSajCompetitionFilterState();
+  renderSajDisciplineFilters();
+  renderSajCompetitionCandidates();
+}
 
 function saveSajRegionState(){
   localStorage.setItem(SAJ_REGION_STORAGE,JSON.stringify(sajRegionState));
@@ -5202,6 +5317,63 @@ function sajCompetitionVisibleByRegion(c){
   return !!id && sajRegionState[id]===true;
 }
 
+function sajCompetitionFieldText(value){
+  if(value && typeof value==='object'){
+    value=value.name ?? value.label ?? value.code ?? value.value ?? value.id ?? '';
+  }
+  return String(value??'').trim();
+}
+
+function normalizeSajCompetitionCategory(value){
+  const raw=sajCompetitionFieldText(value)
+    .toUpperCase().replace(/\s+/g,'').replace(/[（]/g,'(').replace(/[）]/g,')');
+  if(!raw)return 'OTHER';
+  const baseMatch=raw.match(/(?:^|SAJ-?)(A|B)(?:\(|$)/) || raw.match(/^(A|B)/);
+  if(!baseMatch)return 'OTHER';
+  const base=baseMatch[1];
+  const yhExcluded=/YH(?:除く|除外|以外)|EXCLUD/.test(raw);
+  const yh=!yhExcluded && /YH|ユース/.test(raw);
+  return yh ? `${base}_YH` : base;
+}
+
+function normalizeSajCompetitionDiscipline(value){
+  const raw=sajCompetitionFieldText(value).toUpperCase().replace(/[^A-Z]/g,'');
+  if(['SL','GS','SG','DH','AC','SC'].includes(raw))return raw;
+  if(raw.includes('GIANTSLALOM'))return 'GS';
+  if(raw==='SLALOM')return 'SL';
+  if(raw.includes('SUPERG'))return 'SG';
+  if(raw.includes('DOWNHILL'))return 'DH';
+  if(raw.includes('ALPINECOMBINED'))return 'AC';
+  if(raw.includes('SUPERCOMBINED'))return 'SC';
+  return 'OTHER';
+}
+
+function sajCompetitionRaceRows(c){
+  if(Array.isArray(c?.races) && c.races.length)return c.races;
+  const discs=String(c?.disc||'').split(/[\/・,，\s]+/).map(x=>x.trim()).filter(Boolean);
+  return discs.length?discs.map(d=>({category:c?.category||'',discipline:d})):[{category:c?.category||'',discipline:''}];
+}
+
+function sajCompetitionVisibleByRaceFilters(c){
+  const rows=sajCompetitionRaceRows(c);
+  return rows.some(r=>{
+    const cat=normalizeSajCompetitionCategory(r?.category);
+    const disc=normalizeSajCompetitionDiscipline(r?.discipline);
+    return sajCompetitionFilterState.categories[cat]===true &&
+           sajCompetitionFilterState.disciplines[disc]===true;
+  });
+}
+
+function sajCompetitionCategoryLabel(c){
+  const ids=[];
+  for(const r of sajCompetitionRaceRows(c)){
+    const id=normalizeSajCompetitionCategory(r?.category);
+    if(!ids.includes(id))ids.push(id);
+  }
+  const labels=ids.map(id=>SAJ_CATEGORIES.find(x=>x.id===id)?.name||'その他');
+  return labels.join(' / ');
+}
+
 let sajCompetitionCache=[];
 
 function currentSkiSeasonCode(){
@@ -5228,6 +5400,8 @@ function setEventMode(mode){
   if(mode==='saj'){
     initSajCompetitionSeason();
     renderSajRegionFilters();
+    renderSajCategoryFilters();
+    renderSajDisciplineFilters();
     sajCompetitionPanel.classList.remove('hidden');
     eventForm.classList.add('hidden');
     if(sajBtn)sajBtn.classList.add('primary');
@@ -5328,20 +5502,20 @@ async function loadSajCompetitions(){
 function renderSajCompetitionCandidates(){
   const filtered=sajCompetitionCache
     .map((c,i)=>({c,i}))
-    .filter(x=>sajCompetitionVisibleByRegion(x.c));
+    .filter(x=>sajCompetitionVisibleByRegion(x.c) && sajCompetitionVisibleByRaceFilters(x.c));
 
   if(!sajCompetitionCache.length){
     sajCompetitionList.innerHTML='<div class="muted">大会情報はありません</div>';
     return;
   }
   if(!filtered.length){
-    sajCompetitionList.innerHTML='<div class="muted">現在ONになっている地域に該当する大会はありません。</div>';
+    sajCompetitionList.innerHTML='<div class="muted">現在の地域・カテゴリー・種目条件に該当する大会はありません。</div>';
     return;
   }
 
   sajCompetitionList.innerHTML=`<div class="muted" style="margin-bottom:6px">表示 ${filtered.length} / 全国取得 ${sajCompetitionCache.length} 大会</div>
   <div style="overflow:auto"><table>
-    <thead><tr><th>選択</th><th>詳細</th><th>日程</th><th>大会名</th><th>開催地</th><th>種目</th></tr></thead>
+    <thead><tr><th>選択</th><th>詳細</th><th>日程</th><th>大会名</th><th>開催地</th><th>カテゴリー</th><th>種目</th></tr></thead>
     <tbody>${filtered.map(({c,i})=>{
       const exists=db.events.some(e=>e.sajKey && e.sajKey===c.key);
       return `<tr>
@@ -5350,6 +5524,7 @@ function renderSajCompetitionCandidates(){
         <td>${c.end&&c.end!==c.start?`<div>${fmt(c.start)}～</div><div>${fmt(c.end)}</div>`:`<div>${fmt(c.start)}</div>`}</td>
         <td><b>${esc(c.title||'-')}</b>${exists?'<br><span class="status-ok">登録済み</span>':''}</td>
         <td>${esc(c.prefecture||String(c.place||'-').slice(0,3))}</td>
+        <td>${esc(sajCompetitionCategoryLabel(c)||'-')}</td>
         <td>${esc(c.disc||'-')}</td>
       </tr>`;
     }).join('')}</tbody>
@@ -5380,6 +5555,7 @@ function importSelectedSajCompetitions(){
       place:c.place||'',
       prefecture:c.prefecture||'',
       disc:c.disc||'',
+      category:sajCompetitionCategoryLabel(c)||'',
       deadline:'',
       athleteIds:[],
       coachIds:[],
@@ -7596,7 +7772,7 @@ async function refreshAppCacheOnLaunch(){
   if(!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=01348',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=01349',{updateViaCache:'none'});
 
     if(reg.waiting){
       reg.waiting.postMessage({type:'SKIP_WAITING'});

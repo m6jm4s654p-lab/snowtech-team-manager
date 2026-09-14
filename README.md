@@ -1421,3 +1421,15 @@ SnowTech → 管理 → `SAJ連携API URL` にWorker URLを入力 → 保存。
 - LINE/SNS share preview (OGP) thumbnail changed to Alpine Team Manager.
 - Added 1200x630 Alpine Team Manager OGP image and cache-busted image filename.
 - Added og:title/description/url/image and Twitter card metadata.
+
+
+## v0.13.49
+- 大会管理「SAJ公認大会カレンダー」にカテゴリー／種目フィルターを追加。
+- カテゴリー: A / B / A(YH) / B(YH) / その他。
+- 種目: SL / GS / SG / DH / AC / SC / その他。
+- 地域・カテゴリー・種目の3条件で大会候補を表示／非表示。
+- カテゴリーと種目は同一race行の組み合わせで判定し、異なる種目・カテゴリーの混在大会を誤表示しにくくした。
+- フィルター設定は端末LocalStorageに保存し、次回も維持。
+- 大会候補一覧に「カテゴリー」列を追加。
+- SAJ大会を登録する際、カテゴリー情報もイベントに保存。
+- TOP30・チームランキング・選手履歴同期など既存機能は変更していない。
