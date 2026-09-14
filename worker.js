@@ -1,5 +1,5 @@
 /**
- * SnowTech SAJ API v0.13.50
+ * SnowTech SAJ API v0.13.51
  * GET /api/saj-athlete?saj=03028493
  *
  * Strategy:
@@ -173,7 +173,7 @@ export default {
       return cors(json({ok:false,error:"Method not allowed"},405), env, request);
     }
     if (url.pathname === "/health") {
-      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.13.50"}), env, request);
+      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.13.51"}), env, request);
     }
 
     if (url.pathname === "/api/debug-competition-calendar") {
@@ -1303,6 +1303,59 @@ function extractSelectedPointListNumber(html){
   return null;
 }
 
+
+
+async function lookupAthleteListBySexOrganization(sex, organization){
+  const expectedOrg=normalizeJapaneseOrgName(organization);
+  if(!expectedOrg) throw new Error('加盟団体を確認してください');
+
+  let lastError=null;
+  for(const season of getTargetSeasons()){
+    try{
+      // Reuse the same full point-list dataset acquisition path that is already
+      // proven stable for the national TOP30 API. This function only filters the
+      // returned rows by organization; it does not alter TOP30 ranking behavior.
+      const dataset=await fetchAllNationalPointRowsForSeason({season,sex});
+      const rows=(dataset?.rows||[]).filter(row=>
+        normalizeJapaneseOrgName(row?.organization)===expectedOrg
+      );
+
+      if(rows.length){
+        rows.sort((a,b)=>{
+          const an=String(a?.name||'');
+          const bn=String(b?.name||'');
+          return an.localeCompare(bn,'ja');
+        });
+        return {
+          season,
+          seasonLabel:`${season-1}/${season}`,
+          pointListNumber:dataset?.pointListNumber??null,
+          organization,
+          sex,
+          athletes:rows,
+          source:dataset?.source||'',
+          sourcePages:dataset?.pageCount||0,
+          cacheStatus:dataset?.cacheStatus||''
+        };
+      }
+    }catch(e){
+      lastError=e;
+    }
+  }
+
+  if(lastError) throw lastError;
+  return {
+    season:null,
+    seasonLabel:'',
+    pointListNumber:null,
+    organization,
+    sex,
+    athletes:[],
+    source:'',
+    sourcePages:0,
+    cacheStatus:''
+  };
+}
 
 function parseBirthDateLoose(v){
   const t=String(v||"").trim();
