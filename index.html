@@ -9,8 +9,8 @@
 <meta property="og:title" content="Alpine Team Manager by TechBit">
 <meta property="og:description" content="アルペンスキーチーム向けの選手・大会・年間予定・ポイント管理アプリ">
 <meta property="og:url" content="https://m6jm4s654p-lab.github.io/snowtech-team-manager/">
-<meta property="og:image" content="https://m6jm4s654p-lab.github.io/snowtech-team-manager/alpine-team-manager-og-v01349.png">
-<meta property="og:image:secure_url" content="https://m6jm4s654p-lab.github.io/snowtech-team-manager/alpine-team-manager-og-v01349.png">
+<meta property="og:image" content="https://m6jm4s654p-lab.github.io/snowtech-team-manager/alpine-team-manager-og-v01350.png">
+<meta property="og:image:secure_url" content="https://m6jm4s654p-lab.github.io/snowtech-team-manager/alpine-team-manager-og-v01350.png">
 <meta property="og:image:type" content="image/png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -18,7 +18,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Alpine Team Manager by TechBit">
 <meta name="twitter:description" content="アルペンスキーチーム向けの選手・大会・年間予定・ポイント管理アプリ">
-<meta name="twitter:image" content="https://m6jm4s654p-lab.github.io/snowtech-team-manager/alpine-team-manager-og-v01349.png">
+<meta name="twitter:image" content="https://m6jm4s654p-lab.github.io/snowtech-team-manager/alpine-team-manager-og-v01350.png">
 <meta name="referrer" content="no-referrer">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://snowtech-saj-api.take6583.workers.dev https://nominatim.openstreetmap.org https://geocoding-api.open-meteo.com https://api.open-meteo.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'; media-src 'none'">
 <link rel="manifest" href="manifest.webmanifest">
@@ -1920,7 +1920,7 @@ header{
 <header>
   <div class="header-inner">
     <div class="header-meta-row">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.13.49</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.13.50</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
     <div class="header-title-row">
@@ -5162,16 +5162,12 @@ const SAJ_CATEGORIES=[
   {id:'B',name:'B'},
   {id:'A_YH',name:'A(YH)'},
   {id:'B_YH',name:'B(YH)'},
-  {id:'OTHER',name:'その他'}
+  {id:'FIS',name:'FIS'}
 ];
 const SAJ_DISCIPLINES=[
   {id:'SL',name:'SL'},
   {id:'GS',name:'GS'},
-  {id:'SG',name:'SG'},
-  {id:'DH',name:'DH'},
-  {id:'AC',name:'AC'},
-  {id:'SC',name:'SC'},
-  {id:'OTHER',name:'その他'}
+  {id:'SG',name:'SG'}
 ];
 const SAJ_REGIONS=[
   {id:'hokkaido',name:'北海道',prefs:['北海道']},
@@ -5328,6 +5324,7 @@ function normalizeSajCompetitionCategory(value){
   const raw=sajCompetitionFieldText(value)
     .toUpperCase().replace(/\s+/g,'').replace(/[（]/g,'(').replace(/[）]/g,')');
   if(!raw)return 'OTHER';
+  if(/FIS/.test(raw))return 'FIS';
   const baseMatch=raw.match(/(?:^|SAJ-?)(A|B)(?:\(|$)/) || raw.match(/^(A|B)/);
   if(!baseMatch)return 'OTHER';
   const base=baseMatch[1];
@@ -5370,7 +5367,7 @@ function sajCompetitionCategoryLabel(c){
     const id=normalizeSajCompetitionCategory(r?.category);
     if(!ids.includes(id))ids.push(id);
   }
-  const labels=ids.map(id=>SAJ_CATEGORIES.find(x=>x.id===id)?.name||'その他');
+  const labels=ids.map(id=>SAJ_CATEGORIES.find(x=>x.id===id)?.name||id);
   return labels.join(' / ');
 }
 
@@ -7772,7 +7769,7 @@ async function refreshAppCacheOnLaunch(){
   if(!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=01349',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=01350',{updateViaCache:'none'});
 
     if(reg.waiting){
       reg.waiting.postMessage({type:'SKIP_WAITING'});
