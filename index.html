@@ -1935,7 +1935,7 @@ header{
 <header>
   <div class="header-inner">
     <div class="header-meta-row">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.13.56</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.13.58</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
     <div class="header-title-row">
@@ -5941,7 +5941,7 @@ function buildSupporterUpdateEnvelope(){
 function supporterUpdateFilename(){
   const stamp=new Date().toISOString().slice(0,10).replaceAll('-','');
   const safe=String(db.team?.name||'AlpineTeam').replace(/[\\/:*?"<>|]/g,'_').trim()||'AlpineTeam';
-  return `${safe}_Supporter_Update_${stamp}.atsdata`;
+  return `${safe}_Supporter_Update_${stamp}.txt`;
 }
 function downloadSupporterUpdateFile(file){
   const url=URL.createObjectURL(file);
@@ -5951,12 +5951,12 @@ function downloadSupporterUpdateFile(file){
 }
 async function shareSupporterUpdateFile(){
   const envelope=buildSupporterUpdateEnvelope();
-  const file=new File([JSON.stringify(envelope)],supporterUpdateFilename(),{type:'application/json'});
+  const file=new File([JSON.stringify(envelope)],supporterUpdateFilename(),{type:'text/plain;charset=utf-8'});
   try{
     if(navigator.share && navigator.canShare?.({files:[file]})){
       await navigator.share({
         title:'Alpine Team Supporter データ更新',
-        text:'Alpine Team Supporter用のデータ更新ファイルです。',
+        text:'Alpine Team Supporter用のデータ更新ファイルです。\n\nアプリはこちらから開けます。\nhttps://m6jm4s654p-lab.github.io/Alpine-Team-Supporter/',
         files:[file]
       });
       return;
@@ -5976,7 +5976,7 @@ function exportJson(){
   persistDb({silent:true});
 
   const stamp=new Date().toISOString().slice(0,10).replaceAll('-','');
-  const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
+  const blob=new Blob([JSON.stringify(db,null,2)],{type:'text/plain;charset=utf-8'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
   a.href=url;

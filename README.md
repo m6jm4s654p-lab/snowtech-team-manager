@@ -1,3 +1,14 @@
+# v0.13.58
+
+- Supporter用データ更新ファイルの共有メッセージにAlpine Team Supporter公開URLを追加。
+- LINE等へ「更新ファイル＋Supporter URL」を同時に共有。
+- 更新ファイル形式はv0.13.57と同じ .txt。
+- Worker変更なし。
+
+# v0.13.57
+
+- Supporter用データ更新ファイルをLINE互換性の高い .txt（text/plain）形式へ変更。内容は従来と同じJSONデータです。
+
 # v0.13.56
 
 - Alpine Team Supporter用データ更新ファイル（.atsdata）の直接共有/書き出しを追加。
