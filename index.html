@@ -1935,7 +1935,7 @@ header{
 <header>
   <div class="header-inner">
     <div class="header-meta-row">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.13.54</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.13.55</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
     <div class="header-title-row">
@@ -2991,7 +2991,7 @@ header{
       <button class="btn primary" onclick="shareBackupLink()">LINEでバックアップ共有</button>
       <button class="btn danger" onclick="resetAll()">全データ削除</button>
     </div>
-    <p class="muted">LINE共有はバックアップ内容を圧縮した共有リンクを作成します。受信側はリンクを開くと内容を自動検出し、確認後に取り込みます。共有リンクには選手情報が含まれるため、チーム内など信頼できる相手にだけ送信してください。</p>
+    <p class="muted">LINE共有は7日間有効の短い共有リンクを作成します。受信側はリンクを開くと内容を自動検出し、確認後に取り込みます。共有リンクを知っている人はバックアップを取得できるため、チーム内など信頼できる相手にだけ送信してください。</p>
   </div>
 </section>
 
@@ -5958,6 +5958,7 @@ function sanitizeImportedValue(v,depth=0){
 
 const BACKUP_SHARE_PREFIX='atm-share=';
 const BACKUP_SHARE_SCHEMA='atm-backup-share-v1';
+const BACKUP_SHARE_QUERY='atmShare';
 
 function normalizeImportedDb(parsed){
   if(!parsed || typeof parsed!=='object' || Array.isArray(parsed))throw new Error('形式不正');
@@ -5996,27 +5997,38 @@ async function compressBackupText(text){
 async function decompressBackupText(encoded){
   const value=String(encoded||'');
   const dot=value.indexOf('.');
-  if(dot<1)throw new Error('共有リンク形式不正');
+  if(dot<1)throw new Error('共有データ形式不正');
   const mode=value.slice(0,dot);
   const bytes=base64UrlToBytes(value.slice(dot+1));
   if(mode==='j')return new TextDecoder().decode(bytes);
-  if(mode!=='g' || typeof DecompressionStream==='undefined')throw new Error('このブラウザでは圧縮共有リンクを展開できません');
+  if(mode!=='g' || typeof DecompressionStream==='undefined')throw new Error('このブラウザでは圧縮共有データを展開できません');
   const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
   return new TextDecoder().decode(await new Response(stream).arrayBuffer());
 }
-async function makeBackupShareUrl(){
+async function createShortBackupShare(){
   const envelope={schema:BACKUP_SHARE_SCHEMA,exportedAt:new Date().toISOString(),data:db};
-  const encoded=await compressBackupText(JSON.stringify(envelope));
+  const payload=await compressBackupText(JSON.stringify(envelope));
+  const r=await fetch(`${apiBase()}/api/backup-share`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Accept':'application/json'},
+    body:JSON.stringify({payload})
+  });
+  let data={}; try{data=await r.json()}catch{}
+  if(!r.ok || !data.ok || !data.id)throw new Error(data.error||`共有リンク作成エラー (${r.status})`);
+  return data.id;
+}
+async function makeBackupShareUrl(){
+  const id=await createShortBackupShare();
   const url=new URL(location.href);
-  url.search='';
-  url.hash=`${BACKUP_SHARE_PREFIX}${encoded}`;
+  url.searchParams.set(BACKUP_SHARE_QUERY,id);
+  url.hash='';
   return url.toString();
 }
 async function shareBackupLink(){
   try{
     const url=await makeBackupShareUrl();
     const team=(db.team?.name||'Alpine Team Manager').trim();
-    const text=`${team} のAlpine Team Managerバックアップです。リンクを開いて内容を確認後、取り込んでください。`;
+    const text=`${team} のAlpine Team Managerバックアップです。リンクは7日間有効です。開いて内容を確認後、取り込んでください。`;
     if(navigator.share){
       await navigator.share({title:'Alpine Team Manager バックアップ',text,url});
       return;
@@ -6032,14 +6044,32 @@ async function shareBackupLink(){
     alert(`共有リンクを作成できませんでした。${e?.message?'\n'+e.message:''}`);
   }
 }
-function clearBackupShareHash(){
-  if(!location.hash.startsWith(`#${BACKUP_SHARE_PREFIX}`))return;
-  history.replaceState(null,'',location.pathname+location.search);
+function clearBackupShareLocation(){
+  const url=new URL(location.href);
+  let changed=false;
+  if(url.searchParams.has(BACKUP_SHARE_QUERY)){
+    url.searchParams.delete(BACKUP_SHARE_QUERY);
+    changed=true;
+  }
+  if(url.hash.startsWith(`#${BACKUP_SHARE_PREFIX}`)){
+    url.hash='';
+    changed=true;
+  }
+  if(changed)history.replaceState(null,'',url.pathname+(url.search?url.search:'')+(url.hash?url.hash:''));
+}
+async function fetchSharedBackupPayload(id){
+  const r=await fetch(`${apiBase()}/api/backup-share?id=${encodeURIComponent(id)}`,{headers:{'Accept':'application/json'},cache:'no-store'});
+  let data={}; try{data=await r.json()}catch{}
+  if(!r.ok || !data.ok || !data.payload)throw new Error(data.error||`共有データ取得エラー (${r.status})`);
+  return data.payload;
 }
 async function importBackupFromShareLink(){
-  if(!location.hash.startsWith(`#${BACKUP_SHARE_PREFIX}`))return;
-  const encoded=location.hash.slice(1+BACKUP_SHARE_PREFIX.length);
+  const current=new URL(location.href);
+  const shortId=current.searchParams.get(BACKUP_SHARE_QUERY)||'';
+  const legacyEncoded=current.hash.startsWith(`#${BACKUP_SHARE_PREFIX}`)?current.hash.slice(1+BACKUP_SHARE_PREFIX.length):'';
+  if(!shortId && !legacyEncoded)return;
   try{
+    const encoded=shortId ? await fetchSharedBackupPayload(shortId) : legacyEncoded;
     const raw=await decompressBackupText(encoded);
     if(raw.length>5*1024*1024)throw new Error('バックアップデータが大きすぎます');
     const envelope=JSON.parse(raw);
@@ -6051,14 +6081,14 @@ async function importBackupFromShareLink(){
     const events=clean.events.length;
     const schedules=clean.schedules.length;
     const ok=confirm(`LINE共有バックアップを検出しました。\n\nチーム：${team}\n選手：${athletes}名\nコーチ：${coaches}名\n大会：${events}件\n年間予定：${schedules}件\n\nこの端末の現在データを置き換えて取り込みますか？`);
-    if(!ok){clearBackupShareHash();return;}
+    if(!ok){clearBackupShareLocation();return;}
     db=clean;
     if(!persistDb())throw new Error('端末への保存に失敗しました');
-    clearBackupShareHash();
+    clearBackupShareLocation();
     renderAll();
     alert('共有バックアップの取り込みが完了しました。');
   }catch(e){
-    clearBackupShareHash();
+    clearBackupShareLocation();
     alert(`共有バックアップを読み込めませんでした。${e?.message?'\n'+e.message:''}`);
   }
 }
@@ -7932,7 +7962,7 @@ async function refreshAppCacheOnLaunch(){
   if(!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=01354',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=01355',{updateViaCache:'none'});
 
     if(reg.waiting){
       reg.waiting.postMessage({type:'SKIP_WAITING'});

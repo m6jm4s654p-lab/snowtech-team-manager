@@ -1,5 +1,5 @@
 /**
- * SnowTech SAJ API v0.13.53
+ * SnowTech SAJ API v0.13.55
  * GET /api/saj-athlete?saj=03028493
  *
  * Strategy:
@@ -169,11 +169,39 @@ export default {
     const url = new URL(request.url);
 
     if (request.method === "OPTIONS") return cors(new Response(null, {status:204}), env, request);
+
+    if (url.pathname === "/api/backup-share") {
+      if(!env?.BACKUP_SHARE) return cors(json({ok:false,error:"共有ストレージが未設定です"},503),env,request);
+      if(request.method === "POST"){
+        try{
+          const body=await request.json();
+          const payload=String(body?.payload||"");
+          if(!/^[gj]\.[A-Za-z0-9_-]+$/.test(payload)) return cors(json({ok:false,error:"共有データ形式不正"},400),env,request);
+          if(payload.length>1500000) return cors(json({ok:false,error:"共有データが大きすぎます"},413),env,request);
+          const bytes=new Uint8Array(16);
+          crypto.getRandomValues(bytes);
+          const id=Array.from(bytes,b=>b.toString(16).padStart(2,"0")).join("");
+          await env.BACKUP_SHARE.put(`share:${id}`,payload,{expirationTtl:7*24*60*60});
+          return cors(json({ok:true,id,expiresIn:7*24*60*60}),env,request);
+        }catch(e){
+          return cors(json({ok:false,error:"共有リンクを作成できませんでした",detail:String(e?.message||e)},500),env,request);
+        }
+      }
+      if(request.method === "GET"){
+        const id=String(url.searchParams.get("id")||"").trim();
+        if(!/^[a-f0-9]{32}$/.test(id)) return cors(json({ok:false,error:"共有IDが不正です"},400),env,request);
+        const payload=await env.BACKUP_SHARE.get(`share:${id}`);
+        if(!payload) return cors(json({ok:false,error:"共有リンクの有効期限が切れているか、データが見つかりません"},404),env,request);
+        return cors(json({ok:true,payload}),env,request);
+      }
+      return cors(json({ok:false,error:"Method not allowed"},405),env,request);
+    }
+
     if (request.method !== "GET") {
       return cors(json({ok:false,error:"Method not allowed"},405), env, request);
     }
     if (url.pathname === "/health") {
-      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.13.53"}), env, request);
+      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.13.55"}), env, request);
     }
 
     if (url.pathname === "/api/debug-competition-calendar") {
@@ -594,7 +622,7 @@ function cors(resp,env,request){
   if(configured==="*" || !origin || origin===configured){
     h.set("Access-Control-Allow-Origin",configured==="*"?"*":configured);
   }
-  h.set("Access-Control-Allow-Methods","GET,OPTIONS");
+  h.set("Access-Control-Allow-Methods","GET,POST,OPTIONS");
   h.set("Access-Control-Allow-Headers","Content-Type,Accept");
   h.set("Vary","Origin");
   h.set("X-Content-Type-Options","nosniff");
