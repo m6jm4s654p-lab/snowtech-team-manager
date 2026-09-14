@@ -1935,7 +1935,7 @@ header{
 <header>
   <div class="header-inner">
     <div class="header-meta-row">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.13.58</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.13.59</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
     <div class="header-title-row">
@@ -5924,17 +5924,103 @@ function refreshSelects(){
   sCoach.innerHTML='<option value="">未設定</option>'+db.coaches.map(c=>`<option>${esc(c.name||'')}</option>`).join('');
 }
 const SUPPORTER_UPDATE_SCHEMA='alpine-team-supporter-update-v1';
-function buildSupporterUpdateEnvelope(){
+function supporterEmptyNationalRank(){
+  return {categoryLabel:'—',SL:null,GS:null,SG:null};
+}
+async function fetchSupporterNationalRanks(){
+  const result=new Map();
+  const groups=[
+    ['男',(db.athletes||[]).filter(a=>normalizeAthleteSex(a.sex)==='男')],
+    ['女',(db.athletes||[]).filter(a=>normalizeAthleteSex(a.sex)==='女')]
+  ];
+  for(const [sex,athletes] of groups){
+    const sajs=[...new Set(athletes.map(a=>normalizeSajNumberForRank(a.saj)).filter(Boolean))];
+    if(!sajs.length)continue;
+    try{
+      const q=new URLSearchParams({sex,sajs:sajs.join(',')});
+      const r=await fetch(`${apiBase()}/api/saj-athlete-ranks?${q.toString()}`,{cache:'no-store'});
+      const data=await r.json().catch(()=>({}));
+      if(!r.ok||!data?.ok)throw new Error(data?.detail||data?.error||`HTTP ${r.status}`);
+      (data.athletes||[]).forEach(x=>{
+        const saj=normalizeSajNumberForRank(x.saj);
+        if(!saj)return;
+        const ranks=x.ranks||{};
+        result.set(saj,{
+          categoryLabel:x.categoryLabel||'—',
+          SL:Number.isFinite(Number(ranks.SL))?Number(ranks.SL):null,
+          GS:Number.isFinite(Number(ranks.GS))?Number(ranks.GS):null,
+          SG:Number.isFinite(Number(ranks.SG))?Number(ranks.SG):null
+        });
+      });
+    }catch(e){
+      console.warn('Supporter用全国ランク取得失敗',sex,e);
+    }
+  }
+  return result;
+}
+function buildSupporterAnnualCalendar(){
+  const startYear=selectedGlobalSeasonYear();
+  const rangeStart=ymd(startYear,4,1);
+  const rangeEnd=ymd(startYear+1,3,31);
+  const dayMap=new Map();
+  buildSeasonBoardItems().forEach(item=>{
+    (item.dates||[]).forEach(date=>{
+      if(!date || date<rangeStart || date>rangeEnd)return;
+      if(!dayMap.has(date))dayMap.set(date,[]);
+      dayMap.get(date).push({
+        type:item.type||'練習',
+        title:seasonBoardLabel(item)||'',
+        place:item.place||'',
+        note:item.note||'',
+        coach:item.coach||'',
+        source:item.source||'schedule'
+      });
+    });
+  });
+  const days=[...dayMap.entries()].sort((a,b)=>a[0].localeCompare(b[0])).map(([date,items])=>({date,items}));
+  return {
+    seasonStartYear:startYear,
+    seasonLabel:`${startYear}/${startYear+1}`,
+    rangeStart,
+    rangeEnd,
+    firstHalf:{start:ymd(startYear,4,1),end:ymd(startYear,9,30),months:[4,5,6,7,8,9]},
+    secondHalf:{start:ymd(startYear,10,1),end:ymd(startYear+1,3,31),months:[10,11,12,1,2,3]},
+    days
+  };
+}
+async function buildSupporterUpdateEnvelope(){
+  const rankMap=await fetchSupporterNationalRanks();
+  const rankFetchedAt=new Date().toISOString();
+  const athletes=(Array.isArray(db.athletes)?db.athletes:[]).map(a=>{
+    const saj=normalizeSajNumberForRank(a?.saj);
+    const nr=saj?(rankMap.get(saj)||supporterEmptyNationalRank()):supporterEmptyNationalRank();
+    return {
+      ...a,
+      nationalRank:{
+        categoryLabel:nr.categoryLabel,
+        SL:nr.SL,
+        GS:nr.GS,
+        SG:nr.SG,
+        fetchedAt:rankFetchedAt
+      },
+      nationalRanks:{SL:nr.SL,GS:nr.GS,SG:nr.SG},
+      nationalRankCategory:nr.categoryLabel
+    };
+  });
+  const annualCalendar=buildSupporterAnnualCalendar();
   return {
     schema:SUPPORTER_UPDATE_SCHEMA,
-    version:1,
+    version:2,
     exportedAt:new Date().toISOString(),
     teamName:String(db.team?.name||''),
     data:{
       team:db.team||{},
-      athletes:Array.isArray(db.athletes)?db.athletes:[],
+      athletes,
       schedules:Array.isArray(db.schedules)?db.schedules:[],
-      events:Array.isArray(db.events)?db.events:[]
+      events:Array.isArray(db.events)?db.events:[],
+      annualCalendar,
+      calendar:annualCalendar,
+      nationalRankUpdatedAt:rankFetchedAt
     }
   };
 }
@@ -5950,7 +6036,7 @@ function downloadSupporterUpdateFile(file){
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 async function shareSupporterUpdateFile(){
-  const envelope=buildSupporterUpdateEnvelope();
+  const envelope=await buildSupporterUpdateEnvelope();
   const file=new File([JSON.stringify(envelope)],supporterUpdateFilename(),{type:'text/plain;charset=utf-8'});
   try{
     if(navigator.share && navigator.canShare?.({files:[file]})){

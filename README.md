@@ -1,3 +1,13 @@
+# v0.13.59
+
+- Supporter用データ更新ファイルへ、選択中シーズンの年間カレンダー（4月〜翌3月）を追加。
+- 年間カレンダーは4〜9月／10〜3月の2区分情報と、日付ごとの予定を収録。
+- データ更新ファイル作成時に登録選手の全国ランク（SL / GS / SG）をWorkerから取得して選手データへ保存。
+- 全国順位がない種目は null として保存し、Supporter側で「—」表示可能。
+- 従来のSL / GS / SGポイント、schedules、eventsはそのまま維持。
+- LINE共有用 .txt 形式とSupporter URL同送も維持。
+- Worker変更なし。
+
 # v0.13.58
 
 - Supporter用データ更新ファイルの共有メッセージにAlpine Team Supporter公開URLを追加。
