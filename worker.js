@@ -1,5 +1,5 @@
 /**
- * SnowTech SAJ API v0.13.55
+ * SnowTech SAJ API v0.13.56
  * GET /api/saj-athlete?saj=03028493
  *
  * Strategy:
@@ -201,7 +201,7 @@ export default {
       return cors(json({ok:false,error:"Method not allowed"},405), env, request);
     }
     if (url.pathname === "/health") {
-      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.13.55"}), env, request);
+      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.13.56"}), env, request);
     }
 
     if (url.pathname === "/api/debug-competition-calendar") {

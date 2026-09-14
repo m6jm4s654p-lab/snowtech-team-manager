@@ -1935,7 +1935,7 @@ header{
 <header>
   <div class="header-inner">
     <div class="header-meta-row">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.13.55</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.13.56</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
     <div class="header-title-row">
@@ -2989,9 +2989,10 @@ header{
       <button class="btn" onclick="exportJson()">バックアップ書き出し</button>
       <label class="btn" style="display:inline-block">バックアップ読込<input class="hidden" type="file" accept=".json" onchange="importJson(event)"></label>
       <button class="btn primary" onclick="shareBackupLink()">LINEでバックアップ共有</button>
+      <button class="btn primary" onclick="shareSupporterUpdateFile()">Supporter用データ更新ファイルを共有</button>
       <button class="btn danger" onclick="resetAll()">全データ削除</button>
     </div>
-    <p class="muted">LINE共有は7日間有効の短い共有リンクを作成します。受信側はリンクを開くと内容を自動検出し、確認後に取り込みます。共有リンクを知っている人はバックアップを取得できるため、チーム内など信頼できる相手にだけ送信してください。</p>
+    <p class="muted">Supporter用データ更新ファイルはサーバーへ保存せず、LINE等へファイルとして直接共有します。<br>LINE共有は7日間有効の短い共有リンクを作成します。受信側はリンクを開くと内容を自動検出し、確認後に取り込みます。共有リンクを知っている人はバックアップを取得できるため、チーム内など信頼できる相手にだけ送信してください。</p>
   </div>
 </section>
 
@@ -5922,6 +5923,53 @@ function autoSaveMainSkiArea(immediate=false){
 function refreshSelects(){
   sCoach.innerHTML='<option value="">未設定</option>'+db.coaches.map(c=>`<option>${esc(c.name||'')}</option>`).join('');
 }
+const SUPPORTER_UPDATE_SCHEMA='alpine-team-supporter-update-v1';
+function buildSupporterUpdateEnvelope(){
+  return {
+    schema:SUPPORTER_UPDATE_SCHEMA,
+    version:1,
+    exportedAt:new Date().toISOString(),
+    teamName:String(db.team?.name||''),
+    data:{
+      team:db.team||{},
+      athletes:Array.isArray(db.athletes)?db.athletes:[],
+      schedules:Array.isArray(db.schedules)?db.schedules:[],
+      events:Array.isArray(db.events)?db.events:[]
+    }
+  };
+}
+function supporterUpdateFilename(){
+  const stamp=new Date().toISOString().slice(0,10).replaceAll('-','');
+  const safe=String(db.team?.name||'AlpineTeam').replace(/[\\/:*?"<>|]/g,'_').trim()||'AlpineTeam';
+  return `${safe}_Supporter_Update_${stamp}.atsdata`;
+}
+function downloadSupporterUpdateFile(file){
+  const url=URL.createObjectURL(file);
+  const a=document.createElement('a');
+  a.href=url;a.download=file.name;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+async function shareSupporterUpdateFile(){
+  const envelope=buildSupporterUpdateEnvelope();
+  const file=new File([JSON.stringify(envelope)],supporterUpdateFilename(),{type:'application/json'});
+  try{
+    if(navigator.share && navigator.canShare?.({files:[file]})){
+      await navigator.share({
+        title:'Alpine Team Supporter データ更新',
+        text:'Alpine Team Supporter用のデータ更新ファイルです。',
+        files:[file]
+      });
+      return;
+    }
+    downloadSupporterUpdateFile(file);
+    alert('データ更新ファイルを書き出しました。LINEでこのファイルを送信してください。');
+  }catch(e){
+    if(e?.name==='AbortError')return;
+    downloadSupporterUpdateFile(file);
+    alert('共有メニューを使用できなかったため、データ更新ファイルを書き出しました。LINEで送信してください。');
+  }
+}
+
 function exportJson(){
   db.team=db.team||{};
   db.team.lastBackupAt=new Date().toISOString();
