@@ -1,5 +1,5 @@
 /**
- * SnowTech SAJ API v0.13.52
+ * SnowTech SAJ API v0.13.53
  * GET /api/saj-athlete?saj=03028493
  *
  * Strategy:
@@ -173,7 +173,7 @@ export default {
       return cors(json({ok:false,error:"Method not allowed"},405), env, request);
     }
     if (url.pathname === "/health") {
-      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.13.52"}), env, request);
+      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.13.53"}), env, request);
     }
 
     if (url.pathname === "/api/debug-competition-calendar") {
@@ -1651,7 +1651,7 @@ async function lookupAthleteNationalRanks({sex,sajs}){
 
       const categories={
         k2:fetched.rows.filter(r=>isK2BirthForSeason(r.birth,season)),
-        general:fetched.rows.filter(r=>!isK2BirthForSeason(r.birth,season))
+        general:fetched.rows // 一般順位はK2を含む全選手を対象
       };
       const rankMaps={};
       for(const category of ["k2","general"]){
