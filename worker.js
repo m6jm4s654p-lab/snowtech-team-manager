@@ -13,7 +13,7 @@ const SAJ_ORIGIN = "https://sajdb.shikuminet.jp";
 
 const SAJ_RANKING_CACHE_SECONDS = 6 * 60 * 60;      // 6 hours
 const SAJ_RANKING_STALE_SECONDS = 24 * 60 * 60;     // stale fallback
-const SAJ_RANKING_CACHE_VERSION = "v01344";
+const SAJ_RANKING_CACHE_VERSION = "v01345";
 
 
 const SAJ_POINT_CALENDAR_CACHE_SECONDS = 6 * 60 * 60;
@@ -123,7 +123,7 @@ export default {
       return cors(json({ok:false,error:"Method not allowed"},405), env, request);
     }
     if (url.pathname === "/health") {
-      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.13.44"}), env, request);
+      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.13.45"}), env, request);
     }
 
     if (url.pathname === "/api/debug-competition-calendar") {
@@ -510,7 +510,7 @@ function cors(resp,env,request){
 }
 async function getText(url){
   const r=await fetch(url,{headers:{
-    "User-Agent":"AlpineTeamManager/0.13.44 (+public SAJ data lookup)",
+    "User-Agent":"AlpineTeamManager/0.13.45 (+public SAJ data lookup)",
     "Accept":"text/html,application/xhtml+xml"
   }});
   if(!r.ok) throw new Error(`SAJ HTTP ${r.status}: ${url}`);
@@ -869,7 +869,7 @@ async function inflateZipEntry(bytes, method){
 
 async function fetchZipTextEntries(url){
   const r=await fetch(url,{headers:{
-    "User-Agent":"AlpineTeamManager/0.13.44 (+public SAJ point zip lookup)",
+    "User-Agent":"AlpineTeamManager/0.13.45 (+public SAJ point zip lookup)",
     "Accept":"application/zip,application/octet-stream,*/*"
   }});
   if(!r.ok)throw new Error(`SAJ ZIP HTTP ${r.status}: ${url}`);
@@ -997,25 +997,32 @@ function parseDelimitedPointRows(text,source){
   return rows;
 }
 
-async function fetchLatestZipPointRows({season,sex}){
-  const calendar=await getLatestPointCalendarMeta(season);
-  const listNumber=calendar?.latestListNumber??null;
-  const zips=Array.isArray(calendar?.latestZips)?calendar.latestZips:[];
-  const zip=zips.find(x=>x.sex===sex && x.pointListNumber===listNumber);
-  if(!zip?.url)throw new Error(`SAJ No.${listNumber??'—'} ${sex}子ZIPが見つかりません`);
+function latestZipForSex(calendar,sex){
+  const zips=(Array.isArray(calendar?.latestZips)?calendar.latestZips:[])
+    .filter(x=>x?.sex===sex && x?.url)
+    .sort((a,b)=>(Number(b?.pointListNumber)||0)-(Number(a?.pointListNumber)||0));
+  return zips[0]||null;
+}
+
+async function fetchLatestZipPointRows({season,sex,calendarMeta=null}){
+  const calendar=calendarMeta||await getLatestPointCalendarMeta(season);
+  // 男女ZIPは独立して扱い、対象性別に実データがある最新No.を採用する。
+  const zip=latestZipForSex(calendar,sex);
+  const listNumber=zip?.pointListNumber??null;
+  if(!zip?.url)throw new Error(`${season-1}/${season} ${sex}子の有効なSAJポイントZIPが見つかりません`);
   const files=await fetchZipTextEntries(zip.url);
   let rows=[];
   for(const f of files){
     rows.push(...parseDelimitedPointRows(f.text,`${zip.url}#${f.name}`));
   }
   rows=mergePointRowsBySaj(rows);
-  if(!rows.length)throw new Error(`SAJ No.${listNumber??'—'} ZIPからポイント行を解析できませんでした`);
+  if(!rows.length)throw new Error(`SAJ No.${listNumber??'—'} ${sex}子ZIPからSAJポイント行を解析できませんでした`);
   return {rows,pointListNumber:listNumber,calendarListNumber:listNumber,source:zip.url,pageCount:files.length,calendarSource:calendar.source};
 }
 
 async function getRawText(url){
   const r=await fetch(url,{headers:{
-    "User-Agent":"AlpineTeamManager/0.13.44 (+public SAJ data lookup)",
+    "User-Agent":"AlpineTeamManager/0.13.45 (+public SAJ data lookup)",
     "Accept":"text/csv,text/plain,text/html,application/octet-stream,*/*"
   }});
   if(!r.ok) throw new Error(`SAJ HTTP ${r.status}: ${url}`);
@@ -1225,12 +1232,14 @@ function extractSelectedPointListNumber(html){
 
 function parseBirthDateLoose(v){
   const t=String(v||"").trim();
-  let m=t.match(/(\d{4})[\/年.\-](\d{1,2})[\/月.\-](\d{1,2})/);
+  let m=t.match(/((?:19|20)\d{2})[\/年.\-](\d{1,2})[\/月.\-](\d{1,2})/);
   if(m)return {y:Number(m[1]),m:Number(m[2]),d:Number(m[3])};
-  m=t.match(/^(\d{4})(\d{2})(\d{2})$/);
+  m=t.match(/^((?:19|20)\d{2})(\d{2})(\d{2})$/);
   if(m)return {y:Number(m[1]),m:Number(m[2]),d:Number(m[3])};
-  m=t.match(/\b(\d{4})\b/);
-  return m?{y:Number(m[1]),m:7,d:1}:null;
+  // Some SAJ exports use day-month-year ordering.
+  m=t.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-]((?:19|20)\d{2})$/);
+  if(m)return {y:Number(m[3]),m:Number(m[2]),d:Number(m[1])};
+  return null;
 }
 function birthOrdinal(b){
   if(!b)return null;
@@ -1238,7 +1247,7 @@ function birthOrdinal(b){
 }
 function isK2BirthForSeason(birth, season){
   const b=parseBirthDateLoose(birth);
-  if(!b)return false;
+  if(!b)return null;
   const schoolYear=Number(season)-1;
   // User-facing definition:
   // K2 = all junior-high students + first-year high-school students born Jan 1-Apr 1.
@@ -1427,19 +1436,42 @@ async function fetchAllNationalPointRowsForSeasonUncached({season,sex,listNumber
 
 async function fetchAllNationalPointRowsForSeason({season,sex}){
   const calendar=await getLatestPointCalendarMeta(season);
-  const listNumber=calendar?.latestListNumber??null;
-  const latestZips=Array.isArray(calendar?.latestZips)?calendar.latestZips:[];
-  const expectedZip=latestZips.find(x=>x.sex===sex && x.pointListNumber===listNumber);
-  // 「データのある最新シーズン」を選ぶため、対象性別の最新ZIPが発行されていない
-  // シーズンは採用せず、呼び出し元で1シーズン前へ自動フォールバックする。
-  if(!expectedZip?.url)throw new Error(`${season-1}/${season} SAJ No.${listNumber??'—'} ${sex}子の有効なポイントZIPがありません`);
+  // 最新No.は男女共通とは限らない前提で、性別ごとに最新ZIPを決定する。
+  const expectedZip=latestZipForSex(calendar,sex);
+  const listNumber=expectedZip?.pointListNumber??null;
+  // 「データのある最新シーズン」を選ぶため、対象性別のZIPが無いシーズンは採用しない。
+  if(!expectedZip?.url)throw new Error(`${season-1}/${season} ${sex}子の有効なSAJポイントZIPがありません`);
 
   const fresh=await readRankingDatasetCache(season,sex,listNumber);
   if(fresh?.rows?.length)return {...fresh,calendarListNumber:listNumber,calendarSource:calendar?.source||"",cacheStatus:"HIT",cacheTtlSeconds:SAJ_RANKING_CACHE_SECONDS};
 
   try{
-    const live=await fetchLatestZipPointRows({season,sex});
-    const data={...live,pointListNumber:listNumber,calendarListNumber:listNumber,calendarSource:calendar?.source||"",sourceMode:"ZIP"};
+    const live=await fetchLatestZipPointRows({season,sex,calendarMeta:calendar});
+    let zipRows=live.rows||[];
+    let metadataSource="";
+    // ZIPのSAJ番号・SAJポイントを正本とし、K2判定に必要な生年月日や漢字氏名だけを
+    // 同一SAJ No.の公式ポイントリストHTMLから補完する。HTMLのポイント値は採用しない。
+    const needsMeta=zipRows.some(r=>!parseBirthDateLoose(r.birth)||!/[一-龠々〆ヵヶぁ-ゖァ-ヺ]/.test(String(r.name||"")));
+    if(needsMeta){
+      try{
+        const meta=await fetchAllNationalPointRowsForSeasonUncached({season,sex,listNumber});
+        const metaMap=new Map((meta?.rows||[]).map(r=>[String(r?.saj||""),r]));
+        zipRows=zipRows.map(r=>{
+          const m=metaMap.get(String(r?.saj||""));
+          if(!m)return r;
+          return {
+            ...r,
+            name:/[一-龠々〆ヵヶぁ-ゖァ-ヺ]/.test(String(r.name||""))?r.name:(m.name||r.name||""),
+            birth:parseBirthDateLoose(r.birth)?r.birth:(m.birth||r.birth||""),
+            organization:r.organization||m.organization||"",
+            team:r.team||m.team||"",
+            group:r.group||m.group||""
+          };
+        });
+        metadataSource=meta?.source||"";
+      }catch{}
+    }
+    const data={...live,rows:zipRows,pointListNumber:listNumber,calendarListNumber:listNumber,calendarSource:calendar?.source||"",sourceMode:"ZIP",metadataSource};
     await writeRankingDatasetCache(season,sex,listNumber,data);
     return {...data,cacheStatus:"MISS",cacheAgeSeconds:0,cacheTtlSeconds:SAJ_RANKING_CACHE_SECONDS};
   }catch(zipErr){
@@ -1481,7 +1513,8 @@ async function lookupNationalPointRanking({sex,category,discipline}){
       // K2が0人だったことを理由に古いシーズンへ落とさない。
       const filtered=fetched.rows.filter(r=>{
         const k2=isK2BirthForSeason(r.birth,season);
-        return category==="k2"?k2:!k2;
+        // 生年月日不明を「一般」に誤分類しない。
+        return category==="k2" ? k2===true : k2===false;
       });
       const ranking=assignRankingPositions(filtered,discipline);
       return {
@@ -1829,7 +1862,7 @@ async function fetchFollowingSajSession(url, init, maxRedirects=5){
       // Browser semantics: 301/302/303 after a form request become GET.
       if([301,302,303].includes(r.status)){
         currentInit={method:"GET",headers:{
-          "User-Agent":"AlpineTeamManager/0.13.44 (+public SAJ competition calendar lookup)",
+          "User-Agent":"AlpineTeamManager/0.13.45 (+public SAJ competition calendar lookup)",
           "Accept":"text/html,application/xhtml+xml"
         }};
       }
@@ -1852,7 +1885,7 @@ async function fetchFollowingSajSession(url, init, maxRedirects=5){
 async function submitCalendarForm(formInfo){
   const target=new URL(formInfo.action,SAJ_ORIGIN);
   const headers={
-    "User-Agent":"AlpineTeamManager/0.13.44 (+public SAJ competition calendar lookup)",
+    "User-Agent":"AlpineTeamManager/0.13.45 (+public SAJ competition calendar lookup)",
     "Accept":"text/html,application/xhtml+xml"
   };
 
@@ -2200,7 +2233,7 @@ async function lookupCompetitionsApi(season,month=0){
   const r=await fetch(target.toString(),{
     method:"GET",
     headers:{
-      "User-Agent":"AlpineTeamManager/0.13.44 (+public SAJ competition calendar lookup)",
+      "User-Agent":"AlpineTeamManager/0.13.45 (+public SAJ competition calendar lookup)",
       "Accept":"application/json,text/javascript,*/*;q=0.8",
       "Referer":`${SAJ_ORIGIN}/alpine/competition/calendar`
     }
@@ -2245,7 +2278,7 @@ async function debugCompetitionApi(season=2026,month=2){
   const r=await fetch(target.toString(),{
     method:"GET",
     headers:{
-      "User-Agent":"AlpineTeamManager/0.13.44 (+public SAJ competition calendar lookup)",
+      "User-Agent":"AlpineTeamManager/0.13.45 (+public SAJ competition calendar lookup)",
       "Accept":"application/json,text/javascript,*/*;q=0.8",
       "Referer":`${SAJ_ORIGIN}/alpine/competition/calendar`
     }
