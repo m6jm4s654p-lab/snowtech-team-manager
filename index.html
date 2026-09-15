@@ -475,7 +475,7 @@ header [data-team-name],header #teamHeader{display:none!important}
   min-height:92px;
 }
 
-/* v0.13.63 HOME category folding */
+/* v0.13.64 HOME category folding */
 .home-category-toggle{
   cursor:pointer;
   user-select:none;
@@ -1933,7 +1933,7 @@ header{
 </style>
 
 <style>
-/* v0.13.63: daily version update notice */
+/* v0.13.64: daily version update notice */
 .app-update-modal{position:fixed;inset:0;z-index:12000;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(2,10,16,.80);backdrop-filter:blur(5px)}
 .app-update-modal.show{display:flex}
 .app-update-card{width:min(520px,100%);max-height:88vh;overflow:auto;border:1px solid #355064;border-radius:16px;background:#0b1d2a;color:#f8fafc;padding:20px;box-shadow:0 18px 50px rgba(0,0,0,.45)}
@@ -1994,7 +1994,7 @@ header{
 <header>
   <div class="header-inner">
     <div class="header-meta-row">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.13.63</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.13.64</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
     <div class="header-title-row">
@@ -2069,7 +2069,7 @@ header{
         <h2>全国ポイントランキング TOP30</h2>
         <div class="muted">SAJアルペンポイントリストをもとに全国上位30名を表示</div>
       </div>
-      <button class="btn small" type="button" onclick="loadNationalRanking(true)">更新</button>
+      <button class="btn small" type="button" onclick="refreshAllNationalRankings(true)">更新</button>
     </div>
 
     <div class="national-ranking-filter">
@@ -4627,104 +4627,28 @@ function toggleItemHelp(index){
 }
 
 
-// ===== v0.13.40 National SAJ point ranking (latest SAJ calendar ZIP) =====
+// ===== v0.13.64 National SAJ point ranking: persistent weekly cache =====
 let nationalRankingState={category:'k2',sex:'男',discipline:'SL'};
 const nationalRankingCache=new Map();
-
-function nationalRankingKey(){
-  const s=nationalRankingState;
-  return `${s.category}|${s.sex}|${s.discipline}`;
-}
-
-function syncNationalRankingButtons(){
-  document.querySelectorAll('[data-ranking-category]').forEach(b=>b.classList.toggle('active',b.dataset.rankingCategory===nationalRankingState.category));
-  document.querySelectorAll('[data-ranking-sex]').forEach(b=>b.classList.toggle('active',b.dataset.rankingSex===nationalRankingState.sex));
-  document.querySelectorAll('[data-ranking-discipline]').forEach(b=>b.classList.toggle('active',b.dataset.rankingDiscipline===nationalRankingState.discipline));
-}
-function setNationalRankingCategory(v){
-  nationalRankingState.category=v==='general'?'general':'k2';
-  syncNationalRankingButtons();
-  loadNationalRanking();
-}
-function setNationalRankingSex(v){
-  nationalRankingState.sex=v==='女'?'女':'男';
-  syncNationalRankingButtons();
-  loadNationalRanking();
-}
-function setNationalRankingDiscipline(v){
-  nationalRankingState.discipline=['SL','GS','SG'].includes(v)?v:'SL';
-  syncNationalRankingButtons();
-  loadNationalRanking();
-}
-function nationalRankingAthleteUrl(saj){
-  const n=String(saj||'').replace(/\D/g,'');
-  return /^\d{7,9}$/.test(n)?`https://sajdb.shikuminet.jp/alpine/biography/${encodeURIComponent(n)}`:'';
-}
-function openNationalRankingAthlete(saj){
-  const u=nationalRankingAthleteUrl(saj);
-  if(u)window.open(u,'_blank','noopener,noreferrer');
-}
-function renderNationalRanking(data){
-  const body=document.getElementById('nationalRankingBody');
-  const meta=document.getElementById('nationalRankingMeta');
-  const status=document.getElementById('nationalRankingStatus');
-  if(!body||!meta||!status)return;
-
-  const rows=Array.isArray(data?.ranking)?data.ranking:[];
-  const cat=nationalRankingState.category==='k2'?'K2':'一般';
-  const sex=nationalRankingState.sex==='男'?'男子':'女子';
-  meta.textContent=`${data?.seasonLabel||'シーズン—'} / ${data?.pointListNumber!=null?`SAJポイントリスト No.${data.pointListNumber}`:'ポイントリスト番号—'} / ${cat} / ${sex} / ${nationalRankingState.discipline}${data?.sourceMode==='CALENDAR_LIST_FALLBACK'?' / カレンダー同一No.補完':''}`;
-  status.textContent=rows.length?`${rows.length}名を表示（ポイント未取得はランキング対象外）`:'該当するランキングデータがありません。';
-
-  body.innerHTML=rows.map(r=>{
-    const saj=String(r.saj||'');
-    const safeSaj=encodeURIComponent(saj);
-    const birth=r.birth?`Birth ${esc(r.birth)}`:'';
-    return `<tr>
-      <td class="rank">${esc(String(r.rank??'—'))}</td>
-      <td>
-        <button class="national-ranking-athlete" type="button" onclick="openNationalRankingAthlete(decodeURIComponent('${safeSaj}'))">${esc(r.name||'氏名不明')}</button>
-        <div class="national-ranking-athlete-meta">SAJ ${esc(saj||'—')}${birth?` / ${birth}`:''}</div>
-      </td>
-      <td>${esc(r.organization||'—')}</td>
-      <td>${esc(r.team||'—')}</td>
-      <td class="point">${r.point!==null && r.point!==undefined && String(r.point).trim()!=='' && Number.isFinite(Number(r.point))?Number(r.point).toFixed(2):'—'}</td>
-    </tr>`;
-  }).join('');
-}
-async function loadNationalRanking(force=false){
-  const body=document.getElementById('nationalRankingBody');
-  const meta=document.getElementById('nationalRankingMeta');
-  const status=document.getElementById('nationalRankingStatus');
-  if(!body||!meta||!status)return;
-  syncNationalRankingButtons();
-
-  const key=nationalRankingKey();
-  if(!force && nationalRankingCache.has(key)){
-    renderNationalRanking(nationalRankingCache.get(key));
-    return;
-  }
-
-  status.textContent='SAJポイントランキングを取得しています…';
-  if(!body.children.length)body.innerHTML='<tr><td colspan="5" class="muted">読込中…</td></tr>';
-
-  try{
-    const q=new URLSearchParams({
-      category:nationalRankingState.category,
-      sex:nationalRankingState.sex,
-      discipline:nationalRankingState.discipline
-    });
-    const r=await fetch(`${apiBase()}/api/saj-ranking?${q.toString()}`,{cache:'no-store'});
-    const data=await r.json().catch(()=>({}));
-    if(!r.ok||!data?.ok)throw new Error(data?.detail?`${data.error||'取得失敗'}：${data.detail}`:(data?.error||`HTTP ${r.status}`));
-    nationalRankingCache.set(key,data);
-    renderNationalRanking(data);
-  }catch(e){
-    body.innerHTML='';
-    meta.textContent='全国ポイントランキング';
-    status.textContent=`取得できませんでした：${String(e?.message||e)}`;
-  }
-}
+const NATIONAL_RANKING_STORAGE_KEY='alpine_team_manager_national_top30_v1';
+const NATIONAL_RANKING_COMBOS=[['k2','男','SL'],['k2','男','GS'],['k2','男','SG'],['k2','女','SL'],['k2','女','GS'],['k2','女','SG'],['general','男','SL'],['general','男','GS'],['general','男','SG'],['general','女','SL'],['general','女','GS'],['general','女','SG']];
+function nationalRankingKey(s=nationalRankingState){return `${s.category}|${s.sex}|${s.discipline}`;}
+function loadNationalRankingCacheFromStorage(){try{const x=JSON.parse(localStorage.getItem(NATIONAL_RANKING_STORAGE_KEY)||'null');nationalRankingCache.clear();Object.entries(x?.data||{}).forEach(([k,v])=>{if(v)nationalRankingCache.set(k,v)});return x&&typeof x==='object'?x:null}catch(e){console.warn('全国TOP30キャッシュ読込失敗',e);return null}}
+function persistNationalRankingCache(){const data={};nationalRankingCache.forEach((v,k)=>data[k]=v);try{localStorage.setItem(NATIONAL_RANKING_STORAGE_KEY,JSON.stringify({updatedAt:new Date().toISOString(),data}))}catch(e){console.warn('全国TOP30キャッシュ保存失敗',e)}}
+function nationalRankingAutoSeason(now=new Date()){const m=now.getMonth()+1;return m>=11||m<=4;}
+function nationalRankingLatestThursdayStart(now=new Date()){const d=new Date(now.getFullYear(),now.getMonth(),now.getDate());d.setDate(d.getDate()-((d.getDay()-4+7)%7));d.setHours(0,0,0,0);return d;}
+function nationalRankingNeedsWeeklyRefresh(stored,now=new Date()){if(!nationalRankingAutoSeason(now))return false;if(!stored?.updatedAt)return true;if(NATIONAL_RANKING_COMBOS.some(([category,sex,discipline])=>!nationalRankingCache.has(nationalRankingKey({category,sex,discipline}))))return true;const d=new Date(stored.updatedAt);return Number.isNaN(d.getTime())||d<nationalRankingLatestThursdayStart(now);}
+function syncNationalRankingButtons(){document.querySelectorAll('[data-ranking-category]').forEach(b=>b.classList.toggle('active',b.dataset.rankingCategory===nationalRankingState.category));document.querySelectorAll('[data-ranking-sex]').forEach(b=>b.classList.toggle('active',b.dataset.rankingSex===nationalRankingState.sex));document.querySelectorAll('[data-ranking-discipline]').forEach(b=>b.classList.toggle('active',b.dataset.rankingDiscipline===nationalRankingState.discipline));}
+function setNationalRankingCategory(v){nationalRankingState.category=v==='general'?'general':'k2';syncNationalRankingButtons();loadNationalRanking();}
+function setNationalRankingSex(v){nationalRankingState.sex=v==='女'?'女':'男';syncNationalRankingButtons();loadNationalRanking();}
+function setNationalRankingDiscipline(v){nationalRankingState.discipline=['SL','GS','SG'].includes(v)?v:'SL';syncNationalRankingButtons();loadNationalRanking();}
+function nationalRankingAthleteUrl(saj){const n=String(saj||'').replace(/\D/g,'');return /^\d{7,9}$/.test(n)?`https://sajdb.shikuminet.jp/alpine/biography/${encodeURIComponent(n)}`:'';}
+function openNationalRankingAthlete(saj){const u=nationalRankingAthleteUrl(saj);if(u)window.open(u,'_blank','noopener,noreferrer');}
+function renderNationalRanking(data){const body=document.getElementById('nationalRankingBody'),meta=document.getElementById('nationalRankingMeta'),status=document.getElementById('nationalRankingStatus');if(!body||!meta||!status)return;const rows=Array.isArray(data?.ranking)?data.ranking:[],cat=nationalRankingState.category==='k2'?'K2':'一般',sex=nationalRankingState.sex==='男'?'男子':'女子';meta.textContent=`${data?.seasonLabel||'シーズン—'} / ${data?.pointListNumber!=null?`SAJポイントリスト No.${data.pointListNumber}`:'ポイントリスト番号—'} / ${cat} / ${sex} / ${nationalRankingState.discipline}${data?.sourceMode==='CALENDAR_LIST_FALLBACK'?' / カレンダー同一No.補完':''}`;status.textContent=rows.length?`${rows.length}名を表示（ポイント未取得はランキング対象外）`:'該当するランキングデータがありません。';body.innerHTML=rows.map(r=>{const saj=String(r.saj||''),safeSaj=encodeURIComponent(saj),birth=r.birth?`Birth ${esc(r.birth)}`:'';return `<tr><td class="rank">${esc(String(r.rank??'—'))}</td><td><button class="national-ranking-athlete" type="button" onclick="openNationalRankingAthlete(decodeURIComponent('${safeSaj}'))">${esc(r.name||'氏名不明')}</button><div class="national-ranking-athlete-meta">SAJ ${esc(saj||'—')}${birth?` / ${birth}`:''}</div></td><td>${esc(r.organization||'—')}</td><td>${esc(r.team||'—')}</td><td class="point">${r.point!==null&&r.point!==undefined&&String(r.point).trim()!==''&&Number.isFinite(Number(r.point))?Number(r.point).toFixed(2):'—'}</td></tr>`}).join('');}
+async function fetchNationalRankingCombo(category,sex,discipline){const q=new URLSearchParams({category,sex,discipline});const r=await fetch(`${apiBase()}/api/saj-ranking?${q}`,{cache:'no-store'});const data=await r.json().catch(()=>({}));if(!r.ok||!data?.ok)throw new Error(data?.detail?`${data.error||'取得失敗'}：${data.detail}`:(data?.error||`HTTP ${r.status}`));return data;}
+async function refreshAllNationalRankings(manual=false){if(!navigator.onLine||!apiBase())return false;const status=document.getElementById('nationalRankingStatus');if(status)status.textContent=manual?'全国ランキングを一括更新しています…':'全国ランキングを週次更新しています…';const next=new Map(nationalRankingCache);let ok=true;for(const [category,sex,discipline] of NATIONAL_RANKING_COMBOS){try{next.set(nationalRankingKey({category,sex,discipline}),await fetchNationalRankingCombo(category,sex,discipline))}catch(e){ok=false;console.warn('全国TOP30一括取得失敗',category,sex,discipline,e);break}}if(ok){nationalRankingCache.clear();next.forEach((v,k)=>nationalRankingCache.set(k,v));persistNationalRankingCache()}else loadNationalRankingCacheFromStorage();const cur=nationalRankingCache.get(nationalRankingKey());if(cur)renderNationalRanking(cur);else if(status)status.textContent='ランキングを取得できませんでした。保存済みデータはありません。';return ok;}
+async function loadNationalRanking(force=false){const body=document.getElementById('nationalRankingBody'),meta=document.getElementById('nationalRankingMeta'),status=document.getElementById('nationalRankingStatus');if(!body||!meta||!status)return;syncNationalRankingButtons();loadNationalRankingCacheFromStorage();if(force){await refreshAllNationalRankings(true);return}const data=nationalRankingCache.get(nationalRankingKey());if(data){renderNationalRanking(data);return}meta.textContent='全国ポイントランキング';status.textContent=nationalRankingAutoSeason()?'ランキングデータはまだ取得されていません。':'5月〜10月は自動更新しません。「更新」で一括取得できます。';body.innerHTML='<tr><td colspan="5" class="muted">保存済みランキングデータはありません。</td></tr>';}
+async function autoRefreshNationalRankingsOnLaunch(){const stored=loadNationalRankingCacheFromStorage();if(nationalRankingNeedsWeeklyRefresh(stored))await refreshAllNationalRankings(false);}
 
 function openTab(tabId){
   document.querySelectorAll('nav button[data-tab], .top-action-btn[data-tab]').forEach(x=>x.classList.remove('active'));
@@ -8293,6 +8217,7 @@ async function refreshAppCacheOnLaunch(){
 refreshAppCacheOnLaunch().catch(()=>{});
 
 renderAll();
+autoRefreshNationalRankingsOnLaunch().catch(()=>{});
 importBackupFromShareLink().catch(()=>{});
 initCalendarFullscreen();
 initToolPortal();
@@ -8348,8 +8273,8 @@ function goHome(){
 
 
 
-// v0.13.63: check the published app version once per calendar day.
-const APP_VERSION='0.13.63';
+// v0.13.64: check the published app version once per calendar day.
+const APP_VERSION='0.13.64';
 const APP_PUBLIC_URL='https://m6jm4s654p-lab.github.io/snowtech-team-manager/';
 const APP_VERSION_CHECK_KEY='alpine_team_manager_version_check_date_v1';
 function appLocalDateKey(d=new Date()){
