@@ -3170,6 +3170,7 @@ saveEvent = function(){
     coachIds:[],
     note:'',
     manualEvent:true,
+    calendarLinked:true,
     seasonStartYear:selectedGlobalSeasonYear()
   };
 
@@ -4933,7 +4934,7 @@ async function refreshAppCacheOnLaunch(){
   if(!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=01374',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=01375',{updateViaCache:'none'});
 
     if(reg.waiting){
       reg.waiting.postMessage({type:'SKIP_WAITING'});
@@ -5016,7 +5017,7 @@ function goHome(){
 
 
 // v0.13.74: current-season K2 classification + dynamic header version. Team data in localStorage is never cleared.
-const APP_VERSION='0.13.74';
+const APP_VERSION='0.13.75';
 function syncHeaderAppVersion(){
   const el=document.getElementById('headerAppVersion');
   if(el)el.textContent=`v${APP_VERSION}`;

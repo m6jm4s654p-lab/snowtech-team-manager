@@ -1,4 +1,4 @@
-const CACHE_NAME='alpine-team-manager-v01374';
+const CACHE_NAME='alpine-team-manager-v01375';
 const CORE=['./','./index.html','./app.js','./manifest.webmanifest'];
 self.addEventListener('install',event=>{
   self.skipWaiting();
