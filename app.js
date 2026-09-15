@@ -4933,7 +4933,7 @@ async function refreshAppCacheOnLaunch(){
   if(!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=01372',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=01373',{updateViaCache:'none'});
 
     if(reg.waiting){
       reg.waiting.postMessage({type:'SKIP_WAITING'});
@@ -5015,8 +5015,13 @@ function goHome(){
 
 
 
-// v0.13.72: reliable update foundation. Team data in localStorage is never cleared.
-const APP_VERSION='0.13.72';
+// v0.13.73: reliable update foundation + dynamic header version. Team data in localStorage is never cleared.
+const APP_VERSION='0.13.73';
+function syncHeaderAppVersion(){
+  const el=document.getElementById('headerAppVersion');
+  if(el)el.textContent=`v${APP_VERSION}`;
+}
+syncHeaderAppVersion();
 const APP_PUBLIC_URL='https://m6jm4s654p-lab.github.io/snowtech-team-manager/';
 function compareAppVersions(a,b){
   const aa=String(a||'').replace(/^v/i,'').split('.').map(n=>parseInt(n,10)||0);
