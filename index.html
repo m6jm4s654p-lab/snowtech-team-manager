@@ -474,6 +474,27 @@ header [data-team-name],header #teamHeader{display:none!important}
 .home-category-grid .home-menu-btn{
   min-height:92px;
 }
+
+/* v0.13.62 HOME category folding */
+.home-category-toggle{
+  cursor:pointer;
+  user-select:none;
+  -webkit-user-select:none;
+  margin-bottom:13px;
+}
+.home-category-toggle::after{
+  content:'▲';
+  margin-left:auto;
+  color:var(--muted);
+  font-size:12px;
+  font-weight:900;
+}
+.home-category-block.collapsed .home-category-toggle{margin-bottom:0}
+.home-category-block.collapsed .home-category-toggle::after{content:'▼'}
+.home-category-block.collapsed .home-category-grid{display:none}
+.athlete-register-shortcut{margin:0 0 12px}
+.athlete-register-shortcut .btn{font-weight:900}
+
 @media(max-width:640px){
   .home-category-block{padding:13px}
   .home-category-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -1935,7 +1956,7 @@ header{
 <header>
   <div class="header-inner">
     <div class="header-meta-row">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.13.61</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.13.62</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
     <div class="header-title-row">
@@ -1960,8 +1981,8 @@ header{
 
 
 <section id="home" class="active">
-  <div class="home-category-block home-category-manage no-print">
-    <div class="home-category-head">
+  <div class="home-category-block home-category-manage no-print collapsed">
+    <div class="home-category-head home-category-toggle" role="button" tabindex="0" aria-expanded="false" onclick="toggleHomeCategory(this)" onkeydown="handleHomeCategoryKey(event,this)">
       <div class="home-category-icon">M</div>
       <div>
         <div class="home-category-title">管理</div>
@@ -1972,12 +1993,12 @@ header{
       <button class="home-menu-btn" onclick="openTab('schedule')"><strong>年間予定</strong><span>予定表を確認・編集</span></button>
       <button class="home-menu-btn" onclick="openTab('events')"><strong>大会管理</strong><span>公認大会取得・大会登録</span></button>
       <button class="home-menu-btn home-athlete-ranking-btn" onclick="openTab('ranking')"><strong>選手一覧<br>チームランキング</strong><span>所属選手・ポイント順位</span></button>
-      <button class="home-menu-btn" onclick="openTab('athleteTeamSettings')"><strong>選手・チーム設定</strong><span>選手管理／チーム設定</span></button>
+      <button class="home-menu-btn" onclick="openTab('athleteTeamSettings')"><strong>選手・チーム設定</strong><span>所属選手登録／チーム設定</span></button>
     </div>
   </div>
 
-  <div class="home-category-block home-category-info no-print">
-    <div class="home-category-head">
+  <div class="home-category-block home-category-info no-print collapsed">
+    <div class="home-category-head home-category-toggle" role="button" tabindex="0" aria-expanded="false" onclick="toggleHomeCategory(this)" onkeydown="handleHomeCategoryKey(event,this)">
       <div class="home-category-icon">i</div>
       <div>
         <div class="home-category-title">情報</div>
@@ -2639,7 +2660,7 @@ header{
     <h2>選手・チーム設定</h2>
     <div class="athlete-team-choice-grid no-print">
       <button class="athlete-team-choice-btn" type="button" onclick="openTab('athletes')">
-        <strong>選手管理</strong>
+        <strong>所属選手登録</strong>
         <span>選手登録・SAJポイント・成績を管理</span>
       </button>
       <button class="athlete-team-choice-btn" type="button" onclick="openTab('settings')">
@@ -2926,6 +2947,9 @@ header{
 
 <section id="ranking">
   <div class="card combined-athlete-ranking-card">
+    <div class="toolbar no-print athlete-register-shortcut">
+      <button class="btn primary" type="button" onclick="openTab('athletes')">所属選手登録</button>
+    </div>
     <h2>所属選手一覧（年齢順）</h2>
     <div class="muted" style="margin-bottom:10px">年上から年下の順に表示します。選手名をタップすると詳細を確認できます。</div>
     <div id="rankingAthleteList" class="ranking-athlete-overview"></div>
@@ -4509,7 +4533,7 @@ const ITEM_HELP_ITEMS=[
     body:'登録選手の最新SAJポイントを基準に、男子・女子それぞれSL・GS・SGのチーム内ランキングを表示します。シーズン選択には影響されません。選手名から選手詳細へ移動できます。'
   },
   {
-    title:'選手管理',
+    title:'所属選手登録',
     body:'SAJ競技者番号から選手情報を取得して登録できます。加盟団体・性別を指定してSAJポイントリストから複数選手を選択登録することもできます。登録選手の基本情報、最新ポイント、大会履歴を確認・編集できます。'
   },
   {
@@ -8248,6 +8272,20 @@ function renderTopTeamName(){
     const selected=selectedGlobalSeasonYear();
     if(!season.options.length)season.innerHTML=globalSeasonOptionsHtml(selected);
     season.value=String(selected);
+  }
+}
+
+
+function toggleHomeCategory(head){
+  const block=head?.closest?.('.home-category-block');
+  if(!block)return;
+  const collapsed=block.classList.toggle('collapsed');
+  head.setAttribute('aria-expanded',collapsed?'false':'true');
+}
+function handleHomeCategoryKey(event,head){
+  if(event.key==='Enter' || event.key===' '){
+    event.preventDefault();
+    toggleHomeCategory(head);
   }
 }
 

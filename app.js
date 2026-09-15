@@ -1307,7 +1307,7 @@ const ITEM_HELP_ITEMS=[
     body:'登録選手の最新SAJポイントを基準に、男子・女子それぞれSL・GS・SGのチーム内ランキングを表示します。シーズン選択には影響されません。選手名から選手詳細へ移動できます。'
   },
   {
-    title:'選手管理',
+    title:'所属選手登録',
     body:'SAJ競技者番号から選手情報を取得して登録できます。加盟団体・性別を指定してSAJポイントリストから複数選手を選択登録することもできます。登録選手の基本情報、最新ポイント、大会履歴を確認・編集できます。'
   },
   {
@@ -5046,6 +5046,20 @@ function renderTopTeamName(){
     const selected=selectedGlobalSeasonYear();
     if(!season.options.length)season.innerHTML=globalSeasonOptionsHtml(selected);
     season.value=String(selected);
+  }
+}
+
+
+function toggleHomeCategory(head){
+  const block=head?.closest?.('.home-category-block');
+  if(!block)return;
+  const collapsed=block.classList.toggle('collapsed');
+  head.setAttribute('aria-expanded',collapsed?'false':'true');
+}
+function handleHomeCategoryKey(event,head){
+  if(event.key==='Enter' || event.key===' '){
+    event.preventDefault();
+    toggleHomeCategory(head);
   }
 }
 
