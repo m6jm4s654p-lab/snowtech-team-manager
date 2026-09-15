@@ -1,4 +1,3 @@
-
 const SETTER_TOOL_URL='https://m6jm4s654p-lab.github.io/snowtech/';
 
 function openSetterTool(){
@@ -5082,3 +5081,63 @@ function goHome(){
   if(typeof renderHome==='function')renderHome();
 }
 
+
+
+// v0.13.63: check the published app version once per calendar day.
+const APP_VERSION='0.13.63';
+const APP_PUBLIC_URL='https://m6jm4s654p-lab.github.io/snowtech-team-manager/';
+const APP_VERSION_CHECK_KEY='alpine_team_manager_version_check_date_v1';
+function appLocalDateKey(d=new Date()){
+  const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function compareAppVersions(a,b){
+  const aa=String(a||'').replace(/^v/i,'').split('.').map(n=>parseInt(n,10)||0);
+  const bb=String(b||'').replace(/^v/i,'').split('.').map(n=>parseInt(n,10)||0);
+  const len=Math.max(aa.length,bb.length);
+  for(let i=0;i<len;i++){const x=aa[i]||0,y=bb[i]||0;if(x!==y)return x>y?1:-1;}
+  return 0;
+}
+async function checkLatestAppVersionOnceDaily(){
+  const today=appLocalDateKey();
+  if(localStorage.getItem(APP_VERSION_CHECK_KEY)===today)return;
+  try{
+    const r=await fetch(`./version.json?t=${Date.now()}`,{cache:'no-store'});
+    if(!r.ok)throw new Error(`HTTP ${r.status}`);
+    const data=await r.json();
+    const latest=String(data?.version||'').replace(/^v/i,'').trim();
+    if(!latest)throw new Error('version missing');
+    localStorage.setItem(APP_VERSION_CHECK_KEY,today);
+    if(compareAppVersions(latest,APP_VERSION)>0)showAppUpdateNotice(latest);
+  }catch(e){
+    console.warn('最新バージョン確認失敗',e);
+    // Do not record a successful check; retry on the next launch.
+  }
+}
+function showAppUpdateNotice(latest){
+  const modal=document.getElementById('appUpdateModal');
+  const cur=document.getElementById('appUpdateCurrent');
+  const lat=document.getElementById('appUpdateLatest');
+  if(cur)cur.textContent=`v${APP_VERSION}`;
+  if(lat)lat.textContent=`v${latest}`;
+  if(modal)modal.classList.add('show');
+}
+function dismissAppUpdateNotice(){
+  document.getElementById('appUpdateModal')?.classList.remove('show');
+}
+function toggleAppUpdateGuide(){
+  document.getElementById('appUpdateGuide')?.classList.toggle('show');
+}
+async function copyManagerAppUrl(){
+  try{
+    await navigator.clipboard.writeText(APP_PUBLIC_URL);
+    alert('アプリURLをコピーしました。');
+  }catch(e){
+    const ta=document.createElement('textarea');
+    ta.value=APP_PUBLIC_URL;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');alert('アプリURLをコピーしました。');}
+    catch(_){prompt('このURLをコピーしてください。',APP_PUBLIC_URL);}
+    ta.remove();
+  }
+}
+setTimeout(()=>checkLatestAppVersionOnceDaily(),1200);
