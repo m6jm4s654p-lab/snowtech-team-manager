@@ -2078,14 +2078,14 @@ header{
 
   <div class="card" style="margin-top:14px">
     <div class="home-schedule-view-select no-print" aria-label="ホーム予定表示">
-      <label><input id="homeViewWeekCheck" type="checkbox" onchange="setHomeScheduleView('week')"> 直近1週間を通常表示</label>
-      <label><input id="homeViewCalendarCheck" type="checkbox" onchange="setHomeScheduleView('calendar')"> カレンダーを通常表示</label>
+      <label><input id="homeViewWeekCheck" type="checkbox" onclick="setHomeScheduleView('week')"> 直近1週間を通常表示</label>
+      <label><input id="homeViewCalendarCheck" type="checkbox" onclick="setHomeScheduleView('calendar')"> カレンダーを通常表示</label>
     </div>
-    <div id="homeWeekPanel">
+    <div id="homeWeekPanel" style="display:block">
       <h2>直近1週間の予定</h2>
       <div id="homeWeekSchedule"></div>
     </div>
-    <div id="homeCalendarPanel" class="hidden">
+    <div id="homeCalendarPanel" style="display:none">
       <h2>年間スケジュール</h2>
       <div id="homeVerticalCalendar"></div>
     </div>
@@ -5020,49 +5020,79 @@ function homeDateColor(ds){
   if(d.getDay()===6)return'#0066cc';
   return'inherit';
 }
-const HOME_SCHEDULE_VIEW_KEY='alpine_team_manager_home_schedule_view_v1';
+const HOME_SCHEDULE_VIEW_KEY='alpine_team_manager_home_schedule_view_v2';
+let homeScheduleViewMemory='week';
+
 function homeScheduleView(){
-  const v=localStorage.getItem(HOME_SCHEDULE_VIEW_KEY);
-  return v==='calendar'?'calendar':'week';
+  try{
+    const v=localStorage.getItem(HOME_SCHEDULE_VIEW_KEY);
+    if(v==='calendar'||v==='week')homeScheduleViewMemory=v;
+  }catch(e){}
+  return homeScheduleViewMemory;
+}
+function saveHomeScheduleView(view){
+  homeScheduleViewMemory=view;
+  try{localStorage.setItem(HOME_SCHEDULE_VIEW_KEY,view)}catch(e){}
 }
 function setHomeScheduleView(view){
   const next=view==='calendar'?'calendar':'week';
-  localStorage.setItem(HOME_SCHEDULE_VIEW_KEY,next);
-  applyHomeScheduleView();
+  saveHomeScheduleView(next);
+  applyHomeScheduleView(true);
 }
-function applyHomeScheduleView(){
+function applyHomeScheduleView(forceRender=false){
   const view=homeScheduleView();
   const week=document.getElementById('homeWeekPanel');
   const cal=document.getElementById('homeCalendarPanel');
   const wc=document.getElementById('homeViewWeekCheck');
   const cc=document.getElementById('homeViewCalendarCheck');
+
   if(wc)wc.checked=view==='week';
   if(cc)cc.checked=view==='calendar';
-  if(week)week.classList.toggle('hidden',view!=='week');
-  if(cal)cal.classList.toggle('hidden',view!=='calendar');
+
+  // v0.13.80: display is controlled directly, not through hidden attributes/classes.
+  if(week)week.style.display=view==='week'?'block':'none';
+  if(cal)cal.style.display=view==='calendar'?'block':'none';
+
   if(view==='calendar'){
-    renderHomeVerticalCalendar();
-    requestAnimationFrame(()=>positionHomeVerticalCalendar());
+    const box=document.getElementById('homeVerticalCalendar');
+    if(forceRender || !box?.querySelector('.home-month-calendar'))renderHomeVerticalCalendar();
+    requestAnimationFrame(()=>requestAnimationFrame(positionHomeVerticalCalendar));
   }
 }
+function homeCalendarSeasonStartYear(){
+  const selected=Number(selectedGlobalSeasonYear?.());
+  if(Number.isFinite(selected)&&selected>2000)return selected;
+  const n=new Date();
+  return n.getMonth()+1>=5?n.getFullYear():n.getFullYear()-1;
+}
 function homeCalendarMonths(){
-  const y=selectedGlobalSeasonYear();
+  const y=homeCalendarSeasonStartYear();
   return [5,6,7,8,9,10,11,12].map(month=>({year:y,month}))
     .concat([1,2,3,4].map(month=>({year:y+1,month})));
 }
 function homeCalendarItems(){
   const out=[],seen=new Set();
-  const add=(date,title,source='schedule')=>{
+  const norm=v=>String(v??'').trim().replace(/\s+/g,' ').toLowerCase();
+  const add=(date,title,place='',source='schedule')=>{
     const d=String(date||'').slice(0,10);
     if(!d)return;
-    const key=`${d}|${String(title||'').trim().toLowerCase()}|${source}`;
+    const key=[d,norm(title),norm(place),source].join('|');
     if(seen.has(key))return;
-    seen.add(key);out.push({date:d,title:title||'予定',source});
+    seen.add(key);
+    out.push({date:d,title:title||'予定',place,source});
   };
-  (db.schedules||[]).forEach(x=>add(x.date,x.title||x.type||'予定','schedule'));
+  (db.schedules||[]).forEach(x=>add(x.date,x.title||x.type||'予定',x.place||'','schedule'));
   (db.events||[]).forEach(x=>{
-    const dates=enumerateDates(x.start,x.end||x.start);
-    dates.forEach(d=>add(d,x.title||'大会','event'));
+    const s=String(x.start||'').slice(0,10);
+    const e=String(x.end||x.start||'').slice(0,10);
+    if(!s)return;
+    let d=new Date(s+'T00:00:00');
+    const last=new Date((e||s)+'T00:00:00');
+    if(Number.isNaN(d.getTime())||Number.isNaN(last.getTime()))return;
+    while(d<=last){
+      add(homeYmd(d),x.title||'大会',x.place||'','event');
+      d.setDate(d.getDate()+1);
+    }
   });
   return out.sort((a,b)=>a.date.localeCompare(b.date));
 }
@@ -5077,10 +5107,21 @@ function renderHomeCalendarMonth({year,month},all){
     const holiday=JP_HOLIDAYS.has(ds);
     const items=all.filter(x=>x.date===ds);
     const cls=holiday?'holiday':dow===0?'sun':dow===6?'sat':'';
-    cells.push(`<div class="home-calendar-day ${cls}"><span class="home-calendar-day-number">${day}</span>${items.map(x=>`<span class="home-calendar-item ${x.source==='event'?'competition':''}">${esc(x.title)}</span>`).join('')}</div>`);
+    cells.push(`<div class="home-calendar-day ${cls}">
+      <span class="home-calendar-day-number">${day}</span>
+      ${items.map(x=>`<span class="home-calendar-item ${x.source==='event'?'competition':''}">${esc(x.title)}</span>`).join('')}
+    </div>`);
   }
   while(cells.length%7)cells.push('<div class="home-calendar-day blank"></div>');
-  return `<section id="home-month-${year}-${String(month).padStart(2,'0')}" class="home-month-calendar"><h3>${year}年 ${month}月</h3><div class="home-calendar-weekdays"><div class="home-calendar-weekday sun">日</div><div class="home-calendar-weekday">月</div><div class="home-calendar-weekday">火</div><div class="home-calendar-weekday">水</div><div class="home-calendar-weekday">木</div><div class="home-calendar-weekday">金</div><div class="home-calendar-weekday sat">土</div></div><div class="home-calendar-days">${cells.join('')}</div></section>`;
+  return `<section id="home-month-${year}-${String(month).padStart(2,'0')}" class="home-month-calendar">
+    <h3>${year}年 ${month}月</h3>
+    <div class="home-calendar-weekdays">
+      <div class="home-calendar-weekday sun">日</div><div class="home-calendar-weekday">月</div><div class="home-calendar-weekday">火</div>
+      <div class="home-calendar-weekday">水</div><div class="home-calendar-weekday">木</div><div class="home-calendar-weekday">金</div>
+      <div class="home-calendar-weekday sat">土</div>
+    </div>
+    <div class="home-calendar-days">${cells.join('')}</div>
+  </section>`;
 }
 function positionHomeVerticalCalendar(){
   const list=document.getElementById('homeCalendarMonthList');
@@ -5088,14 +5129,26 @@ function positionHomeVerticalCalendar(){
   list.scrollTop=0;
   const now=new Date();
   const target=document.getElementById(`home-month-${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`);
-  if(target)requestAnimationFrame(()=>{list.scrollTop=Math.max(0,target.offsetTop-list.offsetTop)});
+  if(target){
+    requestAnimationFrame(()=>{
+      const top=target.offsetTop-list.offsetTop;
+      list.scrollTop=Math.max(0,top);
+    });
+  }
 }
 function renderHomeVerticalCalendar(){
   const box=document.getElementById('homeVerticalCalendar');
   if(!box)return;
-  const all=homeCalendarItems();
-  box.innerHTML=`<div id="homeCalendarMonthList" class="home-calendar-month-list">${homeCalendarMonths().map(x=>renderHomeCalendarMonth(x,all)).join('')}</div>`;
+  try{
+    const all=homeCalendarItems();
+    const months=homeCalendarMonths();
+    box.innerHTML=`<div id="homeCalendarMonthList" class="home-calendar-month-list">${months.map(x=>renderHomeCalendarMonth(x,all)).join('')}</div>`;
+  }catch(e){
+    console.error('HOME年間カレンダー描画エラー',e);
+    box.innerHTML='<div class="notice">年間カレンダーを表示できませんでした。画面を再読み込みしてください。</div>';
+  }
 }
+
 function renderHome(){
   const wrap=document.getElementById('homeWeekSchedule');
   if(!wrap)return;
@@ -5143,7 +5196,7 @@ function renderHome(){
   }
   wrap.innerHTML=rows.join('');
   renderHomeVerticalCalendar();
-  applyHomeScheduleView();
+  applyHomeScheduleView(false);
 }
 
 
@@ -8366,7 +8419,7 @@ async function refreshAppCacheOnLaunch(){
   if(!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=01379',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=01380',{updateViaCache:'none'});
 
     if(reg.waiting){
       reg.waiting.postMessage({type:'SKIP_WAITING'});
@@ -8449,7 +8502,7 @@ function goHome(){
 
 
 // v0.13.74: current-season K2 classification + dynamic header version. Team data in localStorage is never cleared.
-const APP_VERSION='0.13.79';
+const APP_VERSION='0.13.80';
 function syncHeaderAppVersion(){
   const el=document.getElementById('headerAppVersion');
   if(el)el.textContent=`v${APP_VERSION}`;
