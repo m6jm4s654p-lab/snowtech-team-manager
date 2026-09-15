@@ -4933,7 +4933,7 @@ async function refreshAppCacheOnLaunch(){
   if(!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=01369',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=01370',{updateViaCache:'none'});
 
     if(reg.waiting){
       reg.waiting.postMessage({type:'SKIP_WAITING'});
@@ -5016,7 +5016,7 @@ function goHome(){
 
 
 // v0.13.69: check the published app version on every app launch.
-const APP_VERSION='0.13.69';
+const APP_VERSION='0.13.70';
 const APP_PUBLIC_URL='https://m6jm4s654p-lab.github.io/snowtech-team-manager/';
 function compareAppVersions(a,b){
   const aa=String(a||'').replace(/^v/i,'').split('.').map(n=>parseInt(n,10)||0);
@@ -5026,6 +5026,11 @@ function compareAppVersions(a,b){
   return 0;
 }
 async function checkLatestAppVersionOnLaunch(){
+  const sync=document.getElementById('syncState');
+  if(sync){
+    sync.textContent='● 最新バージョン確認中…';
+    sync.className='sync status-ok';
+  }
   try{
     const r=await fetch(`./version.json?t=${Date.now()}`,{cache:'no-store',headers:{'Cache-Control':'no-cache'}});
     if(!r.ok)throw new Error(`HTTP ${r.status}`);
@@ -5035,8 +5040,14 @@ async function checkLatestAppVersionOnLaunch(){
     if(compareAppVersions(latest,APP_VERSION)>0){
       showAppUpdateNotice(latest, data?.restartRequired===true ? 'restart' : 'minor');
     }
+    if(sync)onlineState();
   }catch(e){
     console.warn('最新バージョン確認失敗',e);
+    if(sync){
+      sync.textContent='○ バージョン確認失敗';
+      sync.className='sync status-warn';
+      setTimeout(()=>onlineState(),2200);
+    }
   }
 }
 function showAppUpdateNotice(latest,mode='minor'){
