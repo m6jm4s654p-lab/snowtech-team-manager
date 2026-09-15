@@ -1290,8 +1290,8 @@ const ITEM_HELP_ITEMS=[
     body:'選択中のチーム名・シーズンを確認し、年間予定、大会管理、ランキング、選手・チーム設定、会場情報、天気・積雪、レース速報、スキー連盟リンク、全国ポイントランキング、ツール切り替えへ移動できます。直近1週間の予定も確認できます。'
   },
   {
-    title:'操作ナビ',
-    body:'シーズン設定、チーム設定、選手登録、コーチ登録、大会登録、年間予定の進捗を確認し、未設定の項目へ順番に移動できます。'
+    title:'初期設定',
+    body:'シーズン設定、チーム情報入力、選手登録、大会登録、年間予定の進捗を確認し、未設定の項目へ順番に移動できます。大会登録と年間予定はスキップできます。'
   },
   {
     title:'年間予定',
@@ -1775,9 +1775,10 @@ function renderOperationGuide(){
   const seasonConfirmed=Number.isFinite(Number(db.team.globalSeasonYear)) && Number(db.team.globalSeasonYear)>2000;
   const teamDone=!!String(db.team?.name||'').trim();
   const athleteCount=(db.athletes||[]).length;
-  const coachCount=(db.coaches||[]).length;
   const eventCount=(db.events||[]).filter(e=>eventSeasonStartYear(e)===selected).length;
   const scheduleCount=(db.schedules||[]).filter(x=>seasonStartYearFromDate(x.date)===selected).length+eventCount;
+  const skippedEvents=localStorage.getItem(`operation_guide_skip_events_${selected}`)==='1';
+  const skippedSchedule=localStorage.getItem(`operation_guide_skip_schedule_${selected}`)==='1';
 
   const items=[
     {
@@ -1787,7 +1788,7 @@ function renderOperationGuide(){
       target:'operationGuide'
     },
     {
-      title:'チーム設定',
+      title:'チーム情報入力',
       sub:teamDone?`チーム名：${db.team.name}`:'チーム名が未設定です',
       done:teamDone,
       target:'settings'
@@ -1799,27 +1800,25 @@ function renderOperationGuide(){
       target:'athletes'
     },
     {
-      title:'コーチ登録',
-      sub:coachCount?`${coachCount}名登録済み`:'コーチがまだ登録されていません',
-      done:coachCount>0,
-      target:'settings'
-    },
-    {
       title:'大会登録',
       sub:eventCount?`${eventCount}大会登録済み`:'このシーズンの大会がまだ登録されていません',
       done:eventCount>0,
+      skipped:skippedEvents,
+      skipKey:'events',
       target:'events'
     },
     {
       title:'年間予定',
       sub:scheduleCount?`${scheduleCount}件の予定があります`:'このシーズンの年間予定がまだ登録されていません',
       done:scheduleCount>0,
+      skipped:skippedSchedule,
+      skipKey:'schedule',
       target:'schedule'
     }
   ];
 
-  const next=items.find(x=>!x.done);
-  const completed=items.filter(x=>x.done).length;
+  const next=items.find(x=>!x.done&&!x.skipped);
+  const completed=items.filter(x=>x.done||x.skipped).length;
 
   box.innerHTML=`
     <div class="operation-guide-season">
@@ -1838,7 +1837,7 @@ function renderOperationGuide(){
       ${next && next.target!=='operationGuide'?`<button class="btn primary" type="button" style="margin-top:10px" onclick="openTab('${next.target}')">${esc(next.title)}へ</button>`:''}
     </div>
 
-    <div style="font-weight:900;margin-bottom:9px">設定進捗 ${completed}/6</div>
+    <div style="font-weight:900;margin-bottom:9px">設定進捗 ${completed}/${items.length}</div>
     <div class="operation-guide-list">
       ${items.map(x=>`
         <div class="operation-guide-row">
@@ -1846,12 +1845,20 @@ function renderOperationGuide(){
             <div class="operation-guide-row-title">${esc(x.title)}</div>
             <div class="operation-guide-row-sub">${esc(x.sub)}</div>
             ${x.target!=='operationGuide'?`<button class="btn" type="button" onclick="openTab('${x.target}')">開く</button>`:''}
+            ${x.skipKey&&!x.done&&!x.skipped?`<button class="btn" type="button" onclick="skipOperationGuideStep('${x.skipKey}')">スキップ</button>`:''}
           </div>
-          <div class="operation-guide-state ${x.done?'done':'todo'}">${x.done?'✓ 完了':'△ 未設定'}</div>
+          <div class="operation-guide-state ${x.done?'done':(x.skipped?'done':'todo')}">${x.done?'✓ 完了':(x.skipped?'— スキップ':'△ 未設定')}</div>
         </div>
       `).join('')}
     </div>`;
 }
+function skipOperationGuideStep(key){
+  const season=selectedGlobalSeasonYear();
+  if(key!=='events'&&key!=='schedule')return;
+  localStorage.setItem(`operation_guide_skip_${key}_${season}`,'1');
+  renderOperationGuide();
+}
+
 function confirmGuideSeason(){
   const sel=document.getElementById('guideSeasonSelect');
   if(!sel)return;
@@ -5009,7 +5016,7 @@ function goHome(){
 
 
 // v0.13.64: check the published app version once per calendar day.
-const APP_VERSION='0.13.64';
+const APP_VERSION='0.13.65';
 const APP_PUBLIC_URL='https://m6jm4s654p-lab.github.io/snowtech-team-manager/';
 const APP_VERSION_CHECK_KEY='alpine_team_manager_version_check_date_v1';
 function appLocalDateKey(d=new Date()){
