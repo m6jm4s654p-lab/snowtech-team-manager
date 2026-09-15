@@ -1735,9 +1735,12 @@ function applyHomeScheduleView(){
   const cc=document.getElementById('homeViewCalendarCheck');
   if(wc)wc.checked=view==='week';
   if(cc)cc.checked=view==='calendar';
-  if(week)week.hidden=view!=='week';
-  if(cal)cal.hidden=view!=='calendar';
-  if(view==='calendar')positionHomeVerticalCalendar();
+  if(week)week.classList.toggle('hidden',view!=='week');
+  if(cal)cal.classList.toggle('hidden',view!=='calendar');
+  if(view==='calendar'){
+    renderHomeVerticalCalendar();
+    requestAnimationFrame(()=>positionHomeVerticalCalendar());
+  }
 }
 function homeCalendarMonths(){
   const y=selectedGlobalSeasonYear();
@@ -5060,7 +5063,7 @@ async function refreshAppCacheOnLaunch(){
   if(!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=01378',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=01379',{updateViaCache:'none'});
 
     if(reg.waiting){
       reg.waiting.postMessage({type:'SKIP_WAITING'});
@@ -5143,7 +5146,7 @@ function goHome(){
 
 
 // v0.13.74: current-season K2 classification + dynamic header version. Team data in localStorage is never cleared.
-const APP_VERSION='0.13.78';
+const APP_VERSION='0.13.79';
 function syncHeaderAppVersion(){
   const el=document.getElementById('headerAppVersion');
   if(el)el.textContent=`v${APP_VERSION}`;
