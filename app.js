@@ -4933,7 +4933,7 @@ async function refreshAppCacheOnLaunch(){
   if(!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=01361',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=01369',{updateViaCache:'none'});
 
     if(reg.waiting){
       reg.waiting.postMessage({type:'SKIP_WAITING'});
@@ -5015,14 +5015,9 @@ function goHome(){
 
 
 
-// v0.13.64: check the published app version once per calendar day.
-const APP_VERSION='0.13.68';
+// v0.13.69: check the published app version on every app launch.
+const APP_VERSION='0.13.69';
 const APP_PUBLIC_URL='https://m6jm4s654p-lab.github.io/snowtech-team-manager/';
-const APP_VERSION_CHECK_KEY='alpine_team_manager_version_check_date_v1';
-function appLocalDateKey(d=new Date()){
-  const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');
-  return `${y}-${m}-${day}`;
-}
 function compareAppVersions(a,b){
   const aa=String(a||'').replace(/^v/i,'').split('.').map(n=>parseInt(n,10)||0);
   const bb=String(b||'').replace(/^v/i,'').split('.').map(n=>parseInt(n,10)||0);
@@ -5030,28 +5025,43 @@ function compareAppVersions(a,b){
   for(let i=0;i<len;i++){const x=aa[i]||0,y=bb[i]||0;if(x!==y)return x>y?1:-1;}
   return 0;
 }
-async function checkLatestAppVersionOnceDaily(){
-  const today=appLocalDateKey();
-  if(localStorage.getItem(APP_VERSION_CHECK_KEY)===today)return;
+async function checkLatestAppVersionOnLaunch(){
   try{
-    const r=await fetch(`./version.json?t=${Date.now()}`,{cache:'no-store'});
+    const r=await fetch(`./version.json?t=${Date.now()}`,{cache:'no-store',headers:{'Cache-Control':'no-cache'}});
     if(!r.ok)throw new Error(`HTTP ${r.status}`);
     const data=await r.json();
     const latest=String(data?.version||'').replace(/^v/i,'').trim();
     if(!latest)throw new Error('version missing');
-    localStorage.setItem(APP_VERSION_CHECK_KEY,today);
-    if(compareAppVersions(latest,APP_VERSION)>0)showAppUpdateNotice(latest);
+    if(compareAppVersions(latest,APP_VERSION)>0){
+      showAppUpdateNotice(latest, data?.restartRequired===true ? 'restart' : 'minor');
+    }
   }catch(e){
     console.warn('最新バージョン確認失敗',e);
-    // Do not record a successful check; retry on the next launch.
   }
 }
-function showAppUpdateNotice(latest){
+function showAppUpdateNotice(latest,mode='minor'){
   const modal=document.getElementById('appUpdateModal');
   const cur=document.getElementById('appUpdateCurrent');
   const lat=document.getElementById('appUpdateLatest');
+  const title=document.getElementById('appUpdateTitle');
+  const msg=document.getElementById('appUpdateMessage');
+  const restartActions=document.getElementById('appUpdateRestartActions');
+  const minorActions=document.getElementById('appUpdateMinorActions');
+  const guide=document.getElementById('appUpdateGuide');
   if(cur)cur.textContent=`v${APP_VERSION}`;
   if(lat)lat.textContent=`v${latest}`;
+  if(guide)guide.classList.remove('show');
+  if(mode==='restart'){
+    if(title)title.textContent='再起動が必要な更新があります';
+    if(msg)msg.textContent='更新前にメインデータのバックアップを作成してください。';
+    if(restartActions)restartActions.style.display='grid';
+    if(minorActions)minorActions.style.display='none';
+  }else{
+    if(title)title.textContent='新しいバージョンがあります';
+    if(msg)msg.textContent='間もなく最新バージョンに変更になります。そのままご使用いただけます。';
+    if(restartActions)restartActions.style.display='none';
+    if(minorActions)minorActions.style.display='block';
+  }
   if(modal)modal.classList.add('show');
 }
 function dismissAppUpdateNotice(){
@@ -5072,4 +5082,4 @@ async function copyManagerAppUrl(){
     ta.remove();
   }
 }
-setTimeout(()=>checkLatestAppVersionOnceDaily(),1200);
+setTimeout(()=>checkLatestAppVersionOnLaunch(),1200);

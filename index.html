@@ -477,7 +477,7 @@ header [data-team-name],header #teamHeader{display:none!important}
   min-height:92px;
 }
 
-/* v0.13.68 HOME category folding */
+/* v0.13.69 HOME category folding */
 .home-category-toggle{
   cursor:pointer;
   user-select:none;
@@ -1935,7 +1935,7 @@ header{
 </style>
 
 <style>
-/* v0.13.68: daily version update notice */
+/* v0.13.69: daily version update notice */
 .app-update-modal{position:fixed;inset:0;z-index:12000;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(2,10,16,.80);backdrop-filter:blur(5px)}
 .app-update-modal.show{display:flex}
 .app-update-card{width:min(520px,100%);max-height:88vh;overflow:auto;border:1px solid #355064;border-radius:16px;background:#0b1d2a;color:#f8fafc;padding:20px;box-shadow:0 18px 50px rgba(0,0,0,.45)}
@@ -1953,13 +1953,16 @@ header{
 <div id="appUpdateModal" class="app-update-modal no-print" role="dialog" aria-modal="true" aria-labelledby="appUpdateTitle">
   <div class="app-update-card">
     <h2 id="appUpdateTitle">新しいバージョンがあります</h2>
-    <div class="muted">更新前にバックアップを作成してください。</div>
+    <div id="appUpdateMessage" class="muted">更新内容を確認しています。</div>
     <div class="app-update-version">現在：<b id="appUpdateCurrent">—</b><br>最新：<b id="appUpdateLatest">—</b></div>
-    <div class="app-update-actions">
+    <div id="appUpdateRestartActions" class="app-update-actions">
       <button class="btn primary" type="button" onclick="exportJson()">バックアップを作成</button>
       <button class="btn" type="button" onclick="copyManagerAppUrl()">アプリURLをコピー</button>
       <button class="btn" type="button" onclick="toggleAppUpdateGuide()">更新手順を表示</button>
       <button class="btn" type="button" onclick="dismissAppUpdateNotice()">今回はそのまま使用</button>
+    </div>
+    <div id="appUpdateMinorActions" style="display:none;margin-top:14px">
+      <button class="btn primary" style="width:100%;min-height:44px" type="button" onclick="dismissAppUpdateNotice()">OK</button>
     </div>
     <div id="appUpdateGuide" class="app-update-guide">
       <b>更新手順</b><br>
@@ -1996,7 +1999,7 @@ header{
 <header>
   <div class="header-inner">
     <div class="header-meta-row">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.13.68</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.13.69</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
     <div class="header-title-row">
@@ -4630,7 +4633,7 @@ function toggleItemHelp(index){
 }
 
 
-// ===== v0.13.68 National SAJ point ranking: persistent weekly cache =====
+// ===== v0.13.69 National SAJ point ranking: persistent weekly cache =====
 let nationalRankingState={category:'k2',sex:'男',discipline:'SL'};
 const nationalRankingCache=new Map();
 const NATIONAL_RANKING_STORAGE_KEY='alpine_team_manager_national_top30_v1';
@@ -8201,7 +8204,7 @@ async function refreshAppCacheOnLaunch(){
   if(!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=01361',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=01369',{updateViaCache:'none'});
 
     if(reg.waiting){
       reg.waiting.postMessage({type:'SKIP_WAITING'});
@@ -8283,14 +8286,9 @@ function goHome(){
 
 
 
-// v0.13.68: check the published app version once per calendar day.
-const APP_VERSION='0.13.68';
+// v0.13.69: check the published app version on every app launch.
+const APP_VERSION='0.13.69';
 const APP_PUBLIC_URL='https://m6jm4s654p-lab.github.io/snowtech-team-manager/';
-const APP_VERSION_CHECK_KEY='alpine_team_manager_version_check_date_v1';
-function appLocalDateKey(d=new Date()){
-  const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');
-  return `${y}-${m}-${day}`;
-}
 function compareAppVersions(a,b){
   const aa=String(a||'').replace(/^v/i,'').split('.').map(n=>parseInt(n,10)||0);
   const bb=String(b||'').replace(/^v/i,'').split('.').map(n=>parseInt(n,10)||0);
@@ -8298,28 +8296,43 @@ function compareAppVersions(a,b){
   for(let i=0;i<len;i++){const x=aa[i]||0,y=bb[i]||0;if(x!==y)return x>y?1:-1;}
   return 0;
 }
-async function checkLatestAppVersionOnceDaily(){
-  const today=appLocalDateKey();
-  if(localStorage.getItem(APP_VERSION_CHECK_KEY)===today)return;
+async function checkLatestAppVersionOnLaunch(){
   try{
-    const r=await fetch(`./version.json?t=${Date.now()}`,{cache:'no-store'});
+    const r=await fetch(`./version.json?t=${Date.now()}`,{cache:'no-store',headers:{'Cache-Control':'no-cache'}});
     if(!r.ok)throw new Error(`HTTP ${r.status}`);
     const data=await r.json();
     const latest=String(data?.version||'').replace(/^v/i,'').trim();
     if(!latest)throw new Error('version missing');
-    localStorage.setItem(APP_VERSION_CHECK_KEY,today);
-    if(compareAppVersions(latest,APP_VERSION)>0)showAppUpdateNotice(latest);
+    if(compareAppVersions(latest,APP_VERSION)>0){
+      showAppUpdateNotice(latest, data?.restartRequired===true ? 'restart' : 'minor');
+    }
   }catch(e){
     console.warn('最新バージョン確認失敗',e);
-    // Do not record a successful check; retry on the next launch.
   }
 }
-function showAppUpdateNotice(latest){
+function showAppUpdateNotice(latest,mode='minor'){
   const modal=document.getElementById('appUpdateModal');
   const cur=document.getElementById('appUpdateCurrent');
   const lat=document.getElementById('appUpdateLatest');
+  const title=document.getElementById('appUpdateTitle');
+  const msg=document.getElementById('appUpdateMessage');
+  const restartActions=document.getElementById('appUpdateRestartActions');
+  const minorActions=document.getElementById('appUpdateMinorActions');
+  const guide=document.getElementById('appUpdateGuide');
   if(cur)cur.textContent=`v${APP_VERSION}`;
   if(lat)lat.textContent=`v${latest}`;
+  if(guide)guide.classList.remove('show');
+  if(mode==='restart'){
+    if(title)title.textContent='再起動が必要な更新があります';
+    if(msg)msg.textContent='更新前にメインデータのバックアップを作成してください。';
+    if(restartActions)restartActions.style.display='grid';
+    if(minorActions)minorActions.style.display='none';
+  }else{
+    if(title)title.textContent='新しいバージョンがあります';
+    if(msg)msg.textContent='間もなく最新バージョンに変更になります。そのままご使用いただけます。';
+    if(restartActions)restartActions.style.display='none';
+    if(minorActions)minorActions.style.display='block';
+  }
   if(modal)modal.classList.add('show');
 }
 function dismissAppUpdateNotice(){
@@ -8340,7 +8353,7 @@ async function copyManagerAppUrl(){
     ta.remove();
   }
 }
-setTimeout(()=>checkLatestAppVersionOnceDaily(),1200);
+setTimeout(()=>checkLatestAppVersionOnLaunch(),1200);
 </script>
 </body>
 </html>
