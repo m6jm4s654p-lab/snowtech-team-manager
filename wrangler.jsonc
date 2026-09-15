@@ -1,0 +1,5 @@
+{
+  "name": "snowtech-saj-api",
+  "compatibility_date": "2026-09-11",
+  "main": "worker.js"
+}

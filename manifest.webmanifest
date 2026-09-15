@@ -1,28 +1,21 @@
 {
-  "name": "Alpine Team Manager by TechBit",
-  "short_name": "Alpine Team Manager",
+  "name": "Alpine Team Manager",
+  "short_name": "Alpine Manager",
   "start_url": "./",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#0b2f58",
+  "background_color": "#07111f",
+  "theme_color": "#07111f",
   "icons": [
     {
       "src": "snowtech-icon-192.png",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
+      "type": "image/png"
     },
     {
       "src": "snowtech-icon-512.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "snowtech-icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
+      "type": "image/png"
     }
   ]
 }

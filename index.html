@@ -3057,8 +3057,8 @@ header{
     <div id="backupStatus" class="backup-status"></div>
     <div class="toolbar">
       <button class="btn" onclick="exportJson()">バックアップ書き出し</button>
-      <label class="btn" style="display:inline-block">バックアップ読込<input class="hidden" type="file" accept=".json" onchange="importJson(event)"></label>
-      <button class="btn primary" onclick="shareBackupLink()">LINEでバックアップ共有</button>
+      <label class="btn" style="display:inline-block">バックアップ読込<input class="hidden" type="file" accept=".json,.txt,application/json,text/plain" onchange="importJson(event)"></label>
+      <button class="btn primary" onclick="shareBackupFile()">LINEでバックアップ共有</button>
       <button class="btn danger" onclick="resetAll()">全データ削除</button>
     </div>
   </div>
@@ -6119,23 +6119,42 @@ async function shareSupporterUpdateFile(){
   }
 }
 
-function exportJson(){
-  db.team=db.team||{};
-  db.team.lastBackupAt=new Date().toISOString();
-  persistDb({silent:true});
-
-  const stamp=new Date().toISOString().slice(0,10).replaceAll('-','');
-  const blob=new Blob([JSON.stringify(db,null,2)],{type:'text/plain;charset=utf-8'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url;
-  a.download=`alpine-team-manager-backup-${stamp}.json`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
-  renderBackupStatus();
+const BACKUP_FILE_SCHEMA='alpine-team-manager-backup-v2';
+function buildBackupEnvelope(){
+  return {schema:BACKUP_FILE_SCHEMA,version:2,appVersion:APP_VERSION,exportedAt:new Date().toISOString(),data:db};
 }
+function backupFilename(){
+  return `alpine-team-manager-backup-${new Date().toISOString().slice(0,10).replaceAll('-','')}.json`;
+}
+function makeBackupFile(){
+  return new File([JSON.stringify(buildBackupEnvelope(),null,2)],backupFilename(),{type:'application/json;charset=utf-8'});
+}
+function downloadBackupFile(file){
+  const url=URL.createObjectURL(file),a=document.createElement('a');
+  a.href=url;a.download=file.name;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+}
+function markBackupCreated(){
+  db.team=db.team||{};db.team.lastBackupAt=new Date().toISOString();persistDb({silent:true});renderBackupStatus();
+}
+function exportJson(){markBackupCreated();downloadBackupFile(makeBackupFile());}
+async function shareBackupFile(){
+  markBackupCreated();
+  const file=makeBackupFile(),team=(db.team?.name||'Alpine Team Manager').trim();
+  try{
+    if(navigator.share && (!navigator.canShare || navigator.canShare({files:[file]}))){
+      await navigator.share({title:'Alpine Team Manager バックアップ',text:`${team} のバックアップファイルです。`,files:[file]});
+      return;
+    }
+    downloadBackupFile(file);
+    alert('バックアップを保存しました。LINEの「＋」→「ファイル」からこのJSONファイルを送信してください。');
+  }catch(e){
+    if(e?.name==='AbortError')return;
+    downloadBackupFile(file);
+    alert('共有メニューを開けなかったため、バックアップを保存しました。LINEの「＋」→「ファイル」から送信してください。');
+  }
+}
+
 function sanitizeImportedValue(v,depth=0){
   if(depth>12)return null;
   if(v===null || typeof v==='boolean')return v;
@@ -6159,7 +6178,11 @@ const BACKUP_SHARE_QUERY='atmShare';
 
 function normalizeImportedDb(parsed){
   if(!parsed || typeof parsed!=='object' || Array.isArray(parsed))throw new Error('形式不正');
-  const clean=sanitizeImportedValue(parsed);
+  let source=parsed;
+  if(parsed.schema===BACKUP_FILE_SCHEMA && parsed.data)source=parsed.data;
+  else if(parsed.schema===BACKUP_SHARE_SCHEMA && parsed.data)source=parsed.data;
+  else if(parsed.data && typeof parsed.data==='object' && (parsed.data.team||Array.isArray(parsed.data.athletes)||Array.isArray(parsed.data.events)))source=parsed.data;
+  const clean=sanitizeImportedValue(source);
   clean.team=(clean.team && typeof clean.team==='object' && !Array.isArray(clean.team))?clean.team:{};
   clean.coaches=Array.isArray(clean.coaches)?clean.coaches:[];
   clean.athletes=Array.isArray(clean.athletes)?clean.athletes:[];
@@ -6289,23 +6312,24 @@ async function importBackupFromShareLink(){
     alert(`共有バックアップを読み込めませんでした。${e?.message?'\n'+e.message:''}`);
   }
 }
-function importJson(ev){
-  const f=ev.target.files[0];if(!f)return;
-  if(f.size>5*1024*1024){alert('バックアップファイルが大きすぎます（上限5MB）。');ev.target.value='';return;}
-  const r=new FileReader();
-  r.onload=()=>{
-    try{
-      const parsed=JSON.parse(r.result);
-      db=normalizeImportedDb(parsed);
-      save();
-      alert('読込完了');
-    }catch{
-      alert('バックアップJSONの形式を確認してください');
-    }finally{
-      ev.target.value='';
-    }
-  };
-  r.readAsText(f);
+async function importJson(ev){
+  const input=ev?.target,f=input?.files?.[0];if(!f)return;
+  try{
+    if(f.size>10*1024*1024)throw new Error('ファイルが大きすぎます（上限10MB）');
+    let raw=(await f.text()).replace(/^\uFEFF/,'').trim();
+    if(!raw)throw new Error('ファイルが空です');
+    let parsed=JSON.parse(raw);
+    if(typeof parsed==='string' && parsed.trim().startsWith('{'))parsed=JSON.parse(parsed.trim());
+    const clean=normalizeImportedDb(parsed);
+    const ok=confirm(`バックアップを読み込みます。\n\nチーム：${clean.team?.name||'名称未設定'}\n選手：${clean.athletes.length}名\nコーチ：${clean.coaches.length}名\n大会：${clean.events.length}件\n年間予定：${clean.schedules.length}件\n\n現在の端末データを置き換えますか？`);
+    if(!ok)return;
+    db=clean;
+    if(!persistDb())throw new Error('端末への保存に失敗しました');
+    renderAll();alert('バックアップの読込が完了しました。');
+  }catch(e){
+    console.error('バックアップ読込失敗',e);
+    alert(`バックアップを読み込めませんでした。\n${e?.message||'JSON形式を確認してください'}`);
+  }finally{if(input)input.value='';}
 }
 
 function renderBackupStatus(){
@@ -8205,7 +8229,7 @@ async function refreshAppCacheOnLaunch(){
   if(!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=01375',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=01376',{updateViaCache:'none'});
 
     if(reg.waiting){
       reg.waiting.postMessage({type:'SKIP_WAITING'});
@@ -8288,7 +8312,7 @@ function goHome(){
 
 
 // v0.13.74: current-season K2 classification + dynamic header version. Team data in localStorage is never cleared.
-const APP_VERSION='0.13.75';
+const APP_VERSION='0.13.76';
 function syncHeaderAppVersion(){
   const el=document.getElementById('headerAppVersion');
   if(el)el.textContent=`v${APP_VERSION}`;
