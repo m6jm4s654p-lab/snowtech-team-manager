@@ -5015,8 +5015,8 @@ function goHome(){
 
 
 
-// v0.13.69: check the published app version on every app launch.
-const APP_VERSION='0.13.70';
+// v0.13.71: check every launch and apply minor updates without deleting local data.
+const APP_VERSION='0.13.71';
 const APP_PUBLIC_URL='https://m6jm4s654p-lab.github.io/snowtech-team-manager/';
 function compareAppVersions(a,b){
   const aa=String(a||'').replace(/^v/i,'').split('.').map(n=>parseInt(n,10)||0);
@@ -5024,6 +5024,42 @@ function compareAppVersions(a,b){
   const len=Math.max(aa.length,bb.length);
   for(let i=0;i<len;i++){const x=aa[i]||0,y=bb[i]||0;if(x!==y)return x>y?1:-1;}
   return 0;
+}
+async function applyMinorAppUpdate(latest){
+  const sync=document.getElementById('syncState');
+  const attemptKey=`alpine_team_manager_update_attempt_${latest}`;
+  if(sessionStorage.getItem(attemptKey)==='1'){
+    if(sync){sync.textContent='○ 更新ファイル反映待ち';sync.className='sync status-warn';}
+    showAppUpdateNotice(latest,'pending');
+    return;
+  }
+  sessionStorage.setItem(attemptKey,'1');
+  if(sync){
+    sync.textContent=`● v${latest}へ更新中…`;
+    sync.className='sync status-ok';
+  }
+  try{
+    // Cache Storage / Service Worker only are refreshed. localStorage (team data) is untouched.
+    if('serviceWorker' in navigator){
+      const regs=await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(reg=>reg.unregister().catch(()=>false)));
+    }
+    if('caches' in window){
+      const keys=await caches.keys();
+      await Promise.all(keys.map(key=>caches.delete(key).catch(()=>false)));
+    }
+    if(sync)sync.textContent='● 更新完了・再起動します…';
+    await new Promise(resolve=>setTimeout(resolve,500));
+    const u=new URL('./',location.href);
+    u.searchParams.set('app_update',latest);
+    u.searchParams.set('_',Date.now().toString());
+    location.replace(u.href);
+  }catch(e){
+    console.warn('アプリ自動更新失敗',e);
+    sessionStorage.removeItem(attemptKey);
+    if(sync){sync.textContent='○ 自動更新失敗';sync.className='sync status-warn';}
+    showAppUpdateNotice(latest,'pending');
+  }
 }
 async function checkLatestAppVersionOnLaunch(){
   const sync=document.getElementById('syncState');
@@ -5038,7 +5074,19 @@ async function checkLatestAppVersionOnLaunch(){
     const latest=String(data?.version||'').replace(/^v/i,'').trim();
     if(!latest)throw new Error('version missing');
     if(compareAppVersions(latest,APP_VERSION)>0){
-      showAppUpdateNotice(latest, data?.restartRequired===true ? 'restart' : 'minor');
+      if(data?.restartRequired===true){
+        showAppUpdateNotice(latest,'restart');
+        if(sync)sync.textContent=`● v${latest} 更新確認済み`;
+      }else{
+        showAppUpdateNotice(latest,'minor');
+        setTimeout(()=>applyMinorAppUpdate(latest),900);
+      }
+      return;
+    }
+    // Successful launch of the newest version: clear obsolete update-attempt markers.
+    for(let i=sessionStorage.length-1;i>=0;i--){
+      const k=sessionStorage.key(i);
+      if(k && k.startsWith('alpine_team_manager_update_attempt_'))sessionStorage.removeItem(k);
     }
     if(sync)onlineState();
   }catch(e){
@@ -5062,7 +5110,12 @@ function showAppUpdateNotice(latest,mode='minor'){
   if(cur)cur.textContent=`v${APP_VERSION}`;
   if(lat)lat.textContent=`v${latest}`;
   if(guide)guide.classList.remove('show');
-  if(mode==='restart'){
+  if(mode==='pending'){
+    if(title)title.textContent='更新ファイルの反映待ちです';
+    if(msg)msg.textContent='公開側の更新反映を待っています。少し時間をおいてアプリを再起動してください。端末データは保持されています。';
+    if(restartActions)restartActions.style.display='none';
+    if(minorActions)minorActions.style.display='block';
+  }else if(mode==='restart'){
     if(title)title.textContent='再起動が必要な更新があります';
     if(msg)msg.textContent='更新前にメインデータのバックアップを作成してください。';
     if(restartActions)restartActions.style.display='grid';
