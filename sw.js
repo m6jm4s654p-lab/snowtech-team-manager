@@ -1,86 +1,41 @@
-const CACHE='snowtech-alpine-v01356';
-const CACHE_PREFIX='snowtech-alpine-';
-const ASSETS=[
-  './','./index.html','./manifest.webmanifest','./snowtech-logo.png',
-  './alpine-team-manager-logo.png',
-  './alpine-team-manager-og-v01350.png','./snowtech-icon-192.png',
-  './snowtech-icon-512.png','./apple-touch-icon.png'
-];
-
+const CACHE_NAME='alpine-team-manager-v01372';
+const CORE=['./','./index.html','./app.js','./manifest.webmanifest'];
 self.addEventListener('install',event=>{
-  event.waitUntil((async()=>{
-    const cache=await caches.open(CACHE);
-    await cache.addAll(ASSETS);
-    await self.skipWaiting();
-  })());
+  self.skipWaiting();
+  event.waitUntil(caches.open(CACHE_NAME).then(c=>Promise.allSettled(CORE.map(u=>c.add(new Request(u,{cache:'reload'}))))));
 });
-
 self.addEventListener('activate',event=>{
   event.waitUntil((async()=>{
     const keys=await caches.keys();
-    await Promise.all(
-      keys
-        .filter(k=>k.startsWith(CACHE_PREFIX) && k!==CACHE)
-        .map(k=>caches.delete(k))
-    );
+    await Promise.all(keys.filter(k=>k!==CACHE_NAME).map(k=>caches.delete(k)));
     await self.clients.claim();
   })());
 });
-
+self.addEventListener('message',event=>{if(event.data?.type==='SKIP_WAITING')self.skipWaiting();});
 self.addEventListener('fetch',event=>{
-  const req=event.request;
-  if(req.method!=='GET')return;
-
-  const url=new URL(req.url);
+  if(event.request.method!=='GET')return;
+  const url=new URL(event.request.url);
   if(url.origin!==self.location.origin)return;
-
-  if(req.mode==='navigate'){
+  if(event.request.mode==='navigate'){
     event.respondWith((async()=>{
-      const cached=(await caches.match('./index.html')) || (await caches.match('./'));
-
-      // Installed PWA: show the cached app shell immediately.
-      // Refresh in the background so weak/unstable radio does not delay the title screen.
-      if(cached){
-        const refresh=(async()=>{
-          try{
-            const fresh=await fetch(req);
-            if(fresh && fresh.ok){
-              const cache=await caches.open(CACHE);
-              await cache.put('./index.html',fresh.clone());
-            }
-          }catch{}
-        })();
-        event.waitUntil(refresh);
-        return cached;
-      }
-
-      // First-ever load still requires the network because no cache exists yet.
       try{
-        const fresh=await fetch(req);
-        if(fresh && fresh.ok){
-          const cache=await caches.open(CACHE);
-          cache.put('./index.html',fresh.clone()).catch(()=>{});
-        }
+        const fresh=await fetch(event.request,{cache:'no-store'});
+        if(fresh && fresh.ok){const c=await caches.open(CACHE_NAME);c.put('./index.html',fresh.clone()).catch(()=>{});}
         return fresh;
-      }catch{
-        return Response.error();
-      }
+      }catch(e){return (await caches.match('./index.html')) || Response.error();}
     })());
     return;
   }
-
+  // version.json must always come from the network so update checks cannot be stale.
+  if(url.pathname.endsWith('/version.json')){
+    event.respondWith(fetch(event.request,{cache:'no-store'}));
+    return;
+  }
   event.respondWith((async()=>{
-    const cached=await caches.match(req);
-    if(cached)return cached;
-    const resp=await fetch(req);
-    if(resp && resp.ok && ['style','script','image','manifest','font'].includes(req.destination)){
-      const cache=await caches.open(CACHE);
-      cache.put(req,resp.clone()).catch(()=>{});
-    }
-    return resp;
+    try{
+      const fresh=await fetch(event.request);
+      if(fresh && fresh.ok){const c=await caches.open(CACHE_NAME);c.put(event.request,fresh.clone()).catch(()=>{});}
+      return fresh;
+    }catch(e){return (await caches.match(event.request)) || Response.error();}
   })());
-});
-
-self.addEventListener('message',event=>{
-  if(event.data && event.data.type==='SKIP_WAITING')self.skipWaiting();
 });

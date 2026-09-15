@@ -4933,7 +4933,7 @@ async function refreshAppCacheOnLaunch(){
   if(!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=01370',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=01372',{updateViaCache:'none'});
 
     if(reg.waiting){
       reg.waiting.postMessage({type:'SKIP_WAITING'});
@@ -5015,8 +5015,8 @@ function goHome(){
 
 
 
-// v0.13.71: check every launch and apply minor updates without deleting local data.
-const APP_VERSION='0.13.71';
+// v0.13.72: reliable update foundation. Team data in localStorage is never cleared.
+const APP_VERSION='0.13.72';
 const APP_PUBLIC_URL='https://m6jm4s654p-lab.github.io/snowtech-team-manager/';
 function compareAppVersions(a,b){
   const aa=String(a||'').replace(/^v/i,'').split('.').map(n=>parseInt(n,10)||0);
@@ -5028,36 +5028,53 @@ function compareAppVersions(a,b){
 async function applyMinorAppUpdate(latest){
   const sync=document.getElementById('syncState');
   const attemptKey=`alpine_team_manager_update_attempt_${latest}`;
-  if(sessionStorage.getItem(attemptKey)==='1'){
-    if(sync){sync.textContent='○ 更新ファイル反映待ち';sync.className='sync status-warn';}
+  const attempts=Number(sessionStorage.getItem(attemptKey)||0);
+  if(attempts>=2){
+    if(sync){sync.textContent='○ 更新反映待ち';sync.className='sync status-warn';}
     showAppUpdateNotice(latest,'pending');
     return;
   }
-  sessionStorage.setItem(attemptKey,'1');
-  if(sync){
-    sync.textContent=`● v${latest}へ更新中…`;
-    sync.className='sync status-ok';
-  }
+  sessionStorage.setItem(attemptKey,String(attempts+1));
+  if(sync){sync.textContent=`● v${latest}へ更新中…`;sync.className='sync status-ok';}
   try{
-    // Cache Storage / Service Worker only are refreshed. localStorage (team data) is untouched.
-    if('serviceWorker' in navigator){
-      const regs=await navigator.serviceWorker.getRegistrations();
-      await Promise.all(regs.map(reg=>reg.unregister().catch(()=>false)));
+    // Ask the browser for a brand-new worker script. The worker uses network-first
+    // navigation, so the next reload is not trapped by an old cached index.html.
+    if('serviceWorker' in navigator && location.protocol.startsWith('http')){
+      const reg=await navigator.serviceWorker.register(`./sw.js?release=${encodeURIComponent(latest)}&t=${Date.now()}`,{updateViaCache:'none'});
+      await reg.update().catch(()=>{});
+      if(reg.waiting)reg.waiting.postMessage({type:'SKIP_WAITING'});
+      if(reg.installing){
+        await new Promise(resolve=>{
+          const w=reg.installing;
+          const timer=setTimeout(resolve,3500);
+          w.addEventListener('statechange',()=>{
+            if(w.state==='activated' || w.state==='redundant'){clearTimeout(timer);resolve();}
+            if(w.state==='installed'){w.postMessage({type:'SKIP_WAITING'});}
+          });
+        });
+      }
     }
+    // Remove only Cache Storage. localStorage/IndexedDB are deliberately untouched.
     if('caches' in window){
       const keys=await caches.keys();
       await Promise.all(keys.map(key=>caches.delete(key).catch(()=>false)));
     }
-    if(sync)sync.textContent='● 更新完了・再起動します…';
-    await new Promise(resolve=>setTimeout(resolve,500));
+    // Verify that the published index itself already contains the requested release
+    // before claiming success or reloading.
+    const verifyUrl=`./index.html?verify=${encodeURIComponent(latest)}&t=${Date.now()}`;
+    const vr=await fetch(verifyUrl,{cache:'no-store',headers:{'Cache-Control':'no-cache'}});
+    const html=vr.ok?await vr.text():'';
+    const expected=`const APP_VERSION='${latest}'`;
+    if(!vr.ok || !html.includes(expected))throw new Error('published index not ready');
+    if(sync)sync.textContent='● 更新ファイル取得完了・再起動します…';
+    await new Promise(resolve=>setTimeout(resolve,650));
     const u=new URL('./',location.href);
-    u.searchParams.set('app_update',latest);
+    u.searchParams.set('app_release',latest);
     u.searchParams.set('_',Date.now().toString());
     location.replace(u.href);
   }catch(e){
-    console.warn('アプリ自動更新失敗',e);
-    sessionStorage.removeItem(attemptKey);
-    if(sync){sync.textContent='○ 自動更新失敗';sync.className='sync status-warn';}
+    console.warn('アプリ自動更新保留',e);
+    if(sync){sync.textContent='○ 更新ファイル反映待ち';sync.className='sync status-warn';}
     showAppUpdateNotice(latest,'pending');
   }
 }
