@@ -1,5 +1,5 @@
 /**
- * SnowTech SAJ API v0.13.56
+ * SnowTech SAJ API v0.13.74
  * GET /api/saj-athlete?saj=03028493
  *
  * Strategy:
@@ -201,7 +201,7 @@ export default {
       return cors(json({ok:false,error:"Method not allowed"},405), env, request);
     }
     if (url.pathname === "/health") {
-      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.13.56"}), env, request);
+      return cors(json({ok:true,service:"snowtech-saj-api",version:"0.13.74"}), env, request);
     }
 
     if (url.pathname === "/api/debug-competition-calendar") {
@@ -1156,14 +1156,18 @@ async function getRawText(url){
   return await r.text();
 }
 
-function getTargetSeasons(now=new Date()){
-  // SAJの「現在シーズン」はアプリ画面で選択されたシーズンではなく、
-  // 実際の現在日付（日本時間）から自動判定する。7月1日をシーズン切替日とする。
+function getCurrentSeason(now=new Date()){
+  // K2 / 一般の区分判定は、ポイントデータの取得元シーズンではなく
+  // 実際の現在日付（日本時間）のシーズンを基準にする。7月1日を切替日とする。
   const jst=new Date(now.getTime()+9*60*60*1000);
   const y=jst.getUTCFullYear();
   const m=jst.getUTCMonth()+1;
-  const current=(m>=7)?y+1:y;
-  // 現在シーズンに対象性別の有効なポイントZIPが無い場合のみ1シーズン前へフォールバック。
+  return (m>=7)?y+1:y;
+}
+function getTargetSeasons(now=new Date()){
+  const current=getCurrentSeason(now);
+  // ポイントデータだけは、現在シーズンに有効なZIPが無い場合に1シーズン前へフォールバックする。
+  // カテゴリー判定はフォールバックさせない。
   return [current,current-1];
 }
 
@@ -1671,6 +1675,7 @@ function assignAllRankingPositions(rows, discipline){
 
 async function lookupAthleteNationalRanks({sex,sajs}){
   const wanted=new Set(sajs);
+  const categorySeason=getCurrentSeason();
   let lastError=null;
   for(const season of getTargetSeasons()){
     try{
@@ -1678,7 +1683,7 @@ async function lookupAthleteNationalRanks({sex,sajs}){
       if(!fetched.rows.length)continue;
 
       const categories={
-        k2:fetched.rows.filter(r=>isK2BirthForSeason(r.birth,season)),
+        k2:fetched.rows.filter(r=>isK2BirthForSeason(r.birth,categorySeason)),
         general:fetched.rows // 一般順位はK2を含む全選手を対象
       };
       const rankMaps={};
@@ -1698,7 +1703,7 @@ async function lookupAthleteNationalRanks({sex,sajs}){
           athletes.push({saj,found:false,category:null,categoryLabel:"—",ranks:{SL:null,GS:null,SG:null}});
           continue;
         }
-        const category=isK2BirthForSeason(row.birth,season)?"k2":"general";
+        const category=isK2BirthForSeason(row.birth,categorySeason)?"k2":"general";
         athletes.push({
           saj,
           found:true,
@@ -1716,6 +1721,8 @@ async function lookupAthleteNationalRanks({sex,sajs}){
           season,
           seasonLabel:`${season-1}/${season}`,
           pointListNumber:fetched.pointListNumber,
+          categorySeason,
+          categorySeasonLabel:`${categorySeason-1}/${categorySeason}`,
           sex,
           athletes,
           source:fetched.source,
@@ -1729,6 +1736,7 @@ async function lookupAthleteNationalRanks({sex,sajs}){
 }
 
 async function lookupNationalPointRanking({sex,category,discipline}){
+  const categorySeason=getCurrentSeason();
   let lastError=null;
   for(const season of getTargetSeasons()){
     try{
@@ -1737,7 +1745,7 @@ async function lookupNationalPointRanking({sex,category,discipline}){
 
       // Category is derived after the full national dataset is obtained.
       const filtered=fetched.rows.filter(r=>{
-        const k2=isK2BirthForSeason(r.birth,season);
+        const k2=isK2BirthForSeason(r.birth,categorySeason);
         return category==="k2"?k2:!k2;
       });
       const ranking=assignRankingPositions(filtered,discipline);
@@ -1746,6 +1754,8 @@ async function lookupNationalPointRanking({sex,category,discipline}){
           season,
           seasonLabel:`${season-1}/${season}`,
           pointListNumber:fetched.pointListNumber,
+          categorySeason,
+          categorySeasonLabel:`${categorySeason-1}/${categorySeason}`,
           sex,
           category,
           discipline,
@@ -1764,7 +1774,9 @@ async function lookupNationalPointRanking({sex,category,discipline}){
   }
   if(lastError)throw lastError;
   return {
-    season:null,seasonLabel:"",pointListNumber:null,sex,category,discipline,
+    season:null,seasonLabel:"",pointListNumber:null,
+    categorySeason:getCurrentSeason(),categorySeasonLabel:`${getCurrentSeason()-1}/${getCurrentSeason()}`,
+    sex,category,discipline,
     ranking:[],totalRows:0,categoryRows:0,source:"",sourcePages:0,
     cacheStatus:"MISS",cacheAgeSeconds:0,cacheTtlSeconds:SAJ_RANKING_CACHE_SECONDS,
     k2Definition:"中学生＋高校1年早生まれ"

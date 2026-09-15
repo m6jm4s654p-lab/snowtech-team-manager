@@ -4636,7 +4636,7 @@ function toggleItemHelp(index){
 // ===== v0.13.69 National SAJ point ranking: persistent weekly cache =====
 let nationalRankingState={category:'k2',sex:'男',discipline:'SL'};
 const nationalRankingCache=new Map();
-const NATIONAL_RANKING_STORAGE_KEY='alpine_team_manager_national_top30_v1';
+const NATIONAL_RANKING_STORAGE_KEY='alpine_team_manager_national_top30_v2';
 const NATIONAL_RANKING_COMBOS=[['k2','男','SL'],['k2','男','GS'],['k2','男','SG'],['k2','女','SL'],['k2','女','GS'],['k2','女','SG'],['general','男','SL'],['general','男','GS'],['general','男','SG'],['general','女','SL'],['general','女','GS'],['general','女','SG']];
 function nationalRankingKey(s=nationalRankingState){return `${s.category}|${s.sex}|${s.discipline}`;}
 function loadNationalRankingCacheFromStorage(){try{const x=JSON.parse(localStorage.getItem(NATIONAL_RANKING_STORAGE_KEY)||'null');nationalRankingCache.clear();Object.entries(x?.data||{}).forEach(([k,v])=>{if(v)nationalRankingCache.set(k,v)});return x&&typeof x==='object'?x:null}catch(e){console.warn('全国TOP30キャッシュ読込失敗',e);return null}}
@@ -5723,7 +5723,7 @@ function athleteAgeYears(birth){
 
 const rankingAthleteNationalRankCache=new Map();
 let rankingAthleteNationalRankRequestSeq=0;
-const NATIONAL_RANK_CACHE_KEY='alpine_team_manager_national_rank_cache_v1';
+const NATIONAL_RANK_CACHE_KEY='alpine_team_manager_national_rank_cache_v2';
 
 function normalizeSajNumberForRank(v){
   const n=String(v||'').replace(/\D/g,'');
@@ -8204,7 +8204,7 @@ async function refreshAppCacheOnLaunch(){
   if(!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=01373',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=01374',{updateViaCache:'none'});
 
     if(reg.waiting){
       reg.waiting.postMessage({type:'SKIP_WAITING'});
@@ -8286,8 +8286,8 @@ function goHome(){
 
 
 
-// v0.13.73: reliable update foundation + dynamic header version. Team data in localStorage is never cleared.
-const APP_VERSION='0.13.73';
+// v0.13.74: current-season K2 classification + dynamic header version. Team data in localStorage is never cleared.
+const APP_VERSION='0.13.74';
 function syncHeaderAppVersion(){
   const el=document.getElementById('headerAppVersion');
   if(el)el.textContent=`v${APP_VERSION}`;
