@@ -1717,6 +1717,79 @@ function homeDateColor(ds){
   if(d.getDay()===6)return'#0066cc';
   return'inherit';
 }
+const HOME_SCHEDULE_VIEW_KEY='alpine_team_manager_home_schedule_view_v1';
+function homeScheduleView(){
+  const v=localStorage.getItem(HOME_SCHEDULE_VIEW_KEY);
+  return v==='calendar'?'calendar':'week';
+}
+function setHomeScheduleView(view){
+  const next=view==='calendar'?'calendar':'week';
+  localStorage.setItem(HOME_SCHEDULE_VIEW_KEY,next);
+  applyHomeScheduleView();
+}
+function applyHomeScheduleView(){
+  const view=homeScheduleView();
+  const week=document.getElementById('homeWeekPanel');
+  const cal=document.getElementById('homeCalendarPanel');
+  const wc=document.getElementById('homeViewWeekCheck');
+  const cc=document.getElementById('homeViewCalendarCheck');
+  if(wc)wc.checked=view==='week';
+  if(cc)cc.checked=view==='calendar';
+  if(week)week.hidden=view!=='week';
+  if(cal)cal.hidden=view!=='calendar';
+  if(view==='calendar')positionHomeVerticalCalendar();
+}
+function homeCalendarMonths(){
+  const y=selectedGlobalSeasonYear();
+  return [5,6,7,8,9,10,11,12].map(month=>({year:y,month}))
+    .concat([1,2,3,4].map(month=>({year:y+1,month})));
+}
+function homeCalendarItems(){
+  const out=[],seen=new Set();
+  const add=(date,title,source='schedule')=>{
+    const d=String(date||'').slice(0,10);
+    if(!d)return;
+    const key=`${d}|${String(title||'').trim().toLowerCase()}|${source}`;
+    if(seen.has(key))return;
+    seen.add(key);out.push({date:d,title:title||'予定',source});
+  };
+  (db.schedules||[]).forEach(x=>add(x.date,x.title||x.type||'予定','schedule'));
+  (db.events||[]).forEach(x=>{
+    const dates=enumerateDates(x.start,x.end||x.start);
+    dates.forEach(d=>add(d,x.title||'大会','event'));
+  });
+  return out.sort((a,b)=>a.date.localeCompare(b.date));
+}
+function renderHomeCalendarMonth({year,month},all){
+  const first=new Date(year,month-1,1).getDay();
+  const last=new Date(year,month,0).getDate();
+  const cells=[];
+  for(let i=0;i<first;i++)cells.push('<div class="home-calendar-day blank"></div>');
+  for(let day=1;day<=last;day++){
+    const ds=`${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const dow=new Date(year,month-1,day).getDay();
+    const holiday=JP_HOLIDAYS.has(ds);
+    const items=all.filter(x=>x.date===ds);
+    const cls=holiday?'holiday':dow===0?'sun':dow===6?'sat':'';
+    cells.push(`<div class="home-calendar-day ${cls}"><span class="home-calendar-day-number">${day}</span>${items.map(x=>`<span class="home-calendar-item ${x.source==='event'?'competition':''}">${esc(x.title)}</span>`).join('')}</div>`);
+  }
+  while(cells.length%7)cells.push('<div class="home-calendar-day blank"></div>');
+  return `<section id="home-month-${year}-${String(month).padStart(2,'0')}" class="home-month-calendar"><h3>${year}年 ${month}月</h3><div class="home-calendar-weekdays"><div class="home-calendar-weekday sun">日</div><div class="home-calendar-weekday">月</div><div class="home-calendar-weekday">火</div><div class="home-calendar-weekday">水</div><div class="home-calendar-weekday">木</div><div class="home-calendar-weekday">金</div><div class="home-calendar-weekday sat">土</div></div><div class="home-calendar-days">${cells.join('')}</div></section>`;
+}
+function positionHomeVerticalCalendar(){
+  const list=document.getElementById('homeCalendarMonthList');
+  if(!list)return;
+  list.scrollTop=0;
+  const now=new Date();
+  const target=document.getElementById(`home-month-${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`);
+  if(target)requestAnimationFrame(()=>{list.scrollTop=Math.max(0,target.offsetTop-list.offsetTop)});
+}
+function renderHomeVerticalCalendar(){
+  const box=document.getElementById('homeVerticalCalendar');
+  if(!box)return;
+  const all=homeCalendarItems();
+  box.innerHTML=`<div id="homeCalendarMonthList" class="home-calendar-month-list">${homeCalendarMonths().map(x=>renderHomeCalendarMonth(x,all)).join('')}</div>`;
+}
 function renderHome(){
   const wrap=document.getElementById('homeWeekSchedule');
   if(!wrap)return;
@@ -1763,6 +1836,8 @@ function renderHome(){
     </div>`);
   }
   wrap.innerHTML=rows.join('');
+  renderHomeVerticalCalendar();
+  applyHomeScheduleView();
 }
 
 
@@ -2827,6 +2902,33 @@ function downloadSupporterUpdateFile(file){
   a.href=url;a.download=file.name;document.body.appendChild(a);a.click();a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
+async function shareManagerApp(){
+  const url='https://m6jm4s654p-lab.github.io/snowtech-team-manager/';
+  const text=`アルペンスキーチーム向けの管理アプリ「Alpine Team Manager」です。
+選手・大会・年間予定・ランキングなどをまとめて管理できます。
+
+${url}`;
+  try{
+    if(navigator.share){
+      await navigator.share({
+        title:'Alpine Team Manager',
+        text
+      });
+      return;
+    }
+    await navigator.clipboard.writeText(text);
+    alert('紹介文とURLをコピーしました。LINEに貼り付けて送信してください。');
+  }catch(e){
+    if(e?.name==='AbortError')return;
+    try{
+      await navigator.clipboard.writeText(text);
+      alert('紹介文とURLをコピーしました。LINEに貼り付けて送信してください。');
+    }catch(_){
+      prompt('この紹介文をコピーしてLINEで送信してください。',text);
+    }
+  }
+}
+
 async function shareSupporterUpdateFile(){
   const envelope=await buildSupporterUpdateEnvelope();
   const file=new File([JSON.stringify(envelope)],supporterUpdateFilename(),{type:'text/plain;charset=utf-8'});
@@ -4958,7 +5060,7 @@ async function refreshAppCacheOnLaunch(){
   if(!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=01376',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=01378',{updateViaCache:'none'});
 
     if(reg.waiting){
       reg.waiting.postMessage({type:'SKIP_WAITING'});
@@ -5041,7 +5143,7 @@ function goHome(){
 
 
 // v0.13.74: current-season K2 classification + dynamic header version. Team data in localStorage is never cleared.
-const APP_VERSION='0.13.76';
+const APP_VERSION='0.13.78';
 function syncHeaderAppVersion(){
   const el=document.getElementById('headerAppVersion');
   if(el)el.textContent=`v${APP_VERSION}`;

@@ -270,6 +270,24 @@ footer{color:var(--muted);text-align:center;padding:24px 0}
 .home-week-row{display:grid;grid-template-columns:100px 1fr;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
 .home-week-date{font-weight:700}
 .home-week-empty{color:var(--muted)}
+.home-schedule-view-select{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin:0 0 12px;padding:8px 10px;background:rgba(255,255,255,.025);border:1px solid var(--line);border-radius:10px}
+.home-schedule-view-select label{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;cursor:pointer}
+.home-schedule-view-select input{width:auto;margin:0}
+.home-calendar-month-list{display:flex;flex-direction:column;gap:14px;max-height:calc(100dvh - 235px);overflow-y:auto;overscroll-behavior:contain;scroll-behavior:smooth;padding-right:2px;scrollbar-gutter:stable}
+.home-month-calendar{background:#0a1827;border:1px solid var(--line);border-radius:13px;padding:10px;scroll-margin-top:6px}
+.home-month-calendar h3{margin:0 0 9px;color:var(--text);font-size:16px;text-align:center}
+.home-calendar-weekdays,.home-calendar-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}
+.home-calendar-weekday{text-align:center;color:var(--muted);font-size:11px;font-weight:800;padding:3px 0}
+.home-calendar-weekday.sun{color:#ff6b6b}.home-calendar-weekday.sat{color:#61a9ff}
+.home-calendar-day{min-height:72px;background:#0d1b2a;border:1px solid rgba(255,255,255,.06);border-radius:7px;padding:4px;overflow:hidden}
+.home-calendar-day.blank{background:transparent;border-color:transparent}
+.home-calendar-day-number{display:block;font-size:12px;font-weight:900;color:#fff}
+.home-calendar-day.sun .home-calendar-day-number,.home-calendar-day.holiday .home-calendar-day-number{color:#ff6b6b}
+.home-calendar-day.sat:not(.holiday) .home-calendar-day-number{color:#61a9ff}
+.home-calendar-item{display:block;background:#173b5a;border-left:2px solid #5fc9ff;border-radius:3px;color:#eff8ff;font-size:9px;line-height:1.2;padding:2px 3px;margin-top:3px;word-break:break-word}
+.home-calendar-item.competition{background:#f3c487;border-left-color:#e89a3d;color:#3c260f}
+@media(max-width:600px){.home-calendar-month-list{max-height:calc(100dvh - 210px)}.home-calendar-day{min-height:62px;padding:3px}.home-calendar-day-number{font-size:11px}.home-calendar-item{font-size:8px;padding:2px}}
+
 @media(max-width:760px){
   .home-menu-grid{grid-template-columns:repeat(2,1fr)}
   .home-menu-btn{min-height:82px}
@@ -2059,8 +2077,18 @@ header{
   </div>
 
   <div class="card" style="margin-top:14px">
-    <h2>直近1週間の予定</h2>
-    <div id="homeWeekSchedule"></div>
+    <div class="home-schedule-view-select no-print" aria-label="ホーム予定表示">
+      <label><input id="homeViewWeekCheck" type="checkbox" onchange="setHomeScheduleView('week')"> 直近1週間を通常表示</label>
+      <label><input id="homeViewCalendarCheck" type="checkbox" onchange="setHomeScheduleView('calendar')"> カレンダーを通常表示</label>
+    </div>
+    <div id="homeWeekPanel">
+      <h2>直近1週間の予定</h2>
+      <div id="homeWeekSchedule"></div>
+    </div>
+    <div id="homeCalendarPanel" hidden>
+      <h2>年間スケジュール</h2>
+      <div id="homeVerticalCalendar"></div>
+    </div>
   </div>
 </section>
 
@@ -2709,6 +2737,10 @@ header{
       <button class="athlete-team-choice-btn" type="button" onclick="openTab('mainDataBackup')">
         <strong>メインデータバックアップ</strong>
         <span>選手・大会・年間予定・チーム情報など、Managerのメインデータを保存・復元・共有します。</span>
+      </button>
+      <button class="athlete-team-choice-btn" type="button" onclick="shareManagerApp()">
+        <strong>このアプリをLINEで紹介</strong>
+        <span>簡単な紹介文とAlpine Team ManagerのURLをLINEなどで送信します。</span>
       </button>
     </div>
   </div>
@@ -4988,6 +5020,79 @@ function homeDateColor(ds){
   if(d.getDay()===6)return'#0066cc';
   return'inherit';
 }
+const HOME_SCHEDULE_VIEW_KEY='alpine_team_manager_home_schedule_view_v1';
+function homeScheduleView(){
+  const v=localStorage.getItem(HOME_SCHEDULE_VIEW_KEY);
+  return v==='calendar'?'calendar':'week';
+}
+function setHomeScheduleView(view){
+  const next=view==='calendar'?'calendar':'week';
+  localStorage.setItem(HOME_SCHEDULE_VIEW_KEY,next);
+  applyHomeScheduleView();
+}
+function applyHomeScheduleView(){
+  const view=homeScheduleView();
+  const week=document.getElementById('homeWeekPanel');
+  const cal=document.getElementById('homeCalendarPanel');
+  const wc=document.getElementById('homeViewWeekCheck');
+  const cc=document.getElementById('homeViewCalendarCheck');
+  if(wc)wc.checked=view==='week';
+  if(cc)cc.checked=view==='calendar';
+  if(week)week.hidden=view!=='week';
+  if(cal)cal.hidden=view!=='calendar';
+  if(view==='calendar')positionHomeVerticalCalendar();
+}
+function homeCalendarMonths(){
+  const y=selectedGlobalSeasonYear();
+  return [5,6,7,8,9,10,11,12].map(month=>({year:y,month}))
+    .concat([1,2,3,4].map(month=>({year:y+1,month})));
+}
+function homeCalendarItems(){
+  const out=[],seen=new Set();
+  const add=(date,title,source='schedule')=>{
+    const d=String(date||'').slice(0,10);
+    if(!d)return;
+    const key=`${d}|${String(title||'').trim().toLowerCase()}|${source}`;
+    if(seen.has(key))return;
+    seen.add(key);out.push({date:d,title:title||'予定',source});
+  };
+  (db.schedules||[]).forEach(x=>add(x.date,x.title||x.type||'予定','schedule'));
+  (db.events||[]).forEach(x=>{
+    const dates=enumerateDates(x.start,x.end||x.start);
+    dates.forEach(d=>add(d,x.title||'大会','event'));
+  });
+  return out.sort((a,b)=>a.date.localeCompare(b.date));
+}
+function renderHomeCalendarMonth({year,month},all){
+  const first=new Date(year,month-1,1).getDay();
+  const last=new Date(year,month,0).getDate();
+  const cells=[];
+  for(let i=0;i<first;i++)cells.push('<div class="home-calendar-day blank"></div>');
+  for(let day=1;day<=last;day++){
+    const ds=`${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const dow=new Date(year,month-1,day).getDay();
+    const holiday=JP_HOLIDAYS.has(ds);
+    const items=all.filter(x=>x.date===ds);
+    const cls=holiday?'holiday':dow===0?'sun':dow===6?'sat':'';
+    cells.push(`<div class="home-calendar-day ${cls}"><span class="home-calendar-day-number">${day}</span>${items.map(x=>`<span class="home-calendar-item ${x.source==='event'?'competition':''}">${esc(x.title)}</span>`).join('')}</div>`);
+  }
+  while(cells.length%7)cells.push('<div class="home-calendar-day blank"></div>');
+  return `<section id="home-month-${year}-${String(month).padStart(2,'0')}" class="home-month-calendar"><h3>${year}年 ${month}月</h3><div class="home-calendar-weekdays"><div class="home-calendar-weekday sun">日</div><div class="home-calendar-weekday">月</div><div class="home-calendar-weekday">火</div><div class="home-calendar-weekday">水</div><div class="home-calendar-weekday">木</div><div class="home-calendar-weekday">金</div><div class="home-calendar-weekday sat">土</div></div><div class="home-calendar-days">${cells.join('')}</div></section>`;
+}
+function positionHomeVerticalCalendar(){
+  const list=document.getElementById('homeCalendarMonthList');
+  if(!list)return;
+  list.scrollTop=0;
+  const now=new Date();
+  const target=document.getElementById(`home-month-${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`);
+  if(target)requestAnimationFrame(()=>{list.scrollTop=Math.max(0,target.offsetTop-list.offsetTop)});
+}
+function renderHomeVerticalCalendar(){
+  const box=document.getElementById('homeVerticalCalendar');
+  if(!box)return;
+  const all=homeCalendarItems();
+  box.innerHTML=`<div id="homeCalendarMonthList" class="home-calendar-month-list">${homeCalendarMonths().map(x=>renderHomeCalendarMonth(x,all)).join('')}</div>`;
+}
 function renderHome(){
   const wrap=document.getElementById('homeWeekSchedule');
   if(!wrap)return;
@@ -5034,6 +5139,8 @@ function renderHome(){
     </div>`);
   }
   wrap.innerHTML=rows.join('');
+  renderHomeVerticalCalendar();
+  applyHomeScheduleView();
 }
 
 
@@ -6098,6 +6205,33 @@ function downloadSupporterUpdateFile(file){
   a.href=url;a.download=file.name;document.body.appendChild(a);a.click();a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
+async function shareManagerApp(){
+  const url='https://m6jm4s654p-lab.github.io/snowtech-team-manager/';
+  const text=`アルペンスキーチーム向けの管理アプリ「Alpine Team Manager」です。
+選手・大会・年間予定・ランキングなどをまとめて管理できます。
+
+${url}`;
+  try{
+    if(navigator.share){
+      await navigator.share({
+        title:'Alpine Team Manager',
+        text
+      });
+      return;
+    }
+    await navigator.clipboard.writeText(text);
+    alert('紹介文とURLをコピーしました。LINEに貼り付けて送信してください。');
+  }catch(e){
+    if(e?.name==='AbortError')return;
+    try{
+      await navigator.clipboard.writeText(text);
+      alert('紹介文とURLをコピーしました。LINEに貼り付けて送信してください。');
+    }catch(_){
+      prompt('この紹介文をコピーしてLINEで送信してください。',text);
+    }
+  }
+}
+
 async function shareSupporterUpdateFile(){
   const envelope=await buildSupporterUpdateEnvelope();
   const file=new File([JSON.stringify(envelope)],supporterUpdateFilename(),{type:'text/plain;charset=utf-8'});
@@ -8229,7 +8363,7 @@ async function refreshAppCacheOnLaunch(){
   if(!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=01376',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=01378',{updateViaCache:'none'});
 
     if(reg.waiting){
       reg.waiting.postMessage({type:'SKIP_WAITING'});
@@ -8312,7 +8446,7 @@ function goHome(){
 
 
 // v0.13.74: current-season K2 classification + dynamic header version. Team data in localStorage is never cleared.
-const APP_VERSION='0.13.76';
+const APP_VERSION='0.13.78';
 function syncHeaderAppVersion(){
   const el=document.getElementById('headerAppVersion');
   if(el)el.textContent=`v${APP_VERSION}`;
