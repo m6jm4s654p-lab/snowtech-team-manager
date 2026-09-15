@@ -1935,7 +1935,7 @@ header{
 <header>
   <div class="header-inner">
     <div class="header-meta-row">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.13.59</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.13.60</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
     <div class="header-title-row">
@@ -5724,10 +5724,53 @@ function athleteAgeYears(birth){
 
 const rankingAthleteNationalRankCache=new Map();
 let rankingAthleteNationalRankRequestSeq=0;
+const NATIONAL_RANK_CACHE_KEY='alpine_team_manager_national_rank_cache_v1';
 
 function normalizeSajNumberForRank(v){
   const n=String(v||'').replace(/\D/g,'');
   return n? n.padStart(8,'0') : '';
+}
+function loadNationalRankCacheFromStorage(){
+  try{
+    const stored=JSON.parse(localStorage.getItem(NATIONAL_RANK_CACHE_KEY)||'null');
+    const ranks=stored?.ranks&&typeof stored.ranks==='object'?stored.ranks:{};
+    rankingAthleteNationalRankCache.clear();
+    Object.entries(ranks).forEach(([saj,info])=>{
+      const key=normalizeSajNumberForRank(saj);
+      if(key&&info)rankingAthleteNationalRankCache.set(key,info);
+    });
+    return stored&&typeof stored==='object'?stored:null;
+  }catch(e){
+    console.warn('全国ランク端末キャッシュ読込失敗',e);
+    return null;
+  }
+}
+function nationalRankLatestThursdayStart(now=new Date()){
+  const d=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  const diff=(d.getDay()-4+7)%7; // 4 = Thursday
+  d.setDate(d.getDate()-diff);
+  return d;
+}
+function currentRegisteredRankSajs(){
+  return [...new Set((db.athletes||[]).map(a=>normalizeSajNumberForRank(a?.saj)).filter(Boolean))];
+}
+function nationalRankCacheNeedsRefresh(stored){
+  const sajs=currentRegisteredRankSajs();
+  if(!sajs.length)return false;
+  if(!stored?.updatedAt)return true;
+  if(sajs.some(saj=>!rankingAthleteNationalRankCache.has(saj)))return true;
+  const updatedAt=new Date(stored.updatedAt);
+  if(Number.isNaN(updatedAt.getTime()))return true;
+  return updatedAt<nationalRankLatestThursdayStart();
+}
+function persistNationalRankCache(updatedAt=new Date().toISOString()){
+  const ranks={};
+  rankingAthleteNationalRankCache.forEach((info,saj)=>{ranks[saj]=info;});
+  try{
+    localStorage.setItem(NATIONAL_RANK_CACHE_KEY,JSON.stringify({updatedAt,ranks}));
+  }catch(e){
+    console.warn('全国ランク端末キャッシュ保存失敗',e);
+  }
 }
 function rankingAthleteRankText(a){
   const saj=normalizeSajNumberForRank(a?.saj);
@@ -5740,12 +5783,25 @@ function rankingAthleteRankText(a){
   return `全国ランク（${cat}）　SL ${f(r.SL)}　GS ${f(r.GS)}　SG ${f(r.SG)}`;
 }
 
-async function loadRankingAthleteNationalRanks(){
+async function loadRankingAthleteNationalRanks(force=false){
+  const stored=loadNationalRankCacheFromStorage();
+  if(!force && !nationalRankCacheNeedsRefresh(stored)){
+    renderRankingAthleteList(false);
+    return true;
+  }
+  if(!navigator.onLine || !apiBase()){
+    renderRankingAthleteList(false);
+    return false;
+  }
+
   const seq=++rankingAthleteNationalRankRequestSeq;
   const groups=[
     ['男',(db.athletes||[]).filter(a=>normalizeAthleteSex(a.sex)==='男')],
     ['女',(db.athletes||[]).filter(a=>normalizeAthleteSex(a.sex)==='女')]
   ];
+  const nextCache=new Map(rankingAthleteNationalRankCache);
+  let allOk=true;
+
   for(const [sex,athletes] of groups){
     const sajs=[...new Set(athletes.map(a=>normalizeSajNumberForRank(a.saj)).filter(Boolean))];
     if(!sajs.length)continue;
@@ -5754,15 +5810,33 @@ async function loadRankingAthleteNationalRanks(){
       const r=await fetch(`${apiBase()}/api/saj-athlete-ranks?${q.toString()}`,{cache:'no-store'});
       const data=await r.json().catch(()=>({}));
       if(!r.ok||!data?.ok)throw new Error(data?.detail||data?.error||`HTTP ${r.status}`);
-      if(seq!==rankingAthleteNationalRankRequestSeq)return;
-      (data.athletes||[]).forEach(x=>rankingAthleteNationalRankCache.set(normalizeSajNumberForRank(x.saj),x));
+      if(seq!==rankingAthleteNationalRankRequestSeq)return false;
+      const returned=new Set();
+      (data.athletes||[]).forEach(x=>{
+        const saj=normalizeSajNumberForRank(x.saj);
+        if(!saj)return;
+        returned.add(saj);
+        nextCache.set(saj,x);
+      });
+      // APIで順位対象外の選手も「取得済み」として保持し、毎起動時の再通信を防ぐ。
+      sajs.filter(saj=>!returned.has(saj)).forEach(saj=>nextCache.set(saj,{categoryLabel:'—',ranks:{SL:null,GS:null,SG:null}}));
     }catch(e){
-      if(seq!==rankingAthleteNationalRankRequestSeq)return;
-      sajs.forEach(saj=>rankingAthleteNationalRankCache.set(saj,{categoryLabel:'—',ranks:{SL:null,GS:null,SG:null}}));
+      allOk=false;
       console.warn('所属選手全国ランク取得失敗',sex,e);
     }
   }
-  if(seq===rankingAthleteNationalRankRequestSeq)renderRankingAthleteList(false);
+
+  if(seq!==rankingAthleteNationalRankRequestSeq)return false;
+  if(allOk){
+    rankingAthleteNationalRankCache.clear();
+    nextCache.forEach((info,saj)=>rankingAthleteNationalRankCache.set(saj,info));
+    persistNationalRankCache();
+  }else{
+    // 取得失敗時は端末保存済みの前回データを維持し、次回起動時に再試行する。
+    loadNationalRankCacheFromStorage();
+  }
+  renderRankingAthleteList(false);
+  return allOk;
 }
 
 function renderRankingAthleteList(loadRanks=true){
@@ -5928,34 +6002,20 @@ function supporterEmptyNationalRank(){
   return {categoryLabel:'—',SL:null,GS:null,SG:null};
 }
 async function fetchSupporterNationalRanks(){
+  // Supporter更新ファイルでは、起動時の週次更新で端末に保持した全国ランクを再利用する。
+  loadNationalRankCacheFromStorage();
   const result=new Map();
-  const groups=[
-    ['男',(db.athletes||[]).filter(a=>normalizeAthleteSex(a.sex)==='男')],
-    ['女',(db.athletes||[]).filter(a=>normalizeAthleteSex(a.sex)==='女')]
-  ];
-  for(const [sex,athletes] of groups){
-    const sajs=[...new Set(athletes.map(a=>normalizeSajNumberForRank(a.saj)).filter(Boolean))];
-    if(!sajs.length)continue;
-    try{
-      const q=new URLSearchParams({sex,sajs:sajs.join(',')});
-      const r=await fetch(`${apiBase()}/api/saj-athlete-ranks?${q.toString()}`,{cache:'no-store'});
-      const data=await r.json().catch(()=>({}));
-      if(!r.ok||!data?.ok)throw new Error(data?.detail||data?.error||`HTTP ${r.status}`);
-      (data.athletes||[]).forEach(x=>{
-        const saj=normalizeSajNumberForRank(x.saj);
-        if(!saj)return;
-        const ranks=x.ranks||{};
-        result.set(saj,{
-          categoryLabel:x.categoryLabel||'—',
-          SL:Number.isFinite(Number(ranks.SL))?Number(ranks.SL):null,
-          GS:Number.isFinite(Number(ranks.GS))?Number(ranks.GS):null,
-          SG:Number.isFinite(Number(ranks.SG))?Number(ranks.SG):null
-        });
-      });
-    }catch(e){
-      console.warn('Supporter用全国ランク取得失敗',sex,e);
-    }
-  }
+  currentRegisteredRankSajs().forEach(saj=>{
+    const info=rankingAthleteNationalRankCache.get(saj);
+    if(!info)return;
+    const ranks=info.ranks||{};
+    result.set(saj,{
+      categoryLabel:info.categoryLabel||'—',
+      SL:Number.isFinite(Number(ranks.SL))?Number(ranks.SL):null,
+      GS:Number.isFinite(Number(ranks.GS))?Number(ranks.GS):null,
+      SG:Number.isFinite(Number(ranks.SG))?Number(ranks.SG):null
+    });
+  });
   return result;
 }
 function buildSupporterAnnualCalendar(){
@@ -5989,8 +6049,12 @@ function buildSupporterAnnualCalendar(){
   };
 }
 async function buildSupporterUpdateEnvelope(){
+  // 週次更新が必要な状態なら、最新ランク取得を試してから更新ファイルを作る。
+  // 更新済みの週は端末キャッシュだけを使うため追加通信しない。
+  await loadRankingAthleteNationalRanks(false);
   const rankMap=await fetchSupporterNationalRanks();
-  const rankFetchedAt=new Date().toISOString();
+  const storedRankCache=loadNationalRankCacheFromStorage();
+  const rankFetchedAt=storedRankCache?.updatedAt||'';
   const athletes=(Array.isArray(db.athletes)?db.athletes:[]).map(a=>{
     const saj=normalizeSajNumberForRank(a?.saj);
     const nr=saj?(rankMap.get(saj)||supporterEmptyNationalRank()):supporterEmptyNationalRank();
@@ -6276,6 +6340,7 @@ async function resetAll(){
   if(!confirm('この操作は取り消せません。バックアップ済みであることを確認してから「OK」を押してください。'))return;
 
   localStorage.removeItem(KEY);
+  localStorage.removeItem(NATIONAL_RANK_CACHE_KEY);
   localStorage.removeItem(WEATHER_GEO_CACHE_KEY);
   localStorage.removeItem(SAJ_REGION_STORAGE);
   sessionStorage.removeItem('snowtech_selected_tool');
@@ -8096,7 +8161,7 @@ async function refreshAppCacheOnLaunch(){
   if(!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=01355',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=01360',{updateViaCache:'none'});
 
     if(reg.waiting){
       reg.waiting.postMessage({type:'SKIP_WAITING'});
