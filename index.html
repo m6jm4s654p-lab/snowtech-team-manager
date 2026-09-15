@@ -32,7 +32,9 @@
   --text:#f4f7fb;--muted:#9fb1c3;--accent:#5fc9ff;--ok:#39d98a;
   --warn:#ffb84d;--danger:#ff6b6b;--chip:#17324a;
 }
-*{box-sizing:border-box} body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:linear-gradient(180deg,#07111f,#0b1727);color:var(--text)}
+*{box-sizing:border-box}
+html{min-height:100%;background:#0b1727}
+body{margin:0;min-height:100vh;min-height:100dvh;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:linear-gradient(180deg,#07111f 0%,#0b1727 72%,#10243a 100%);background-attachment:fixed;color:var(--text)}
 header{position:sticky;top:0;z-index:20;background:rgba(7,17,31,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding:14px 18px}
 .brand{display:flex;justify-content:space-between;align-items:center;gap:14px;max-width:1200px;margin:auto}
 .brand h1{font-size:20px;margin:0}.brand small{color:var(--muted)}
@@ -475,7 +477,7 @@ header [data-team-name],header #teamHeader{display:none!important}
   min-height:92px;
 }
 
-/* v0.13.67 HOME category folding */
+/* v0.13.68 HOME category folding */
 .home-category-toggle{
   cursor:pointer;
   user-select:none;
@@ -1933,7 +1935,7 @@ header{
 </style>
 
 <style>
-/* v0.13.67: daily version update notice */
+/* v0.13.68: daily version update notice */
 .app-update-modal{position:fixed;inset:0;z-index:12000;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(2,10,16,.80);backdrop-filter:blur(5px)}
 .app-update-modal.show{display:flex}
 .app-update-card{width:min(520px,100%);max-height:88vh;overflow:auto;border:1px solid #355064;border-radius:16px;background:#0b1d2a;color:#f8fafc;padding:20px;box-shadow:0 18px 50px rgba(0,0,0,.45)}
@@ -1994,7 +1996,7 @@ header{
 <header>
   <div class="header-inner">
     <div class="header-meta-row">
-      <span class="muted" style="font-size:12px;font-weight:700">v0.13.67</span>
+      <span class="muted" style="font-size:12px;font-weight:700">v0.13.68</span>
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
     <div class="header-title-row">
@@ -4628,7 +4630,7 @@ function toggleItemHelp(index){
 }
 
 
-// ===== v0.13.67 National SAJ point ranking: persistent weekly cache =====
+// ===== v0.13.68 National SAJ point ranking: persistent weekly cache =====
 let nationalRankingState={category:'k2',sex:'男',discipline:'SL'};
 const nationalRankingCache=new Map();
 const NATIONAL_RANKING_STORAGE_KEY='alpine_team_manager_national_top30_v1';
@@ -8281,8 +8283,8 @@ function goHome(){
 
 
 
-// v0.13.67: check the published app version once per calendar day.
-const APP_VERSION='0.13.67';
+// v0.13.68: check the published app version once per calendar day.
+const APP_VERSION='0.13.68';
 const APP_PUBLIC_URL='https://m6jm4s654p-lab.github.io/snowtech-team-manager/';
 const APP_VERSION_CHECK_KEY='alpine_team_manager_version_check_date_v1';
 function appLocalDateKey(d=new Date()){

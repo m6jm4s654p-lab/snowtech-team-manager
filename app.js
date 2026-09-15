@@ -5016,7 +5016,7 @@ function goHome(){
 
 
 // v0.13.64: check the published app version once per calendar day.
-const APP_VERSION='0.13.67';
+const APP_VERSION='0.13.68';
 const APP_PUBLIC_URL='https://m6jm4s654p-lab.github.io/snowtech-team-manager/';
 const APP_VERSION_CHECK_KEY='alpine_team_manager_version_check_date_v1';
 function appLocalDateKey(d=new Date()){
