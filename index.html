@@ -2768,12 +2768,12 @@ header{
     <h2>データ共有 / バックアップ</h2>
     <div class="athlete-team-choice-grid no-print">
       <button id="supporterPublishBtn" class="athlete-team-choice-btn" type="button" onclick="publishSupporterData()">
-        <strong>Supporterへ配信</strong>
-        <span>最新データをサーバーへ配信します。登録済みのSupporterは、起動時に自動更新されます。</span>
+        <strong>Supporter向け情報を更新</strong>
+        <span>最新情報を更新すると、登録済みSupporterへ次回起動時に反映されます。</span>
       </button>
       <button class="athlete-team-choice-btn" type="button" onclick="shareSupporterInviteLink()">
         <strong>Supporter招待URLを共有</strong>
-        <span>利用を許可する保護者・選手へ、登録専用URLをLINEなどで共有します。</span>
+        <span>チーム内の保護者・選手へ、閲覧専用アプリをLINEなどで共有します。</span>
       </button>
       <button class="athlete-team-choice-btn" type="button" onclick="openTab('mainDataBackup')">
         <strong>メインデータバックアップ</strong>
@@ -6537,13 +6537,14 @@ const SUPPORTER_SYNC_API='https://alpine-supporter-api.take6583.workers.dev';
 const SUPPORTER_SYNC_TEAM_KEY='atsSupporterSyncTeamId';
 const SUPPORTER_SYNC_MANAGER_KEY='atsSupporterSyncManagerKey';
 function getSupporterSyncSettings(){return {teamId:localStorage.getItem(SUPPORTER_SYNC_TEAM_KEY)||'',managerKey:localStorage.getItem(SUPPORTER_SYNC_MANAGER_KEY)||''};}
+function hasSupporterSyncSettings(){const s=getSupporterSyncSettings();return !!(s.teamId&&s.managerKey);}
 function loadSupporterSyncSettings(){const s=getSupporterSyncSettings(),t=document.getElementById('supporterSyncTeamId'),k=document.getElementById('supporterSyncManagerKey');if(t)t.value=s.teamId;if(k)k.value=s.managerKey;renderSupporterSyncStatus();}
 function renderSupporterSyncStatus(message='',error=false){const el=document.getElementById('supporterSyncStatus');if(!el)return;const s=getSupporterSyncSettings();el.textContent=message||(s.teamId&&s.managerKey?'接続設定は保存済みです。':'チームIDとManager配信キーを設定してください。');el.style.color=error?'#b42318':'';}
 function saveSupporterSyncSettings(){const teamId=document.getElementById('supporterSyncTeamId')?.value.trim(),managerKey=document.getElementById('supporterSyncManagerKey')?.value.trim();if(!teamId||!managerKey){alert('チームIDとManager配信キーを入力してください。');return;}localStorage.setItem(SUPPORTER_SYNC_TEAM_KEY,teamId);localStorage.setItem(SUPPORTER_SYNC_MANAGER_KEY,managerKey);renderSupporterSyncStatus('接続設定を保存しました。');}
 function clearSupporterSyncSettings(){if(!confirm('Supporterの接続設定をこの端末から削除しますか？'))return;localStorage.removeItem(SUPPORTER_SYNC_TEAM_KEY);localStorage.removeItem(SUPPORTER_SYNC_MANAGER_KEY);loadSupporterSyncSettings();}
 async function supporterManagerRequest(path,options={}){const s=getSupporterSyncSettings();if(!s.teamId||!s.managerKey)throw new Error('先にSupporterサーバー接続設定を保存してください。');const response=await fetch(SUPPORTER_SYNC_API+path,{...options,headers:{'Content-Type':'application/json','X-Team-ID':s.teamId,'Authorization':'Bearer '+s.managerKey,...(options.headers||{})}});let data={};try{data=await response.json();}catch(_){data={};}if(!response.ok)throw new Error(data.error||`サーバーエラー (${response.status})`);return data;}
-async function publishSupporterData(){const button=document.getElementById('supporterPublishBtn');try{if(button)button.disabled=true;renderSupporterSyncStatus('最新データを作成して配信しています…');const envelope=await buildSupporterUpdateEnvelope();const data=await supporterManagerRequest('/api/manager/publish',{method:'POST',body:JSON.stringify(envelope)});renderSupporterSyncStatus(`配信完了：バージョン ${data.version}（${new Date(data.publishedAt).toLocaleString('ja-JP')}）`);alert('Supporterへの配信が完了しました。登録済み端末は次回起動時に自動更新されます。');}catch(e){renderSupporterSyncStatus(e.message,true);alert('Supporterへ配信できませんでした。\n'+e.message);}finally{if(button)button.disabled=false;}}
-async function shareSupporterInviteLink(){try{renderSupporterSyncStatus('招待URLを発行しています…');const data=await supporterManagerRequest('/api/manager/invite',{method:'POST',body:JSON.stringify({expiresHours:168,maxUses:100})});const text=`Alpine Team Supporterの登録案内です。\n下の専用URLを開いて登録してください。\n\n${data.inviteUrl}\n\n登録コード：${data.inviteCode}\n有効期限：${new Date(data.expiresAt).toLocaleString('ja-JP')}`;if(navigator.share){await navigator.share({title:'Alpine Team Supporter 登録案内',text});}else if(navigator.clipboard){await navigator.clipboard.writeText(text);alert('招待案内をコピーしました。LINEに貼り付けて送信してください。');}else{prompt('この招待案内をコピーして送信してください。',text);}renderSupporterSyncStatus('招待URLを発行しました。');}catch(e){if(e?.name==='AbortError')return;renderSupporterSyncStatus(e.message,true);alert('招待URLを発行できませんでした。\n'+e.message);}}
+async function publishSupporterData(){if(!hasSupporterSyncSettings()){const message='情報を更新するには、先に接続設定を保存してください。';renderSupporterSyncStatus(message,true);alert(message);return;}const button=document.getElementById('supporterPublishBtn');try{if(button)button.disabled=true;renderSupporterSyncStatus('Supporter向けの最新情報を更新しています…');const envelope=await buildSupporterUpdateEnvelope();const data=await supporterManagerRequest('/api/manager/publish',{method:'POST',body:JSON.stringify(envelope)});renderSupporterSyncStatus(`更新完了：バージョン ${data.version}（${new Date(data.publishedAt).toLocaleString('ja-JP')}）`);alert('Supporter向け情報を更新しました。登録済み端末は次回起動時に自動更新されます。');}catch(e){renderSupporterSyncStatus(e.message,true);alert('Supporter向け情報を更新できませんでした。\n'+e.message);}finally{if(button)button.disabled=false;}}
+async function shareSupporterInviteLink(){if(!hasSupporterSyncSettings()){const message='招待URLを共有するには、先に接続設定を保存してください。';renderSupporterSyncStatus(message,true);alert(message);return;}try{renderSupporterSyncStatus('招待URLを発行しています…');const data=await supporterManagerRequest('/api/manager/invite',{method:'POST',body:JSON.stringify({expiresHours:168,maxUses:100})});const text=`Alpine Team Supporterの登録案内です。\n下の専用URLを開いて登録してください。\n\n${data.inviteUrl}\n\n登録コード：${data.inviteCode}\n有効期限：${new Date(data.expiresAt).toLocaleString('ja-JP')}`;if(navigator.share){await navigator.share({title:'Alpine Team Supporter 登録案内',text});}else if(navigator.clipboard){await navigator.clipboard.writeText(text);alert('招待案内をコピーしました。LINEに貼り付けて送信してください。');}else{prompt('この招待案内をコピーして送信してください。',text);}renderSupporterSyncStatus('招待URLを発行しました。');}catch(e){if(e?.name==='AbortError')return;renderSupporterSyncStatus(e.message,true);alert('招待URLを発行できませんでした。\n'+e.message);}}
 setTimeout(loadSupporterSyncSettings,0);
 
 const BACKUP_FILE_SCHEMA='alpine-team-manager-backup-v2';
@@ -8755,7 +8756,7 @@ function goHome(){
 
 
 // v0.13.74: current-season K2 classification + dynamic header version. Team data in localStorage is never cleared.
-const APP_VERSION='0.13.87';
+const APP_VERSION='0.13.89';
 function syncHeaderAppVersion(){
   const el=document.getElementById('headerAppVersion');
   if(el)el.textContent=`v${APP_VERSION}`;
