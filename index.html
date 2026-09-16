@@ -8673,7 +8673,7 @@ async function refreshAppCacheOnLaunch(){
   if(!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=01385',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=01392',{updateViaCache:'none'});
 
     if(reg.waiting){
       reg.waiting.postMessage({type:'SKIP_WAITING'});
@@ -8688,6 +8688,10 @@ async function refreshAppCacheOnLaunch(){
         }
       });
     });
+
+    const warm=()=>reg.active?.postMessage({type:'WARM_APP_SHELL'});
+    if(reg.active)warm();
+    else navigator.serviceWorker.ready.then(ready=>ready.active?.postMessage({type:'WARM_APP_SHELL'})).catch(()=>{});
 
     // Do not compete with first paint/title screen on a weak connection.
     setTimeout(()=>{
@@ -8756,7 +8760,7 @@ function goHome(){
 
 
 // v0.13.74: current-season K2 classification + dynamic header version. Team data in localStorage is never cleared.
-const APP_VERSION='0.13.91';
+const APP_VERSION='0.13.92';
 function syncHeaderAppVersion(){
   const el=document.getElementById('headerAppVersion');
   if(el)el.textContent=`v${APP_VERSION}`;
@@ -8799,11 +8803,8 @@ async function applyMinorAppUpdate(latest){
         });
       }
     }
-    // Remove only Cache Storage. localStorage/IndexedDB are deliberately untouched.
-    if('caches' in window){
-      const keys=await caches.keys();
-      await Promise.all(keys.map(key=>caches.delete(key).catch(()=>false)));
-    }
+    // Keep the newly built offline shell. The activated worker removes only
+    // obsolete Manager caches after the new shell has been cached completely.
     // Verify that the published index itself already contains the requested release
     // before claiming success or reloading.
     const verifyUrl=`./index.html?verify=${encodeURIComponent(latest)}&t=${Date.now()}`;
