@@ -2932,11 +2932,40 @@ function removeTrainingBarn(index){
   renderTrainingBarns();
 }
 function refreshAwayTrainingBarnOptions(){
-  const data=document.getElementById('calendarAwayTrainingOptions');
-  if(!data)return;
+  const select=document.getElementById('calendarAwayTrainingSelect');
+  if(!select)return;
+
   const main=String(db.team?.mainSkiArea||'').trim();
-  const values=[...new Set(normalizedTrainingBarns().filter(v=>v!==main))];
-  data.innerHTML=values.map(v=>`<option value="${esc(v)}"></option>`).join('');
+  const values=normalizedTrainingBarns().filter(v=>v && v!==main);
+  const current=select.value;
+
+  select.innerHTML=
+    '<option value="">登録済みバーンから選択</option>'+
+    values.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('')+
+    '<option value="__direct__">その他の場所を直接入力</option>';
+
+  if(values.includes(current)){
+    select.value=current;
+  }else{
+    select.value='';
+  }
+}
+function onAwayTrainingBarnSelect(){
+  const select=document.getElementById('calendarAwayTrainingSelect');
+  const input=document.getElementById('calendarAwayTrainingPlace');
+  if(!select||!input)return;
+
+  const value=String(select.value||'');
+  if(value==='__direct__'){
+    input.value='';
+    input.focus();
+    return;
+  }
+  if(value){
+    input.value=value;
+    input.focus();
+    input.select?.();
+  }
 }
 
 let mainSkiAreaSaveTimer=null;
@@ -4771,24 +4800,39 @@ function setHomeTrainingFromCalendar(){
 function openAwayTrainingInput(){
   const panel=document.getElementById('calendarAwayTrainingPanel');
   const input=document.getElementById('calendarAwayTrainingPlace');
+  const select=document.getElementById('calendarAwayTrainingSelect');
   if(!panel||!input)return;
 
   refreshAwayTrainingBarnOptions();
+
   const existing=trainingDayRowForDate(calendarActionDateValue);
-  input.value=existing?.trainingLocationType==='away' ? String(existing.place||'') : '';
+  const existingPlace=existing?.trainingLocationType==='away' ? String(existing.place||'').trim() : '';
+  input.value=existingPlace;
+
+  if(select){
+    const barns=normalizedTrainingBarns();
+    select.value=barns.includes(existingPlace)?existingPlace:(existingPlace?'__direct__':'');
+  }
+
   panel.classList.remove('hidden');
 
   setTimeout(()=>{
-    input.focus();
-    input.select?.();
+    if(select && normalizedTrainingBarns().length){
+      select.focus();
+    }else{
+      input.focus();
+      input.select?.();
+    }
   },30);
 }
 
 function cancelAwayTrainingInput(){
   const panel=document.getElementById('calendarAwayTrainingPanel');
   const input=document.getElementById('calendarAwayTrainingPlace');
+  const select=document.getElementById('calendarAwayTrainingSelect');
   if(panel)panel.classList.add('hidden');
   if(input)input.value='';
+  if(select)select.value='';
 }
 
 function confirmAwayTraining(){
@@ -5240,7 +5284,7 @@ async function refreshAppCacheOnLaunch(){
   if(!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=01384',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=01385',{updateViaCache:'none'});
 
     if(reg.waiting){
       reg.waiting.postMessage({type:'SKIP_WAITING'});
@@ -5323,7 +5367,7 @@ function goHome(){
 
 
 // v0.13.74: current-season K2 classification + dynamic header version. Team data in localStorage is never cleared.
-const APP_VERSION='0.13.84';
+const APP_VERSION='0.13.85';
 function syncHeaderAppVersion(){
   const el=document.getElementById('headerAppVersion');
   if(el)el.textContent=`v${APP_VERSION}`;
