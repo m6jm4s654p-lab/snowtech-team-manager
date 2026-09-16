@@ -5097,12 +5097,23 @@ function homeSupporterMonthSpec(){
     .concat([1,2,3,4].map(m=>({year:y+1,month:m})));
 }
 function homeSupporterAnnualItems(){
+  // v0.13.82:
+  // HOMEカレンダーは buildSupporterAnnualCalendar() の結果だけを使用する。
+  // v0.13.81では、この結果に db.schedules / db.events をもう一度足していたため、
+  // 同じ予定が「Supporter年間カレンダー経由」と「Manager本体データ経由」の
+  // 2経路から入り、1マス内で重複表示されるケースがあった。
   const out=[],seen=new Set();
   const norm=v=>String(v??'').trim().replace(/\s+/g,' ').toLowerCase();
+
   const add=x=>{
     if(!x?.date)return;
     const item={...x,date:String(x.date).slice(0,10)};
-    const key=[item.date,norm(item.title||item.kind),norm(item.place)].join('|');
+    // 表示上同じ予定は source に関係なく1件へ統合する。
+    const key=[
+      item.date,
+      norm(item.title||item.kind),
+      norm(item.place)
+    ].join('|');
     if(seen.has(key))return;
     seen.add(key);
     out.push(item);
@@ -5123,39 +5134,12 @@ function homeSupporterAnnualItems(){
       }
     }
   }catch(e){
-    console.warn('Supporter年間カレンダーデータ生成フォールバック',e);
+    console.error('Supporter年間カレンダーデータ生成エラー',e);
   }
 
-  // Supporterデータ生成に含まれない日付もManager本体データから補完する。
-  for(const x of (db.schedules||[])){
-    add({
-      date:x.date,
-      title:x.title||x.type||'予定',
-      place:x.place||'',
-      kind:x.type||'予定',
-      source:'schedule'
-    });
-  }
-  for(const x of (db.events||[])){
-    const s=String(x.start||'').slice(0,10);
-    const e=String(x.end||x.start||'').slice(0,10);
-    if(!s)continue;
-    let d=new Date(s+'T00:00:00');
-    const last=new Date((e||s)+'T00:00:00');
-    if(Number.isNaN(d.getTime())||Number.isNaN(last.getTime()))continue;
-    while(d<=last){
-      add({
-        date:homeYmd(d),
-        title:x.title||'大会',
-        place:x.place||'',
-        kind:'大会',
-        source:'event'
-      });
-      d.setDate(d.getDate()+1);
-    }
-  }
   return out.sort((a,b)=>String(a.date).localeCompare(String(b.date)));
 }
+
 function homeSupporterIsCompetition(x){
   const source=String(x?.source||'').toLowerCase();
   const kind=String(x?.kind||'');
@@ -8495,7 +8479,7 @@ async function refreshAppCacheOnLaunch(){
   if(!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=01381',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=01382',{updateViaCache:'none'});
 
     if(reg.waiting){
       reg.waiting.postMessage({type:'SKIP_WAITING'});
@@ -8578,7 +8562,7 @@ function goHome(){
 
 
 // v0.13.74: current-season K2 classification + dynamic header version. Team data in localStorage is never cleared.
-const APP_VERSION='0.13.81';
+const APP_VERSION='0.13.82';
 function syncHeaderAppVersion(){
   const el=document.getElementById('headerAppVersion');
   if(el)el.textContent=`v${APP_VERSION}`;
