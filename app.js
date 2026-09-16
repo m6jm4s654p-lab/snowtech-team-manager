@@ -5380,7 +5380,7 @@ function goHome(){
 
 
 // v0.13.74: current-season K2 classification + dynamic header version. Team data in localStorage is never cleared.
-const APP_VERSION='0.13.86';
+const APP_VERSION='0.13.87';
 function syncHeaderAppVersion(){
   const el=document.getElementById('headerAppVersion');
   if(el)el.textContent=`v${APP_VERSION}`;

@@ -20,7 +20,7 @@
 <meta name="twitter:description" content="アルペンスキーチーム向けの選手・大会・年間予定・ポイント管理アプリ">
 <meta name="twitter:image" content="https://m6jm4s654p-lab.github.io/snowtech-team-manager/alpine-team-manager-og-v01350.png">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://snowtech-saj-api.take6583.workers.dev https://nominatim.openstreetmap.org https://geocoding-api.open-meteo.com https://api.open-meteo.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'; media-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://snowtech-saj-api.take6583.workers.dev https://alpine-supporter-api.take6583.workers.dev https://nominatim.openstreetmap.org https://geocoding-api.open-meteo.com https://api.open-meteo.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'; media-src 'none'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="snowtech-icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -8755,7 +8755,7 @@ function goHome(){
 
 
 // v0.13.74: current-season K2 classification + dynamic header version. Team data in localStorage is never cleared.
-const APP_VERSION='0.13.86';
+const APP_VERSION='0.13.87';
 function syncHeaderAppVersion(){
   const el=document.getElementById('headerAppVersion');
   if(el)el.textContent=`v${APP_VERSION}`;
