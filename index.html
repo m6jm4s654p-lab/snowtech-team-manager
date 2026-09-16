@@ -1935,6 +1935,22 @@ header{
   .home-supporter-calendar-item{font-size:8px;padding:2px}
 }
 
+
+.training-barn-add-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;margin-top:6px}
+.training-barn-list{display:flex;flex-direction:column;gap:7px;margin-top:10px}
+.training-barn-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 9px;border:1px solid var(--line);border-radius:9px;background:rgba(255,255,255,.025)}
+.training-barn-row span{min-width:0;overflow-wrap:anywhere;font-size:13px}
+.training-barn-delete{padding:6px 10px;flex:0 0 auto}
+@media(max-width:460px){.training-barn-add-row{grid-template-columns:1fr}.training-barn-add-row .btn{width:100%}}
+
+
+.header-coaches-only{
+  font-size:.62em;
+  font-weight:700;
+  letter-spacing:.01em;
+  white-space:nowrap;
+}
+
 </style>
 
 <style>
@@ -2042,7 +2058,7 @@ header{
       <div class="sync" id="syncState">● ローカル保存</div>
     </div>
     <div class="header-title-row">
-      <h1>Alpine Team Manager</h1>
+      <h1>Alpine Team Manager <span class="header-coaches-only">（Coaches Only）</span></h1>
     </div>
   </div>
 </header>
@@ -3091,6 +3107,15 @@ header{
       <input id="mainSkiArea" placeholder="例：サンプルスキー場"
              oninput="autoSaveMainSkiArea()" onchange="autoSaveMainSkiArea(true)">
       <div class="muted" style="margin-top:6px">入力内容は自動保存され、年間予定の「練習日設定」に使用されます。</div>
+
+      <label style="margin-top:16px">その他トレーニングバーン</label>
+      <div class="training-barn-add-row">
+        <input id="trainingBarnInput" type="text" maxlength="60" placeholder="例：網張温泉スキー場"
+               onkeydown="if(event.key==='Enter'){event.preventDefault();addTrainingBarn()}">
+        <button class="btn primary" type="button" onclick="addTrainingBarn()">追加</button>
+      </div>
+      <div class="muted" style="margin-top:6px">複数登録できます。「ホーム以外で練習」の練習場所候補として使用します。</div>
+      <div id="trainingBarnList" class="training-barn-list"></div>
     </div>
     <div class="card">
       <h2>所属コーチ</h2>
@@ -3218,7 +3243,10 @@ header{
 
     <div id="calendarAwayTrainingPanel" class="calendar-away-training-panel hidden">
       <label for="calendarAwayTrainingPlace">練習場所</label>
-      <input id="calendarAwayTrainingPlace" type="text" maxlength="60" placeholder="例：テスト高原スキー場">
+      <input id="calendarAwayTrainingPlace" type="text" list="calendarAwayTrainingOptions" maxlength="60"
+             autocomplete="off" placeholder="登録済みバーンから選択、または直接入力">
+      <datalist id="calendarAwayTrainingOptions"></datalist>
+      <div class="muted" style="margin-top:6px;font-size:11px">チーム設定の「その他トレーニングバーン」から選択できます。候補以外も直接入力できます。</div>
       <div class="calendar-away-training-actions">
         <button class="btn" type="button" onclick="cancelAwayTrainingInput()">キャンセル</button>
         <button class="btn primary" type="button" onclick="confirmAwayTraining()">確定</button>
@@ -3231,7 +3259,7 @@ header{
 
     <div class="calendar-action-help">
       「ホームで練習」はチーム設定のメインのスキー場を使用します。<br>
-      「ホーム以外で練習」は練習場所を入力して確定します。<br>
+      「ホーム以外で練習」は登録済みトレーニングバーンから選択、または練習場所を直接入力して確定します。<br>
       「その他予定設定」はこれまでの期間・予定1・予定2の入力画面を開きます。<br>
       公式大会が登録されている日は「大会詳細」からSAJの大会詳細ページを表示できます。
     </div>
@@ -3569,13 +3597,19 @@ let db=JSON.parse(localStorage.getItem(KEY)||'null')||{
     globalSeasonYear:null,
     lastBackupAt:'',
     scheduleOffSeason:false,
-    sajAutoRefreshDate:''
+    sajAutoRefreshDate:'',
+    trainingBarns:[]
   },
   coaches:[],
   athletes:[],
   schedules:[],
   events:[]
 };
+
+// v0.13.83 compatibility: normalize additional training barns.
+db.team=db.team||{};
+if(!Array.isArray(db.team.trainingBarns))db.team.trainingBarns=[];
+db.team.trainingBarns=[...new Set(db.team.trainingBarns.map(v=>String(v||'').trim()).filter(Boolean))];
 
 // v0.13.39 compatibility: normalize only known sex labels.
 // Existing athlete records and point values are never removed here.
@@ -4635,7 +4669,7 @@ const ITEM_HELP_ITEMS=[
   },
   {
     title:'チーム設定',
-    body:'チーム名、メインのスキー場、所属コーチ、役割を管理できます。チーム名とメインのスキー場は入力すると自動保存されます。メインのスキー場は年間予定の「ホームで練習」で使用します。バックアップ書き出し・読込、全データ削除もここで行います。'
+    body:'チーム名、メインのスキー場、その他トレーニングバーン、所属コーチ、役割を管理できます。メインのスキー場は年間予定の「ホームで練習」で使用し、その他トレーニングバーンは「ホーム以外で練習」の候補として表示されます。候補以外の練習場所も直接入力できます。'
   },
   {
     title:'会場情報',
@@ -5364,6 +5398,8 @@ function renderAll(){
   document.getElementById('teamName').value=db.team.name||'';
   const mainSkiAreaInput=document.getElementById('mainSkiArea');
   if(mainSkiAreaInput)mainSkiAreaInput.value=db.team.mainSkiArea||'';
+  renderTrainingBarns();
+  refreshAwayTrainingBarnOptions();
   initGlobalSeason();renderCoaches();renderAthletes();renderSchedule();renderEvents();renderRanking();refreshSelects();initSajCompetitionSeason();initScheduleSeason();renderSajRegionFilters();renderSajCategoryFilters();renderSajDisciplineFilters();renderVenues();renderWeatherVenues();renderHome();renderBackupStatus();
 }
 
@@ -6181,6 +6217,80 @@ function autoSaveTeamName(immediate=false){
 }
 
 
+function normalizedTrainingBarns(){
+  db.team=db.team||{};
+  if(!Array.isArray(db.team.trainingBarns))db.team.trainingBarns=[];
+  const seen=new Set();
+  return db.team.trainingBarns
+    .map(v=>String(v||'').trim())
+    .filter(v=>{
+      if(!v)return false;
+      const key=v.toLowerCase();
+      if(seen.has(key))return false;
+      seen.add(key);
+      return true;
+    });
+}
+function renderTrainingBarns(){
+  const list=document.getElementById('trainingBarnList');
+  if(!list)return;
+  const barns=normalizedTrainingBarns();
+  db.team.trainingBarns=barns;
+  list.innerHTML=barns.length
+    ? barns.map((name,i)=>`
+      <div class="training-barn-row">
+        <span>${esc(name)}</span>
+        <button class="btn danger training-barn-delete" type="button" onclick="removeTrainingBarn(${i})">削除</button>
+      </div>`).join('')
+    : '<div class="muted" style="font-size:11px">登録されていません。</div>';
+  refreshAwayTrainingBarnOptions();
+}
+function addTrainingBarn(){
+  const input=document.getElementById('trainingBarnInput');
+  if(!input)return;
+  const value=String(input.value||'').trim();
+  if(!value){
+    alert('トレーニングバーン名を入力してください。');
+    input.focus();
+    return;
+  }
+  if(value.length>60){
+    alert('60文字以内で入力してください。');
+    input.focus();
+    return;
+  }
+  const barns=normalizedTrainingBarns();
+  if(barns.some(v=>v.toLowerCase()===value.toLowerCase())){
+    alert('同じトレーニングバーンが登録されています。');
+    input.focus();
+    input.select?.();
+    return;
+  }
+  barns.push(value);
+  db.team.trainingBarns=barns;
+  persistDb({silent:true});
+  input.value='';
+  renderTrainingBarns();
+  input.focus();
+}
+function removeTrainingBarn(index){
+  const barns=normalizedTrainingBarns();
+  const name=barns[index];
+  if(!name)return;
+  if(!confirm(`「${name}」をその他トレーニングバーンから削除しますか？`))return;
+  barns.splice(index,1);
+  db.team.trainingBarns=barns;
+  persistDb({silent:true});
+  renderTrainingBarns();
+}
+function refreshAwayTrainingBarnOptions(){
+  const data=document.getElementById('calendarAwayTrainingOptions');
+  if(!data)return;
+  const main=String(db.team?.mainSkiArea||'').trim();
+  const values=[...new Set(normalizedTrainingBarns().filter(v=>v!==main))];
+  data.innerHTML=values.map(v=>`<option value="${esc(v)}"></option>`).join('');
+}
+
 let mainSkiAreaSaveTimer=null;
 function autoSaveMainSkiArea(immediate=false){
   if(mainSkiAreaSaveTimer){
@@ -6206,6 +6316,8 @@ function autoSaveMainSkiArea(immediate=false){
       }
     });
     persistDb({silent:true});
+    renderTrainingBarns();
+    refreshAwayTrainingBarnOptions();
     renderScheduleBoard();
     renderHome();
   };
@@ -8013,6 +8125,7 @@ function openAwayTrainingInput(){
   const input=document.getElementById('calendarAwayTrainingPlace');
   if(!panel||!input)return;
 
+  refreshAwayTrainingBarnOptions();
   const existing=trainingDayRowForDate(calendarActionDateValue);
   input.value=existing?.trainingLocationType==='away' ? String(existing.place||'') : '';
   panel.classList.remove('hidden');
@@ -8479,7 +8592,7 @@ async function refreshAppCacheOnLaunch(){
   if(!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=01382',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=01384',{updateViaCache:'none'});
 
     if(reg.waiting){
       reg.waiting.postMessage({type:'SKIP_WAITING'});
@@ -8562,7 +8675,7 @@ function goHome(){
 
 
 // v0.13.74: current-season K2 classification + dynamic header version. Team data in localStorage is never cleared.
-const APP_VERSION='0.13.82';
+const APP_VERSION='0.13.84';
 function syncHeaderAppVersion(){
   const el=document.getElementById('headerAppVersion');
   if(el)el.textContent=`v${APP_VERSION}`;
