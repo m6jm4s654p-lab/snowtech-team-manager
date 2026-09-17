@@ -1,4 +1,4 @@
-const CACHE_NAME='alpine-team-manager-v01392';
+const CACHE_NAME='alpine-team-manager-v01393';
 const APP_CACHE_PREFIX='alpine-team-manager-';
 const APP_SHELL=[
   './',
@@ -24,7 +24,7 @@ self.addEventListener('install',event=>{
 
 self.addEventListener('activate',event=>{
   event.waitUntil((async()=>{
-    // The complete v0.13.92 shell exists before older Manager caches are removed.
+    // The complete v0.13.93 shell exists before older Manager caches are removed.
     const keys=await caches.keys();
     await Promise.all(keys
       .filter(key=>key.startsWith(APP_CACHE_PREFIX) && key!==CACHE_NAME)

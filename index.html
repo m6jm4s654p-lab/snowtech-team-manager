@@ -8673,7 +8673,7 @@ async function refreshAppCacheOnLaunch(){
   if(!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
 
   try{
-    const reg=await navigator.serviceWorker.register('./sw.js?ver=01392',{updateViaCache:'none'});
+    const reg=await navigator.serviceWorker.register('./sw.js?ver=01393',{updateViaCache:'none'});
 
     if(reg.waiting){
       reg.waiting.postMessage({type:'SKIP_WAITING'});
@@ -8760,7 +8760,7 @@ function goHome(){
 
 
 // v0.13.74: current-season K2 classification + dynamic header version. Team data in localStorage is never cleared.
-const APP_VERSION='0.13.92';
+const APP_VERSION='0.13.93';
 function syncHeaderAppVersion(){
   const el=document.getElementById('headerAppVersion');
   if(el)el.textContent=`v${APP_VERSION}`;
@@ -8909,7 +8909,39 @@ async function copyManagerAppUrl(){
     ta.remove();
   }
 }
+const MANAGER_ACCESS_API='https://alpine-supporter-api.take6583.workers.dev';
+const MANAGER_ACCESS_DEVICE_KEY='alpine_team_manager_anonymous_device_v1';
+const MANAGER_ACCESS_SESSION_KEY='alpine_team_manager_access_sent_v01393';
+let managerAccessReporting=false;
+function managerAnonymousDeviceId(){
+  let id=localStorage.getItem(MANAGER_ACCESS_DEVICE_KEY)||'';
+  if(!/^[a-zA-Z0-9._:-]{8,100}$/.test(id)){
+    id=crypto.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    localStorage.setItem(MANAGER_ACCESS_DEVICE_KEY,id);
+  }
+  return id;
+}
+function managerLaunchMode(){
+  return (window.matchMedia?.('(display-mode: standalone)')?.matches||navigator.standalone===true)?'standalone':'browser';
+}
+async function reportAnonymousManagerAccess(){
+  if(!navigator.onLine||managerAccessReporting||sessionStorage.getItem(MANAGER_ACCESS_SESSION_KEY))return;
+  managerAccessReporting=true;
+  try{
+    const response=await fetch(`${MANAGER_ACCESS_API}/api/manager/access`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      credentials:'omit',
+      referrerPolicy:'no-referrer',
+      body:JSON.stringify({deviceId:managerAnonymousDeviceId(),appVersion:APP_VERSION,mode:managerLaunchMode()})
+    });
+    if(response.ok)sessionStorage.setItem(MANAGER_ACCESS_SESSION_KEY,'1');
+  }catch{}
+  finally{managerAccessReporting=false;}
+}
 setTimeout(()=>checkLatestAppVersionOnLaunch(),1200);
+setTimeout(()=>reportAnonymousManagerAccess(),1800);
+addEventListener('online',()=>reportAnonymousManagerAccess());
 </script>
 </body>
 </html>
